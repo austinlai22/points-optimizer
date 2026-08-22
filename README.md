@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# PointCompass
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**[pointcompass.vercel.app](https://pointcompass.vercel.app)**
 
-Currently, two official plugins are available:
+A free, client-only tool that values your Chase, Capital One, American Express, and Citi points/miles, and helps you figure out which card to redeem through for a specific trip.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Nothing is sent to a server — all balances and inputs stay in your browser (`localStorage`).
 
-## React Compiler
+## What it does
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Portfolio** — Enter the balance on each card you hold and see three figures per card:
+- **Cash-back floor** — the guaranteed, unconditional value if you cashed out today
+- **Realistic value** — the guaranteed travel-portal redemption rate
+- **Transfer ceiling** — this app's reasoned estimate of the upside from transferring to airline/hotel partners for premium-cabin or peak-date bookings
 
-## Expanding the Oxlint configuration
+Balances pool automatically across cards in the same issuer's family (e.g. a no-transfer Chase Freedom balance inherits a held Sapphire Reserve's transfer ceiling), the same way a rational cardholder would actually consolidate points before redeeming.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**Trip Optimizer** — Enter a trip's cash price and the hotel/airline brand you'd redeem through, and see every redemption path (each card's own portal, plus any transfer partner) ranked by cost — the opportunity cost of spending those points instead of your best guaranteed alternative. Lower cost is a better deal. The current scenario is reflected in the URL, so you can copy the link to share or bookmark it.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Valuation model
+
+This app's own transparent, reasoned assumptions — not a claim to match The Points Guy, NerdWallet, or any other published valuation guide. Full breakdown (with live numbers) is in the "Methodology & assumptions" disclosure at the bottom of each page in the app. Card terms were last verified August 2026 and can change — confirm current terms directly with each issuer before making redemption decisions.
+
+## Tech stack
+
+Vite + React 19 + TypeScript + Tailwind CSS v4 (CSS-first config, no `tailwind.config.js`). No backend, no database, no auth.
+
+## Running locally
+
+```bash
+npm install
+npm run dev      # start the dev server
+npm test         # run the vitest suite
+npm run build    # type-check and produce a production build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Disclaimer
+
+PointCompass is an independent estimation tool and is not affiliated with, endorsed by, or sponsored by Chase, Capital One, American Express, Citi, or any airline or hotel program referenced in the app. Figures are illustrative estimates based on this app's own assumptions — not financial advice.

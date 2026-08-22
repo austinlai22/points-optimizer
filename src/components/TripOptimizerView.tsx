@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import cardsData from '../data/cards.json';
 import transferPartnersData from '../data/transferPartners.json';
 import { useCardBalances } from '../context/CardBalancesContext';
@@ -26,6 +26,48 @@ const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
   airline: 'Airlines',
 };
 const PARTNER_TYPE_ORDER: PartnerType[] = ['hotel', 'airline'];
+
+const TRIP_STORAGE_KEY = 'cco:tripOptimizer';
+
+interface TripInputs {
+  tripCashPrice: number;
+  selectedPartnerId: string;
+  pointsRequired: number;
+}
+
+const DEFAULT_TRIP_INPUTS: TripInputs = { tripCashPrice: 0, selectedPartnerId: '', pointsRequired: 0 };
+
+function sanitizeStoredNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
+// A shared link's query params take priority over anything saved locally
+// from a previous session — opening someone else's link should show THEIR
+// scenario, not silently keep your own leftover inputs. Only trip
+// scenario fields go in the URL/localStorage here; portfolio balances are
+// deliberately never included, so sharing a link never leaks your points.
+function loadInitialTripInputs(): TripInputs {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('price') || params.has('partner') || params.has('points')) {
+    return {
+      tripCashPrice: parseNonNegativeNumber(params.get('price') ?? ''),
+      selectedPartnerId: params.get('partner') ?? '',
+      pointsRequired: parseNonNegativeNumber(params.get('points') ?? ''),
+    };
+  }
+  try {
+    const stored = localStorage.getItem(TRIP_STORAGE_KEY);
+    if (!stored) return DEFAULT_TRIP_INPUTS;
+    const parsed = JSON.parse(stored);
+    return {
+      tripCashPrice: sanitizeStoredNumber(parsed.tripCashPrice),
+      selectedPartnerId: typeof parsed.selectedPartnerId === 'string' ? parsed.selectedPartnerId : '',
+      pointsRequired: sanitizeStoredNumber(parsed.pointsRequired),
+    };
+  } catch {
+    return DEFAULT_TRIP_INPUTS;
+  }
+}
 
 function CompassIcon() {
   return (
@@ -110,12 +152,14 @@ function ChevronDownIcon() {
 
 export function TripOptimizerView() {
   const { balances, ownership } = useCardBalances();
-  const [tripCashPrice, setTripCashPrice] = useState(0);
-  const [selectedPartnerId, setSelectedPartnerId] = useState('');
+  const initialTripInputs = useMemo(loadInitialTripInputs, []);
+  const [tripCashPrice, setTripCashPrice] = useState(initialTripInputs.tripCashPrice);
+  const [selectedPartnerId, setSelectedPartnerId] = useState(initialTripInputs.selectedPartnerId);
   // A single value, not keyed by card — only one brand is ever priced at a
   // time, and its award cost doesn't depend on which of your cards you'd
   // transfer from.
-  const [pointsRequired, setPointsRequired] = useState(0);
+  const [pointsRequired, setPointsRequired] = useState(initialTripInputs.pointsRequired);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
   const ownedCards = useMemo(() => cards.filter((card) => ownership[card.id]), [ownership]);
   const ownedTransferEligibleIssuers = useMemo(
@@ -174,6 +218,50 @@ export function TripOptimizerView() {
     setPointsRequired(0);
   };
 
+  // A persisted or shared partner might not be reachable anymore (e.g. you
+  // no longer own a transfer-eligible card for that issuer) — fall back to
+  // "no brand selected" rather than leaving the dropdown pointed at
+  // something that isn't one of its own options.
+  useEffect(() => {
+    if (selectedPartnerId && !availablePartners.some((p) => p.id === selectedPartnerId)) {
+      setSelectedPartnerId('');
+    }
+  }, [availablePartners, selectedPartnerId]);
+
+  // Keep the current scenario in both localStorage (so it survives a
+  // reload) and the URL (so the address bar itself is always a valid share
+  // link, even without clicking "Copy link"). Deliberately excludes
+  // portfolio balances — only the trip scenario itself is ever persisted or
+  // shareable.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        TRIP_STORAGE_KEY,
+        JSON.stringify({ tripCashPrice, selectedPartnerId, pointsRequired }),
+      );
+    } catch {
+      // localStorage unavailable (private mode / quota) — inputs still work in-memory.
+    }
+
+    const params = new URLSearchParams();
+    if (tripCashPrice > 0) params.set('price', String(tripCashPrice));
+    if (selectedPartnerId) params.set('partner', selectedPartnerId);
+    if (pointsRequired > 0) params.set('points', String(pointsRequired));
+    const query = params.toString();
+    window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
+  }, [tripCashPrice, selectedPartnerId, pointsRequired]);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopyStatus('copied');
+      setTimeout(() => setCopyStatus('idle'), 2000);
+    } catch {
+      // Clipboard API unavailable/blocked — the address bar already
+      // reflects the current scenario as a fallback, so this just no-ops.
+    }
+  };
+
   return (
     <div>
       <h2 className="mb-1.5 font-display text-2xl font-medium tracking-tight text-navy-950">
@@ -185,9 +273,20 @@ export function TripOptimizerView() {
       </p>
 
       <div className={`${CARD_SURFACE} mb-8 p-6`}>
-        <label htmlFor="trip-price" className={`mb-1.5 block ${LABEL}`}>
-          Trip cash price
-        </label>
+        <div className="mb-1.5 flex flex-wrap items-start justify-between gap-3">
+          <label htmlFor="trip-price" className={LABEL}>
+            Trip cash price
+          </label>
+          {(tripCashPrice > 0 || selectedPartnerId) && (
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className={`rounded-lg border border-navy/20 px-3 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
+            >
+              {copyStatus === 'copied' ? 'Copied!' : 'Copy link'}
+            </button>
+          )}
+        </div>
         <div className="relative mb-7 max-w-xs">
           <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center font-mono text-navy-950/35">
             $
