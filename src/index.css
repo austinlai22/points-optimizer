@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #1E3A5F;
+  --color-navy-950: #0B1220;
+  --color-navy-100: #E8EEF5;
+  --color-teal: #0D9488;
+  --color-slate-50: #F8FAFC;
+  --color-amber: #D97706;
+  --color-orange: #EA580C;
+  --color-red: #DC2626;
+
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --shadow-card: 0 1px 2px 0 rgba(11, 18, 32, 0.04), 0 6px 20px -6px rgba(11, 18, 32, 0.12);
+  --shadow-card-hover: 0 2px 4px 0 rgba(11, 18, 32, 0.06), 0 18px 32px -10px rgba(11, 18, 32, 0.18);
+  --shadow-control: 0 1px 2px 0 rgba(11, 18, 32, 0.06), 0 8px 20px -6px rgba(11, 18, 32, 0.16);
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-navy-950 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  ::selection {
+    @apply bg-navy/20;
+  }
+}
+
+@layer utilities {
+  details > summary {
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+}

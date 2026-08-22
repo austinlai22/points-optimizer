@@ -1,0 +1,233 @@
+import { describe, expect, it } from 'vitest';
+import cardsData from './cards.json';
+import transferPartnersData from './transferPartners.json';
+import { computeCardValuation, computeRedemptionPaths, CASH_BACK_RATE } from '../utils/valuation';
+import { ISSUER_ORDER } from '../styles/constants';
+import type { CardConfig, Issuer, PartnerType, TransferPartner } from '../types';
+
+// These tests validate the ACTUAL shipped data files, not synthetic
+// fixtures — catching data-entry mistakes (typo'd issuer keys, malformed
+// ratios, duplicate ids) that pure-logic unit tests can't see, since those
+// tests intentionally use their own small, controlled fixtures instead.
+const cards = cardsData as CardConfig[];
+const transferPartners = transferPartnersData as TransferPartner[];
+const VALID_ISSUERS = new Set<Issuer>(ISSUER_ORDER);
+const VALID_PARTNER_TYPES = new Set<PartnerType>(['hotel', 'airline']);
+
+describe('cards.json shape and sanity', () => {
+  it('has at least one card', () => {
+    expect(cards.length).toBeGreaterThan(0);
+  });
+
+  it('has unique card ids', () => {
+    const ids = cards.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('only uses issuers that are actually declared in ISSUER_ORDER', () => {
+    for (const card of cards) {
+      expect(VALID_ISSUERS.has(card.issuer), `card "${card.id}" has unknown issuer "${card.issuer}"`).toBe(
+        true,
+      );
+    }
+  });
+
+  it('has a sane annual fee, portal multiplier, and non-empty name for every card', () => {
+    for (const card of cards) {
+      expect(card.annualFee, `${card.id} annualFee`).toBeGreaterThanOrEqual(0);
+      expect(card.portalMultiplier, `${card.id} portalMultiplier`).toBeGreaterThan(0);
+      expect(card.name.length, `${card.id} name`).toBeGreaterThan(0);
+      expect(typeof card.transferEligible, `${card.id} transferEligible`).toBe('boolean');
+    }
+  });
+
+  it('gives every issuer at least one transfer-eligible card, so pooling always has a target', () => {
+    for (const issuer of ISSUER_ORDER) {
+      const issuerCards = cards.filter((c) => c.issuer === issuer);
+      if (issuerCards.length === 0) continue; // issuer not represented yet is fine
+      const hasTransferEligible = issuerCards.some((c) => c.transferEligible);
+      expect(hasTransferEligible, `${issuer} has no transfer-eligible card at all`).toBe(true);
+    }
+  });
+
+  it('has a CASH_BACK_RATE entry for every issuer actually used by a card', () => {
+    for (const card of cards) {
+      expect(CASH_BACK_RATE[card.issuer], `CASH_BACK_RATE missing for ${card.issuer}`).toBeGreaterThan(0);
+      // The unconditional floor should never exceed the guaranteed travel
+      // rate — that would invert the whole floor/marker/ceiling story.
+      expect(CASH_BACK_RATE[card.issuer], `${card.issuer} floor exceeds travel rate`).toBeLessThanOrEqual(
+        0.01,
+      );
+    }
+  });
+});
+
+describe('transferPartners.json shape and sanity', () => {
+  it('has unique partner ids', () => {
+    const ids = transferPartners.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('only uses valid partner types', () => {
+    for (const partner of transferPartners) {
+      expect(VALID_PARTNER_TYPES.has(partner.type), `${partner.id} has invalid type "${partner.type}"`).toBe(
+        true,
+      );
+    }
+  });
+
+  it('every partner reaches at least one issuer, at a positive ratio, using only known issuers', () => {
+    for (const partner of transferPartners) {
+      const issuerEntries = Object.entries(partner.ratiosByIssuer);
+      expect(issuerEntries.length, `${partner.id} has no issuers at all`).toBeGreaterThan(0);
+      for (const [issuer, ratio] of issuerEntries) {
+        expect(VALID_ISSUERS.has(issuer as Issuer), `${partner.id} references unknown issuer "${issuer}"`).toBe(
+          true,
+        );
+        expect(ratio, `${partner.id}/${issuer} ratio must be positive`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('has a non-empty, human-readable name for every partner', () => {
+    for (const partner of transferPartners) {
+      expect(partner.name.length, `${partner.id} name`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('real data end-to-end valuation sanity', () => {
+  it('maintains floor <= marker <= ceiling for every real card at a representative balance', () => {
+    for (const card of cards) {
+      const result = computeCardValuation({
+        card,
+        balance: 50_000,
+        allCards: cards,
+        transferPartners,
+      });
+      expect(result.floor, `${card.id} floor`).toBeLessThanOrEqual(result.marker);
+      expect(result.marker, `${card.id} marker`).toBeLessThanOrEqual(result.ceiling);
+      expect(result.floor, `${card.id} floor should be non-negative`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('never pools a card into a different issuer, for every real card', () => {
+    for (const card of cards) {
+      const result = computeCardValuation({
+        card,
+        balance: 50_000,
+        allCards: cards,
+        transferPartners,
+      });
+      if (result.pooledViaCard) {
+        expect(result.pooledViaCard.issuer, `${card.id} pooled cross-issuer`).toBe(card.issuer);
+      }
+    }
+  });
+
+  it('gives every non-transfer-eligible card a ceiling boost from pooling, when its issuer has a transfer-eligible card', () => {
+    const nonTransferEligible = cards.filter((c) => !c.transferEligible);
+    for (const card of nonTransferEligible) {
+      const issuerHasTransferEligible = cards.some(
+        (c) => c.issuer === card.issuer && c.transferEligible,
+      );
+      if (!issuerHasTransferEligible) continue;
+      const result = computeCardValuation({
+        card,
+        balance: 50_000,
+        allCards: cards,
+        transferPartners,
+      });
+      expect(result.isPooled, `${card.id} should be pooled`).toBe(true);
+      expect(result.ceiling, `${card.id} ceiling should exceed its marker`).toBeGreaterThan(result.marker);
+    }
+  });
+});
+
+describe('real data: known reduced-ratio cards are never recommended when a better option exists', () => {
+  const allBalances = Object.fromEntries(cards.map((c) => [c.id, 100_000]));
+
+  it('never recommends Citi Strata (blanket reduced ratio) over Premier/Elite for any Citi partner', () => {
+    const citiPartners = transferPartners.filter((p) => p.ratiosByIssuer.citi !== undefined);
+    expect(citiPartners.length).toBeGreaterThan(0); // sanity: Citi must actually reach something
+    for (const partner of citiPartners) {
+      const paths = computeRedemptionPaths({
+        cards,
+        transferPartners,
+        balances: allBalances,
+        tripCashPrice: 500,
+        pointsRequiredByPartner: { [partner.id]: 30_000 },
+      });
+      const citiPath = paths.find((p) => p.issuer === 'citi' && p.kind === 'transfer');
+      expect(citiPath?.card.id, `Citi path for ${partner.id}`).not.toBe('citistrata');
+    }
+  });
+
+  it('recommends Chase Reserve over Preferred specifically for Hyatt, but Preferred for other Chase partners', () => {
+    const hyattPaths = computeRedemptionPaths({
+      cards,
+      transferPartners,
+      balances: allBalances,
+      tripCashPrice: 500,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    });
+    const hyattChasePath = hyattPaths.find((p) => p.issuer === 'chase' && p.kind === 'transfer');
+    expect(hyattChasePath?.card.id).toBe('csr');
+
+    const unitedPaths = computeRedemptionPaths({
+      cards,
+      transferPartners,
+      balances: allBalances,
+      tripCashPrice: 500,
+      pointsRequiredByPartner: { united: 30_000 },
+    });
+    const unitedChasePath = unitedPaths.find((p) => p.issuer === 'chase' && p.kind === 'transfer');
+    expect(unitedChasePath?.card.id).toBe('csp'); // lower fee, no known caveat on United
+  });
+});
+
+describe('real data: Citi Strata\'s blanket ratio shortfall is priced, not just avoided', () => {
+  const strata = cards.find((c) => c.id === 'citistrata')!;
+  const strataOnly = cards.filter((c) => c.id === 'citistrata');
+  const strataPlusPremier = cards.filter((c) => c.id === 'citistrata' || c.id === 'citistratapremier');
+
+  it('discounts Strata\'s own ceiling when it is the only Citi card held', () => {
+    const result = computeCardValuation({
+      card: strata,
+      balance: 50_000,
+      allCards: strataOnly,
+      transferPartners,
+    });
+    expect(result.isPooled).toBe(false);
+    const undiscounted = computeCardValuation({
+      card: strata,
+      balance: 50_000,
+      allCards: strataPlusPremier,
+      transferPartners,
+    });
+    // Holding Premier too should make Strata's ceiling strictly higher
+    // (full rate, via pooling) than holding Strata alone (its own worse rate).
+    expect(undiscounted.ceiling).toBeGreaterThan(result.ceiling);
+  });
+
+  it('inflates Trip Optimizer cost through Strata when it is the only held Citi card', () => {
+    const aaPartner = transferPartners.find((p) => p.ratiosByIssuer.citi !== undefined)!;
+    const soloPaths = computeRedemptionPaths({
+      cards: strataOnly,
+      transferPartners,
+      balances: { citistrata: 100_000 },
+      tripCashPrice: 500,
+      pointsRequiredByPartner: { [aaPartner.id]: 30_000 },
+    });
+    const pooledPaths = computeRedemptionPaths({
+      cards: strataPlusPremier,
+      transferPartners,
+      balances: { citistrata: 100_000, citistratapremier: 100_000 },
+      tripCashPrice: 500,
+      pointsRequiredByPartner: { [aaPartner.id]: 30_000 },
+    });
+    const soloCost = soloPaths.find((p) => p.issuer === 'citi' && p.kind === 'transfer')?.cost;
+    const pooledCost = pooledPaths.find((p) => p.issuer === 'citi' && p.kind === 'transfer')?.cost;
+    expect(soloCost).toBeGreaterThan(pooledCost!);
+  });
+});

@@ -1,0 +1,101 @@
+[
+  {
+    "id": "csr",
+    "name": "Chase Sapphire Reserve",
+    "issuer": "chase",
+    "annualFee": 795,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "csp",
+    "name": "Chase Sapphire Preferred",
+    "issuer": "chase",
+    "annualFee": 95,
+    "portalMultiplier": 1.0,
+    "transferEligible": true,
+    "reducedRatioPartners": ["hyatt"]
+  },
+  {
+    "id": "freedom",
+    "name": "Chase Freedom / Freedom Unlimited",
+    "issuer": "chase",
+    "annualFee": 0,
+    "portalMultiplier": 1.0,
+    "transferEligible": false
+  },
+  {
+    "id": "ventureone",
+    "name": "Capital One VentureOne Rewards",
+    "issuer": "capitalOne",
+    "annualFee": 0,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "venture",
+    "name": "Capital One Venture Rewards",
+    "issuer": "capitalOne",
+    "annualFee": 95,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "venturex",
+    "name": "Capital One Venture X",
+    "issuer": "capitalOne",
+    "annualFee": 395,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "amexgreen",
+    "name": "American Express Green Card",
+    "issuer": "amex",
+    "annualFee": 150,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "amexgold",
+    "name": "American Express Gold Card",
+    "issuer": "amex",
+    "annualFee": 325,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "amexplatinum",
+    "name": "American Express Platinum Card",
+    "issuer": "amex",
+    "annualFee": 895,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "citistrata",
+    "name": "Citi Strata Card",
+    "issuer": "citi",
+    "annualFee": 0,
+    "portalMultiplier": 1.0,
+    "transferEligible": true,
+    "reducedRatioPartners": ["*"],
+    "blanketRatioMultiplier": 0.7
+  },
+  {
+    "id": "citistratapremier",
+    "name": "Citi Strata Premier Card",
+    "issuer": "citi",
+    "annualFee": 95,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  },
+  {
+    "id": "citistrataelite",
+    "name": "Citi Strata Elite Card",
+    "issuer": "citi",
+    "annualFee": 595,
+    "portalMultiplier": 1.0,
+    "transferEligible": true
+  }
+]

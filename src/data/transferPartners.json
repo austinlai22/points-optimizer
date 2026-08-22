@@ -1,0 +1,80 @@
+[
+  {
+    "id": "hyatt",
+    "name": "World of Hyatt",
+    "type": "hotel",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "united",
+    "name": "United MileagePlus",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "southwest",
+    "name": "Southwest Rapid Rewards",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "flyingblue",
+    "name": "Air France-KLM Flying Blue",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
+  },
+  {
+    "id": "britishairways",
+    "name": "British Airways Avios",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
+  },
+  {
+    "id": "wyndham",
+    "name": "Wyndham Rewards",
+    "type": "hotel",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "citi": 1 }
+  },
+  {
+    "id": "turkish",
+    "name": "Turkish Airlines Miles&Smiles",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "citi": 1 }
+  },
+  {
+    "id": "emirates",
+    "name": "Emirates Skywards",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 0.75, "amex": 0.8, "citi": 0.8 }
+  },
+  {
+    "id": "iprefer",
+    "name": "Preferred Hotels & Resorts (I Prefer)",
+    "type": "hotel",
+    "ratiosByIssuer": { "capitalOne": 2 }
+  },
+  {
+    "id": "delta",
+    "name": "Delta SkyMiles",
+    "type": "airline",
+    "ratiosByIssuer": { "amex": 1 }
+  },
+  {
+    "id": "hilton",
+    "name": "Hilton Honors",
+    "type": "hotel",
+    "ratiosByIssuer": { "amex": 2 }
+  },
+  {
+    "id": "aa",
+    "name": "American Airlines AAdvantage",
+    "type": "airline",
+    "ratiosByIssuer": { "citi": 1 }
+  },
+  {
+    "id": "marriott",
+    "name": "Marriott Bonvoy",
+    "type": "hotel",
+    "ratiosByIssuer": { "chase": 1, "amex": 1 }
+  }
+]
