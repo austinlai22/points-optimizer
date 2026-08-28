@@ -281,6 +281,59 @@ describe('computeCardValuation', () => {
       expect(premierResult.pooledViaCard).toBeNull();
     });
   });
+
+  describe('per-card cash-back rate override (e.g. Bank of America Travel Rewards)', () => {
+    const cheapFloorCard: CardConfig = {
+      id: 'cheapfloor',
+      name: 'Cheap floor',
+      issuer: 'bankOfAmerica',
+      annualFee: 0,
+      portalMultiplier: 1.0,
+      transferEligible: false,
+      cashBackRateOverride: 0.006,
+    };
+    const goodFloorCard: CardConfig = {
+      id: 'goodfloor',
+      name: 'Good floor',
+      issuer: 'bankOfAmerica',
+      annualFee: 95,
+      portalMultiplier: 1.0,
+      transferEligible: false,
+    };
+
+    it("uses a card's own cashBackRateOverride for its floor when held alone", () => {
+      const result = computeCardValuation({
+        card: cheapFloorCard,
+        balance: 10_000,
+        allCards: [cheapFloorCard],
+        transferPartners: [],
+      });
+      expect(result.floor).toBeCloseTo(10_000 * 0.006);
+      expect(result.isPooled).toBe(false);
+    });
+
+    it('rescues the worse-floor card via pooling into a better-floor sibling', () => {
+      const result = computeCardValuation({
+        card: cheapFloorCard,
+        balance: 10_000,
+        allCards: [cheapFloorCard, goodFloorCard],
+        transferPartners: [],
+      });
+      expect(result.isPooled).toBe(true);
+      expect(result.pooledViaCard?.id).toBe('goodfloor');
+      expect(result.floor).toBeCloseTo(10_000 * CASH_BACK_RATE.bankOfAmerica);
+    });
+
+    it('never produces a ceiling above realistic value when no card in the issuer is transfer-eligible', () => {
+      const result = computeCardValuation({
+        card: goodFloorCard,
+        balance: 10_000,
+        allCards: [cheapFloorCard, goodFloorCard],
+        transferPartners: [],
+      });
+      expect(result.ceiling).toBeCloseTo(result.marker);
+    });
+  });
 });
 
 describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', () => {

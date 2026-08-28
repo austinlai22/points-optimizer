@@ -26,7 +26,8 @@ function App() {
         <footer className="mx-auto max-w-5xl px-4 pb-6 pt-4 sm:pb-2">
           <p className="mx-auto max-w-2xl text-center text-xs leading-relaxed text-navy-950/40">
             PointCompass is an independent estimation tool and is not affiliated with,
-            endorsed by, or sponsored by Chase, Capital One, American Express, Citi, or any
+            endorsed by, or sponsored by Chase, Capital One, American Express, Citi, Bank of
+            America, or any
             airline or hotel program named here. Figures are illustrative estimates based on this
             app's own assumptions (see
             Methodology below) — not financial advice. Verify current terms directly with each

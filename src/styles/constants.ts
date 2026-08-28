@@ -1,12 +1,13 @@
 import type { Issuer } from '../types';
 
-export const ISSUER_ORDER: Issuer[] = ['chase', 'capitalOne', 'amex', 'citi'];
+export const ISSUER_ORDER: Issuer[] = ['chase', 'capitalOne', 'amex', 'citi', 'bankOfAmerica'];
 
 export const ISSUER_LABELS: Record<Issuer, string> = {
   chase: 'Chase',
   capitalOne: 'Capital One',
   amex: 'Amex',
   citi: 'Citi',
+  bankOfAmerica: 'Bank of America',
 };
 
 export const FOCUS_RING =
