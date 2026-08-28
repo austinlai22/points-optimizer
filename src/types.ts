@@ -1,4 +1,4 @@
-export type Issuer = 'chase' | 'capitalOne' | 'amex' | 'citi';
+export type Issuer = 'chase' | 'capitalOne' | 'amex' | 'citi' | 'bankOfAmerica';
 
 export interface CardConfig {
   id: string;
@@ -20,6 +20,14 @@ export interface CardConfig {
   // balance into first) — e.g. Citi Strata's real 10:7 transfer ratio is
   // 0.7. Defaults to 1 (no further degradation) if omitted.
   blanketRatioMultiplier?: number;
+  // This specific card's real unconditional cash-back rate, when it differs
+  // from its issuer's usual rate (CASH_BACK_RATE). Every issuer modeled so
+  // far has one uniform floor across its whole lineup EXCEPT Bank of
+  // America, where the no-fee Travel Rewards card's true cash-out rate
+  // (0.6 cents/point) is genuinely worse than its own Premium Rewards/Elite
+  // siblings (1 cent/point, the issuer default) — a real per-card exception,
+  // not a per-issuer one. Omit for a card that matches its issuer's default.
+  cashBackRateOverride?: number;
 }
 
 export type PartnerType = 'hotel' | 'airline';

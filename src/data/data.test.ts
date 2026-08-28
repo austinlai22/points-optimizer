@@ -41,13 +41,26 @@ describe('cards.json shape and sanity', () => {
     }
   });
 
-  it('gives every issuer at least one transfer-eligible card, so pooling always has a target', () => {
+  it('gives every issuer at least one transfer-eligible card, EXCEPT Bank of America (which genuinely has none)', () => {
+    // Bank of America is a real, deliberate exception: none of its cards
+    // have any airline/hotel transfer partners at all, unlike every other
+    // issuer here. This test still guards against a FUTURE issuer silently
+    // ending up with zero transfer-eligible cards by accident.
+    const issuersAllowedNoTransferEligible = new Set<Issuer>(['bankOfAmerica']);
     for (const issuer of ISSUER_ORDER) {
       const issuerCards = cards.filter((c) => c.issuer === issuer);
       if (issuerCards.length === 0) continue; // issuer not represented yet is fine
+      if (issuersAllowedNoTransferEligible.has(issuer)) continue;
       const hasTransferEligible = issuerCards.some((c) => c.transferEligible);
       expect(hasTransferEligible, `${issuer} has no transfer-eligible card at all`).toBe(true);
     }
+  });
+
+  it('Bank of America genuinely has zero transfer-eligible cards (no transfer partners exist for it)', () => {
+    const boaCards = cards.filter((c) => c.issuer === 'bankOfAmerica');
+    expect(boaCards.length).toBeGreaterThan(0);
+    expect(boaCards.every((c) => !c.transferEligible)).toBe(true);
+    expect(transferPartners.some((p) => p.ratiosByIssuer.bankOfAmerica !== undefined)).toBe(false);
   });
 
   it('has a CASH_BACK_RATE entry for every issuer actually used by a card', () => {
@@ -229,5 +242,84 @@ describe('real data: Citi Strata\'s blanket ratio shortfall is priced, not just 
     const soloCost = soloPaths.find((p) => p.issuer === 'citi' && p.kind === 'transfer')?.cost;
     const pooledCost = pooledPaths.find((p) => p.issuer === 'citi' && p.kind === 'transfer')?.cost;
     expect(soloCost).toBeGreaterThan(pooledCost!);
+  });
+});
+
+describe('real data: Bank of America (no transfer partners, per-card cash-back floor)', () => {
+  const travelRewards = cards.find((c) => c.id === 'boatravelrewards')!;
+  const premiumRewardsElite = cards.find((c) => c.id === 'boapremiumrewardselite')!;
+  const travelRewardsOnly = cards.filter((c) => c.id === 'boatravelrewards');
+  const travelRewardsPlusElite = cards.filter(
+    (c) => c.id === 'boatravelrewards' || c.id === 'boapremiumrewardselite',
+  );
+
+  it('gives Travel Rewards its own worse cash-back floor when held alone', () => {
+    const result = computeCardValuation({
+      card: travelRewards,
+      balance: 50_000,
+      allCards: travelRewardsOnly,
+      transferPartners,
+    });
+    expect(result.floor).toBeCloseTo(50_000 * 0.006);
+    expect(result.isPooled).toBe(false);
+    // No transfer-eligible BoA card exists anywhere, so ceiling never gets
+    // a transfer premium — it just equals the realistic value.
+    expect(result.ceiling).toBeCloseTo(result.marker);
+  });
+
+  it('rescues Travel Rewards\' floor via pooling when Premium Rewards Elite is also held', () => {
+    const result = computeCardValuation({
+      card: travelRewards,
+      balance: 50_000,
+      allCards: travelRewardsPlusElite,
+      transferPartners,
+    });
+    expect(result.isPooled).toBe(true);
+    expect(result.pooledViaCard?.id).toBe('boapremiumrewardselite');
+    // Rescued up to Premium Rewards Elite's full $0.01/point cash-back rate.
+    expect(result.floor).toBeCloseTo(50_000 * 0.01);
+  });
+
+  it('gives Premium Rewards Elite its 1.25x airfare-redemption boost, with no transfer premium on top', () => {
+    const result = computeCardValuation({
+      card: premiumRewardsElite,
+      balance: 50_000,
+      allCards: travelRewardsPlusElite,
+      transferPartners,
+    });
+    expect(result.marker).toBeCloseTo(50_000 * 0.01 * 1.25);
+    expect(result.ceiling).toBeCloseTo(result.marker); // never transfer-eligible, so no premium
+  });
+
+  it('rescues Travel Rewards\' floor via Premium Rewards (not just Elite) when both tie on portal rate', () => {
+    // Travel Rewards and plain Premium Rewards both have portalMultiplier
+    // 1.0 and neither is transfer-eligible — a full tie on every dimension
+    // except cash-back rate, which is exactly the scenario that exposed a
+    // real getBestPortalCard tiebreak gap during development.
+    const travelRewardsPlusPremium = cards.filter(
+      (c) => c.id === 'boatravelrewards' || c.id === 'boapremiumrewards',
+    );
+    const result = computeCardValuation({
+      card: travelRewards,
+      balance: 50_000,
+      allCards: travelRewardsPlusPremium,
+      transferPartners,
+    });
+    expect(result.isPooled).toBe(true);
+    expect(result.pooledViaCard?.id).toBe('boapremiumrewards');
+    expect(result.floor).toBeCloseTo(50_000 * 0.01);
+  });
+
+  it('produces zero transfer paths for Bank of America in Trip Optimizer (portal-only)', () => {
+    const boaCards = cards.filter((c) => c.issuer === 'bankOfAmerica');
+    const paths = computeRedemptionPaths({
+      cards: boaCards,
+      transferPartners,
+      balances: Object.fromEntries(boaCards.map((c) => [c.id, 100_000])),
+      tripCashPrice: 500,
+      pointsRequiredByPartner: {},
+    });
+    expect(paths.every((p) => p.kind === 'portal')).toBe(true);
+    expect(paths.length).toBe(boaCards.length);
   });
 });

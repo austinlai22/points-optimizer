@@ -97,5 +97,30 @@
     "annualFee": 595,
     "portalMultiplier": 1.0,
     "transferEligible": true
+  },
+  {
+    "id": "boatravelrewards",
+    "name": "Bank of America Travel Rewards",
+    "issuer": "bankOfAmerica",
+    "annualFee": 0,
+    "portalMultiplier": 1.0,
+    "transferEligible": false,
+    "cashBackRateOverride": 0.006
+  },
+  {
+    "id": "boapremiumrewards",
+    "name": "Bank of America Premium Rewards",
+    "issuer": "bankOfAmerica",
+    "annualFee": 95,
+    "portalMultiplier": 1.0,
+    "transferEligible": false
+  },
+  {
+    "id": "boapremiumrewardselite",
+    "name": "Bank of America Premium Rewards Elite",
+    "issuer": "bankOfAmerica",
+    "annualFee": 550,
+    "portalMultiplier": 1.25,
+    "transferEligible": false
   }
 ]

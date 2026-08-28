@@ -17,12 +17,37 @@ export const BASE_CPP = 0.01; // $ per point, travel-redemption base rate
 //   below its 1 cent/point flights/Fine Hotels & Resorts rate.
 // - Citi: cash back on the ThankYou-earning cards is 0.75 cents/point,
 //   below the Citi Travel portal's 1 cent/point.
+// - Bank of America: Premium Rewards and Premium Rewards Elite redeem for
+//   cash (deposit, statement credit, gift card) at the full $0.01/point, no
+//   gap at all — this is the issuer default below. The no-fee Travel
+//   Rewards card is the one real exception: its cash-out rate is only
+//   $0.006/point, genuinely worse than its own siblings, so it carries a
+//   per-card cashBackRateOverride in cards.json rather than changing this
+//   issuer-wide default.
 export const CASH_BACK_RATE: Record<Issuer, number> = {
   chase: BASE_CPP,
   capitalOne: BASE_CPP / 2,
   amex: 0.006,
   citi: 0.0075,
+  bankOfAmerica: BASE_CPP,
 };
+
+// A card's own true cash-back rate: its cashBackRateOverride if it has one
+// (a documented per-card exception), otherwise its issuer's usual rate.
+function getCashBackRate(card: CardConfig): number {
+  return card.cashBackRateOverride ?? CASH_BACK_RATE[card.issuer];
+}
+
+// The best cash-back rate reachable among held cards in the same issuer
+// family — mirrors getBestPortalCard's "a rational cardholder consolidates
+// into their best card before redeeming" reasoning, just applied to the
+// cash-out rate instead of the travel-portal rate. This only ever differs
+// from a card's own rate when a per-card cashBackRateOverride exists (only
+// Bank of America Travel Rewards has one today), so it's a no-op for every
+// other issuer.
+function getBestCashBackRate(cardsInScope: CardConfig[]): number {
+  return Math.max(...cardsInScope.map(getCashBackRate));
+}
 
 // Award-chart (transfer) redemptions are priced at fixed point costs while
 // cash prices float with demand, so premium-cabin / peak-date bookings tend
@@ -73,10 +98,14 @@ function hasReducedRatioFor(card: CardConfig, partnerId: string | null): boolean
 // happens to come first in the array, which is correct today only because
 // cards.json happens to list each issuer's non-transfer-eligible card last.
 // That's an accident of ordering, not a guarantee, so ties are broken
-// explicitly here: prefer a transfer-eligible card whenever one exists, and
-// among those, prefer one with no blanket ratio shortfall (e.g. pick Citi
-// Strata Premier over the plain Strata card) — so the "best" card used to
-// value every point in the family is never one known to underperform when a
+// explicitly here: prefer a transfer-eligible card whenever one exists,
+// among those prefer one with no blanket ratio shortfall (e.g. pick Citi
+// Strata Premier over the plain Strata card), and finally prefer whichever
+// has the better cash-back rate (e.g. Bank of America Premium Rewards over
+// Travel Rewards — both 1.0x portal, neither transfer-eligible, but
+// Premium Rewards' cash-out rate is genuinely better) — so the "best" card
+// used to value every point in the family, and named in pooledViaCard, is
+// never one known to underperform on ANY dimension this app models when a
 // genuinely better held card exists.
 function getBestPortalCard(cardsInScope: CardConfig[]): CardConfig {
   return cardsInScope.reduce((best, c) => {
@@ -88,6 +117,9 @@ function getBestPortalCard(cardsInScope: CardConfig[]): CardConfig {
     const cReduced = hasReducedRatioFor(c, null);
     const bestReduced = hasReducedRatioFor(best, null);
     if (cReduced !== bestReduced) return cReduced ? best : c;
+    const cCashBack = getCashBackRate(c);
+    const bestCashBack = getCashBackRate(best);
+    if (cCashBack !== bestCashBack) return cCashBack > bestCashBack ? c : best;
     return best;
   });
 }
@@ -105,27 +137,38 @@ export function computeCardValuation({
   allCards,
   transferPartners,
 }: ComputeCardValuationArgs): CardValuation {
-  const floor = balance * CASH_BACK_RATE[card.issuer];
-
   // Scope pooling to this card's own issuer — Chase points and Capital One
   // miles never pool together.
   const sameIssuerCards = allCards.filter((c) => c.issuer === card.issuer);
   const ratioMultiplier = getBestTransferRatio(transferPartners, card.issuer);
   const bestCard = getBestPortalCard(sameIssuerCards);
 
-  // "Pooled" means consolidating into bestCard genuinely changes something
-  // for this card — either a better portal rate, gaining transfer
-  // eligibility it doesn't have on its own (e.g. Freedom has no transfer
-  // partners of its own, but ties Reserve/Preferred's flat portal rate —
-  // pooling still unlocks its ceiling even though its "realistic" rate
-  // doesn't move), or escaping its OWN blanket ratio shortfall by riding a
-  // better held card's rate instead (e.g. Strata's balance pooled into
-  // Strata Premier). Checking portal rate alone would miss both cases now
-  // that every card within an issuer shares the same flat 1.0x portal rate.
+  // Same "consolidate into your best card first" reasoning as the portal
+  // rate, applied to cash-back rate — matters today only for Bank of
+  // America, where Travel Rewards' own cash-out rate is worse than Premium
+  // Rewards/Elite's. A no-op for every other issuer, since none of them
+  // have a per-card cashBackRateOverride.
+  const bestCashBackRate = getBestCashBackRate(sameIssuerCards);
+  const floor = balance * bestCashBackRate;
+
+  // "Pooled" means consolidating into bestCard (or, for cash-back, into
+  // whichever held card has the best rate) genuinely changes something for
+  // this card — a better portal rate, gaining transfer eligibility it
+  // doesn't have on its own (e.g. Freedom has no transfer partners of its
+  // own, but ties Reserve/Preferred's flat portal rate — pooling still
+  // unlocks its ceiling even though its "realistic" rate doesn't move),
+  // escaping its OWN blanket ratio shortfall by riding a better held card's
+  // rate instead (e.g. Strata's balance pooled into Strata Premier), or
+  // escaping a worse cash-back floor (e.g. Bank of America Travel Rewards
+  // pooled into Premium Rewards Elite). Checking portal rate alone would
+  // miss all but the first case now that every card within an issuer shares
+  // the same flat 1.0x portal rate (Premium Rewards Elite's airfare-only
+  // 1.25x aside).
   const isPooled =
     card.portalMultiplier < bestCard.portalMultiplier ||
     (!card.transferEligible && bestCard.transferEligible) ||
-    (hasReducedRatioFor(card, null) && bestCard.id !== card.id);
+    (hasReducedRatioFor(card, null) && bestCard.id !== card.id) ||
+    getCashBackRate(card) < bestCashBackRate;
 
   const marker = balance * BASE_CPP * bestCard.portalMultiplier;
 
