@@ -65,9 +65,16 @@ export interface RedemptionPath {
   kind: RedemptionKind;
   partner: TransferPartner | null;
   pointsUsed: number;
-  // What these points are worth at your issuer's best guaranteed rate —
-  // the opportunity cost of using them this way instead of your best
-  // alternative. Lower is better; ranking sorts ascending by this value.
+  // Out-of-pocket cash you still have to pay on top of the points — award
+  // taxes and carrier-imposed surcharges. Only ever nonzero on transfer
+  // paths: a portal booking is paid entirely in points at the trip's cash
+  // price, which already includes taxes, so there's nothing left to pay.
+  cashFees: number;
+  // The full cost of getting this trip via this path: what these points are
+  // worth at your issuer's best guaranteed rate (the opportunity cost of
+  // using them this way instead of your best alternative) PLUS any cash
+  // fees you'd still pay out of pocket. Lower is better; ranking sorts
+  // ascending by this value.
   cost: number;
   sufficient: boolean;
   isPoorDeal: boolean;

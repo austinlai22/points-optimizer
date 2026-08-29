@@ -206,6 +206,15 @@ interface ComputeRedemptionPathsArgs {
   // (Hyatt charges the same points whether they came from a Reserve or a
   // Preferred), so this is keyed by partner only, not by (card, partner).
   pointsRequiredByPartner: Record<string, number>;
+  // Out-of-pocket cash still owed on an award booking — taxes and
+  // carrier-imposed surcharges (trivial on most domestic awards, but
+  // hundreds of dollars on some international ones). Applies to TRANSFER
+  // paths only: a portal booking is paid entirely in points at the trip's
+  // cash price, which already includes taxes, so there is nothing left to
+  // pay out of pocket there. Like pointsRequiredByPartner, this is a
+  // property of the award booking itself, so it's issuer-independent.
+  // Defaults to 0.
+  awardCashFees?: number;
 }
 
 export function computeRedemptionPaths({
@@ -214,6 +223,7 @@ export function computeRedemptionPaths({
   balances,
   tripCashPrice,
   pointsRequiredByPartner,
+  awardCashFees = 0,
 }: ComputeRedemptionPathsArgs): RedemptionPath[] {
   if (!tripCashPrice || tripCashPrice <= 0) return [];
 
@@ -282,9 +292,16 @@ export function computeRedemptionPaths({
         // silently assuming the issuer-wide generic ratio still applies.
         const pointsUsed =
           partnerPointsRequired / ratio / (recommendedCard.blanketRatioMultiplier ?? 1);
-        const cost = pointsUsed * issuerRealisticRate;
+        // An award booking costs you BOTH the points (valued at their
+        // opportunity cost) AND whatever cash you still hand over in taxes
+        // and carrier surcharges — so the honest total is the sum. Without
+        // this, a "cheap" award with $600 of surcharges would rank above a
+        // portal booking that actually costs you less overall.
+        const cost = pointsUsed * issuerRealisticRate + awardCashFees;
 
         const ownBalance = balances[recommendedCard.id] ?? 0;
+        // Cash fees are paid with money, not points, so they never affect
+        // whether your balance covers the award.
         const sufficient = pooledBalance >= pointsUsed;
         const usesPooling = ownBalance < pointsUsed && sufficient;
         const otherContributingCards = issuerCards.filter(
@@ -297,6 +314,7 @@ export function computeRedemptionPaths({
           kind: 'transfer',
           partner,
           pointsUsed,
+          cashFees: awardCashFees,
           cost,
           sufficient,
           isPoorDeal: cost > tripCashPrice,
@@ -313,6 +331,12 @@ export function computeRedemptionPaths({
     // points used at the ISSUER's best rate, so a card with a weaker portal
     // than your best one correctly shows as burning more value than the
     // trip is worth.
+    //
+    // No cash fees here, deliberately: booking through a portal pays the
+    // trip's full cash price in points, and that price already includes
+    // taxes — there's no separate award surcharge left to hand over. That
+    // asymmetry with transfer paths is the whole point of tracking fees;
+    // it's often what makes a portal booking the better deal.
     for (const card of issuerCards) {
       const balance = balances[card.id] ?? 0;
       const cppPortal = BASE_CPP * card.portalMultiplier;
@@ -325,6 +349,7 @@ export function computeRedemptionPaths({
         kind: 'portal',
         partner: null,
         pointsUsed,
+        cashFees: 0,
         cost,
         sufficient: balance >= pointsUsed,
         isPoorDeal: cost > tripCashPrice,
