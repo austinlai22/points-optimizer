@@ -33,9 +33,15 @@ interface TripInputs {
   tripCashPrice: number;
   selectedPartnerId: string;
   pointsRequired: number;
+  awardCashFees: number;
 }
 
-const DEFAULT_TRIP_INPUTS: TripInputs = { tripCashPrice: 0, selectedPartnerId: '', pointsRequired: 0 };
+const DEFAULT_TRIP_INPUTS: TripInputs = {
+  tripCashPrice: 0,
+  selectedPartnerId: '',
+  pointsRequired: 0,
+  awardCashFees: 0,
+};
 
 function sanitizeStoredNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
@@ -48,11 +54,12 @@ function sanitizeStoredNumber(value: unknown): number {
 // deliberately never included, so sharing a link never leaks your points.
 function loadInitialTripInputs(): TripInputs {
   const params = new URLSearchParams(window.location.search);
-  if (params.has('price') || params.has('partner') || params.has('points')) {
+  if (params.has('price') || params.has('partner') || params.has('points') || params.has('fees')) {
     return {
       tripCashPrice: parseNonNegativeNumber(params.get('price') ?? ''),
       selectedPartnerId: params.get('partner') ?? '',
       pointsRequired: parseNonNegativeNumber(params.get('points') ?? ''),
+      awardCashFees: parseNonNegativeNumber(params.get('fees') ?? ''),
     };
   }
   try {
@@ -63,6 +70,7 @@ function loadInitialTripInputs(): TripInputs {
       tripCashPrice: sanitizeStoredNumber(parsed.tripCashPrice),
       selectedPartnerId: typeof parsed.selectedPartnerId === 'string' ? parsed.selectedPartnerId : '',
       pointsRequired: sanitizeStoredNumber(parsed.pointsRequired),
+      awardCashFees: sanitizeStoredNumber(parsed.awardCashFees),
     };
   } catch {
     return DEFAULT_TRIP_INPUTS;
@@ -159,6 +167,7 @@ export function TripOptimizerView() {
   // time, and its award cost doesn't depend on which of your cards you'd
   // transfer from.
   const [pointsRequired, setPointsRequired] = useState(initialTripInputs.pointsRequired);
+  const [awardCashFees, setAwardCashFees] = useState(initialTripInputs.awardCashFees);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
   const ownedCards = useMemo(() => cards.filter((card) => ownership[card.id]), [ownership]);
@@ -197,8 +206,9 @@ export function TripOptimizerView() {
         balances,
         tripCashPrice,
         pointsRequiredByPartner,
+        awardCashFees,
       }),
-    [ownedCards, balances, tripCashPrice, pointsRequiredByPartner],
+    [ownedCards, balances, tripCashPrice, pointsRequiredByPartner, awardCashFees],
   );
 
   const ranks = useMemo(() => computeDenseRanks(paths.map((p) => p.cost)), [paths]);
@@ -214,8 +224,10 @@ export function TripOptimizerView() {
   const handleBrandChange = (partnerId: string) => {
     setSelectedPartnerId(partnerId);
     // A new brand means a new award chart — last brand's points requirement
-    // no longer applies, so don't silently carry it over.
+    // and its taxes/surcharges no longer apply, so don't silently carry
+    // either over.
     setPointsRequired(0);
+    setAwardCashFees(0);
   };
 
   // A persisted or shared partner might not be reachable anymore (e.g. you
@@ -237,7 +249,7 @@ export function TripOptimizerView() {
     try {
       localStorage.setItem(
         TRIP_STORAGE_KEY,
-        JSON.stringify({ tripCashPrice, selectedPartnerId, pointsRequired }),
+        JSON.stringify({ tripCashPrice, selectedPartnerId, pointsRequired, awardCashFees }),
       );
     } catch {
       // localStorage unavailable (private mode / quota) — inputs still work in-memory.
@@ -247,9 +259,10 @@ export function TripOptimizerView() {
     if (tripCashPrice > 0) params.set('price', String(tripCashPrice));
     if (selectedPartnerId) params.set('partner', selectedPartnerId);
     if (pointsRequired > 0) params.set('points', String(pointsRequired));
+    if (awardCashFees > 0) params.set('fees', String(awardCashFees));
     const query = params.toString();
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
-  }, [tripCashPrice, selectedPartnerId, pointsRequired]);
+  }, [tripCashPrice, selectedPartnerId, pointsRequired, awardCashFees]);
 
   const handleCopyLink = async () => {
     try {
@@ -364,6 +377,33 @@ export function TripOptimizerView() {
               placeholder="0"
               className={`${FIELD} max-w-xs ${TAP_TARGET} ${FOCUS_RING}`}
             />
+
+            <label htmlFor="award-fees" className={`mb-1.5 mt-6 block ${LABEL}`}>
+              Cash fees on the award{' '}
+              <span className="normal-case text-navy-950/40">
+                (taxes &amp; surcharges — transfers only)
+              </span>
+            </label>
+            <div className="relative max-w-xs">
+              <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center font-mono text-navy-950/35">
+                $
+              </span>
+              <input
+                id="award-fees"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={awardCashFees || ''}
+                onChange={(event) => setAwardCashFees(parseNonNegativeNumber(event.target.value))}
+                placeholder="0"
+                className={`${FIELD} pl-7 ${TAP_TARGET} ${FOCUS_RING}`}
+              />
+            </div>
+            <p className="mt-1.5 max-w-md text-xs text-navy-950/45">
+              What you'd still pay out of pocket when booking this award — often just a few
+              dollars, but hundreds on airlines that add carrier surcharges. Portal bookings
+              don't get this, since the trip's cash price already covers taxes.
+            </p>
           </div>
         )}
       </div>

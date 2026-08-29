@@ -47,7 +47,8 @@ function PortalIcon() {
 }
 
 export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: RedemptionPathCardProps) {
-  const { card, kind, partner, pointsUsed, cost, isPoorDeal, usesPooling, pooledFromCards } = path;
+  const { card, kind, partner, pointsUsed, cashFees, cost, isPoorDeal, usesPooling, pooledFromCards } =
+    path;
   const isTopPick = rank === 1;
   const savings = tripCashPrice - cost;
 
@@ -106,6 +107,14 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
           <p className={`font-mono text-sm ${textPrimary}`}>{formatUSD(cost)}</p>
         </div>
       </div>
+      {cashFees > 0 && (
+        // Only worth breaking out when there IS a cash component — showing
+        // "+ $0 in fees" on every portal path would be noise.
+        <p className={`-mt-1 text-xs ${textSecondary}`}>
+          Includes {formatUSD(cashFees)} paid in cash (taxes &amp; surcharges) on top of{' '}
+          {formatPoints(pointsUsed)} points
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <p className={label}>Savings vs. cash price</p>
         <p

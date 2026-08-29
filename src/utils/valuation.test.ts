@@ -584,3 +584,91 @@ describe('computeRedemptionPaths', () => {
     }
   });
 });
+
+describe('computeRedemptionPaths — award cash fees', () => {
+  const balances = { reserve: 200_000, preferred: 200_000 };
+
+  it('adds cash fees to a transfer path\'s cost, on top of the points opportunity cost', () => {
+    const paths = computeRedemptionPaths({
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+      awardCashFees: 75,
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.cashFees).toBe(75);
+    // 30,000 points * $0.01 = $300 opportunity cost, + $75 cash = $375.
+    expect(transferPath?.cost).toBeCloseTo(30_000 * BASE_CPP + 75);
+  });
+
+  it('never applies fees to portal paths — a portal price already includes taxes', () => {
+    const paths = computeRedemptionPaths({
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+      awardCashFees: 75,
+    });
+    const portalPath = paths.find((p) => p.kind === 'portal');
+    expect(portalPath?.cashFees).toBe(0);
+    expect(portalPath?.cost).toBeCloseTo(600); // unchanged by the fee
+  });
+
+  it('defaults to zero fees when the caller omits them (back-compat)', () => {
+    const paths = computeRedemptionPaths({
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    });
+    expect(paths.every((p) => p.cashFees === 0)).toBe(true);
+    expect(paths.find((p) => p.kind === 'transfer')?.cost).toBeCloseTo(30_000 * BASE_CPP);
+  });
+
+  it('lets a heavy surcharge flip a transfer from the best option to a worse one than the portal', () => {
+    // The whole motivation for tracking fees: 30,000 points ($300) beats a
+    // $600 portal booking outright — until $400 of carrier surcharges make
+    // the real total $700, which is worse than just booking the portal.
+    const withoutFees = computeRedemptionPaths({
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    });
+    expect(withoutFees[0].kind).toBe('transfer');
+
+    const withFees = computeRedemptionPaths({
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+      awardCashFees: 400,
+    });
+    expect(withFees[0].kind).toBe('portal');
+    const transferWithFees = withFees.find((p) => p.kind === 'transfer');
+    expect(transferWithFees?.cost).toBeCloseTo(700);
+    expect(transferWithFees?.isPoorDeal).toBe(true); // $700 > $600 cash price
+  });
+
+  it('does not let fees affect whether your points balance is sufficient', () => {
+    // Fees are paid in cash, not points — a huge fee must not make an
+    // otherwise-affordable award drop out of the results.
+    const paths = computeRedemptionPaths({
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances: { reserve: 30_000 }, // exactly enough points, no more
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+      awardCashFees: 5_000,
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath).toBeDefined();
+    expect(transferPath?.sufficient).toBe(true);
+  });
+});

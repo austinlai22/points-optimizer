@@ -80,6 +80,19 @@ export function Methodology() {
           burning more point value than the trip is worth.
         </p>
         <p>
+          <span className="font-medium text-navy-950/70">Cash fees on awards:</span> an award
+          booking usually isn't free once you've spent the points — you still owe taxes, and on
+          some airlines substantial carrier-imposed surcharges. Whatever you enter there is added
+          straight onto the cost of every <em>transfer</em> path, because that's real money
+          leaving your pocket alongside the points. It is deliberately <em>not</em> added to
+          portal paths: booking through a portal pays the trip's full cash price in points, and
+          that price already includes taxes, so there's nothing further to hand over. That
+          asymmetry is exactly why the field is worth filling in — a transfer that looks cheaper
+          on points alone can easily lose to a portal booking once a few hundred dollars of
+          surcharges are counted. Fees never affect whether your balance is sufficient, since
+          they're paid in cash rather than points.
+        </p>
+        <p>
           <span className="font-medium text-navy-950/70">Annual fee:</span> shown on each
           redemption card as reference only — it's a sunk cost once you already hold the card, so
           it does not affect cost or the ranking. Use it to judge whether a pricier card is worth
