@@ -14,8 +14,10 @@ import {
   TAP_TARGET,
 } from '../styles/constants';
 import { RedemptionPathCard } from './RedemptionPathCard';
+import { ValuationBasisSelect } from './ValuationBasisSelect';
 import { Methodology } from './Methodology';
 import { formatUSD, parseNonNegativeNumber } from '../utils/format';
+import { DEFAULT_VALUATION_BASIS } from '../types';
 import type { CardConfig, Issuer, PartnerType, RedemptionPath, TransferPartner } from '../types';
 
 const cards = cardsData as CardConfig[];
@@ -159,7 +161,7 @@ function ChevronDownIcon() {
 }
 
 export function TripOptimizerView() {
-  const { balances, ownership } = useCardBalances();
+  const { balances, ownership, basis } = useCardBalances();
   const initialTripInputs = useMemo(loadInitialTripInputs, []);
   const [tripCashPrice, setTripCashPrice] = useState(initialTripInputs.tripCashPrice);
   const [selectedPartnerId, setSelectedPartnerId] = useState(initialTripInputs.selectedPartnerId);
@@ -207,8 +209,9 @@ export function TripOptimizerView() {
         tripCashPrice,
         pointsRequiredByPartner,
         awardCashFees,
+        basis,
       }),
-    [ownedCards, balances, tripCashPrice, pointsRequiredByPartner, awardCashFees],
+    [ownedCards, balances, tripCashPrice, pointsRequiredByPartner, awardCashFees, basis],
   );
 
   const ranks = useMemo(() => computeDenseRanks(paths.map((p) => p.cost)), [paths]);
@@ -260,9 +263,14 @@ export function TripOptimizerView() {
     if (selectedPartnerId) params.set('partner', selectedPartnerId);
     if (pointsRequired > 0) params.set('points', String(pointsRequired));
     if (awardCashFees > 0) params.set('fees', String(awardCashFees));
+    // Basis lives in shared context (Portfolio uses it too) but is
+    // serialized here alongside the other trip inputs, so one copied link
+    // reproduces the whole scenario. Omitted at the default, matching how
+    // zero-valued params are left out.
+    if (basis !== DEFAULT_VALUATION_BASIS) params.set('basis', basis);
     const query = params.toString();
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
-  }, [tripCashPrice, selectedPartnerId, pointsRequired, awardCashFees]);
+  }, [tripCashPrice, selectedPartnerId, pointsRequired, awardCashFees, basis]);
 
   const handleCopyLink = async () => {
     try {
@@ -406,6 +414,10 @@ export function TripOptimizerView() {
             </p>
           </div>
         )}
+
+        <div className="mt-7 border-t border-navy/10 pt-6">
+          <ValuationBasisSelect />
+        </div>
       </div>
 
       {paths.length === 0 ? (

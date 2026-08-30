@@ -6,8 +6,9 @@ import {
   computeCardValuation,
   computeRedemptionPaths,
   getBestTransferRatio,
+  getRateForBasis,
 } from './valuation';
-import type { CardConfig, TransferPartner } from '../types';
+import type { CardConfig, TransferPartner, ValuationBasis } from '../types';
 
 // Small, explicit fixtures — deliberately decoupled from the real data files
 // so these tests describe the LOGIC's behavior and don't silently break (or
@@ -670,5 +671,142 @@ describe('computeRedemptionPaths — award cash fees', () => {
     const transferPath = paths.find((p) => p.kind === 'transfer');
     expect(transferPath).toBeDefined();
     expect(transferPath?.sufficient).toBe(true);
+  });
+});
+
+describe('valuation basis', () => {
+  const chaseCards = [reserve, preferred, freedom];
+  const partners = [hyatt, flyingBlue];
+  const balances = { reserve: 200_000, preferred: 200_000, freedom: 200_000 };
+
+  describe('getRateForBasis', () => {
+    it('returns per-point rates that match computeCardValuation exactly', () => {
+      // THE regression test for the bug this feature exists to fix: Portfolio
+      // and Trip Optimizer used to compute rates in separate expressions and
+      // drifted into contradicting each other (Portfolio implying 1.75c while
+      // the Optimizer called a 1c redemption "break even"). Both now route
+      // through these helpers, so a divergence fails here.
+      const balance = 50_000;
+      const valuation = computeCardValuation({
+        card: reserve,
+        balance,
+        allCards: chaseCards,
+        transferPartners: partners,
+      });
+      const expectedByBasis: Record<ValuationBasis, number> = {
+        cashBack: valuation.floor / balance,
+        guaranteed: valuation.marker / balance,
+        transfer: valuation.ceiling / balance,
+      };
+      for (const basis of Object.keys(expectedByBasis) as ValuationBasis[]) {
+        expect(
+          getRateForBasis(chaseCards, partners, 'chase', basis),
+          `basis "${basis}" rate must match its Portfolio figure`,
+        ).toBeCloseTo(expectedByBasis[basis]);
+      }
+    });
+
+    it('falls back to the guaranteed rate when no card in the issuer is transfer-eligible', () => {
+      const noTransferCards: CardConfig[] = [
+        { ...freedom, id: 'a', transferEligible: false },
+        { ...freedom, id: 'b', transferEligible: false },
+      ];
+      expect(getRateForBasis(noTransferCards, partners, 'chase', 'transfer')).toBeCloseTo(
+        getRateForBasis(noTransferCards, partners, 'chase', 'guaranteed'),
+      );
+    });
+  });
+
+  it('scales cost with the basis while leaving points used and sufficiency alone', () => {
+    const args = {
+      cards: chaseCards,
+      transferPartners: partners,
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    };
+    const guaranteed = computeRedemptionPaths({ ...args, basis: 'guaranteed' as const });
+    const transfer = computeRedemptionPaths({ ...args, basis: 'transfer' as const });
+
+    const gTransfer = guaranteed.find((p) => p.kind === 'transfer')!;
+    const tTransfer = transfer.find((p) => p.kind === 'transfer')!;
+
+    expect(gTransfer.cost).toBeCloseTo(300); // 30,000 x $0.01
+    expect(tTransfer.cost).toBeCloseTo(300 * TRANSFER_PREMIUM_FACTOR); // x 1.75 = $525
+
+    // Points and sufficiency are properties of the award, not of how you
+    // choose to value the points.
+    expect(tTransfer.pointsUsed).toBeCloseTo(gTransfer.pointsUsed);
+    expect(tTransfer.sufficient).toBe(gTransfer.sufficient);
+  });
+
+  it('leaves ranking unchanged across bases when there are no cash fees', () => {
+    // The core finding behind this feature: scaling every path's rate
+    // together preserves order, so the basis changes the verdict, not the
+    // pick. If this ever fails, the "basis doesn't change the ranking"
+    // claim in the Methodology copy is wrong.
+    const args = {
+      cards: chaseCards,
+      transferPartners: partners,
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000, flyingblue: 45_000 },
+    };
+    const order = (basis: ValuationBasis) =>
+      computeRedemptionPaths({ ...args, basis }).map(
+        (p) => `${p.issuer}-${p.kind}-${p.partner?.id ?? 'portal'}-${p.card.id}`,
+      );
+
+    expect(order('transfer')).toEqual(order('guaranteed'));
+    expect(order('cashBack')).toEqual(order('guaranteed'));
+  });
+
+  it('CAN change ranking once cash fees are involved, since fees do not scale', () => {
+    // The documented exception to the rule above: a fixed dollar fee shrinks
+    // in relative terms as the point rate rises, so a heavily surcharged
+    // award can overtake a portal path at a higher basis.
+    const args = {
+      cards: [reserve],
+      transferPartners: [hyatt],
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+      awardCashFees: 400,
+    };
+    // At the guaranteed rate: transfer $300 + $400 = $700 vs portal $600.
+    expect(computeRedemptionPaths({ ...args, basis: 'guaranteed' })[0].kind).toBe('portal');
+    // At transfer value: transfer $525 + $400 = $925 vs portal $1,050.
+    expect(computeRedemptionPaths({ ...args, basis: 'transfer' })[0].kind).toBe('transfer');
+  });
+
+  it('always flags portal paths as poor deals at the transfer basis', () => {
+    // Deterministic and intended, not a bug: portal cost is exactly
+    // tripCashPrice x TRANSFER_PREMIUM_FACTOR, which always exceeds the
+    // trip's cash price. Pinned here because it looks alarming in the UI and
+    // someone will otherwise "fix" it.
+    const paths = computeRedemptionPaths({
+      cards: chaseCards,
+      transferPartners: partners,
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: {},
+      basis: 'transfer',
+    });
+    const portalPaths = paths.filter((p) => p.kind === 'portal');
+    expect(portalPaths.length).toBeGreaterThan(0);
+    expect(portalPaths.every((p) => p.isPoorDeal)).toBe(true);
+  });
+
+  it('reproduces the pre-basis numbers when basis is omitted', () => {
+    const args = {
+      cards: chaseCards,
+      transferPartners: partners,
+      balances,
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    };
+    const omitted = computeRedemptionPaths(args);
+    const explicit = computeRedemptionPaths({ ...args, basis: 'guaranteed' as const });
+    expect(omitted.map((p) => p.cost)).toEqual(explicit.map((p) => p.cost));
   });
 });

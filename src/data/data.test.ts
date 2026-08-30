@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import cardsData from './cards.json';
 import transferPartnersData from './transferPartners.json';
-import { computeCardValuation, computeRedemptionPaths, CASH_BACK_RATE } from '../utils/valuation';
+import {
+  computeCardValuation,
+  computeRedemptionPaths,
+  getRateForBasis,
+  CASH_BACK_RATE,
+} from '../utils/valuation';
 import { ISSUER_ORDER } from '../styles/constants';
-import type { CardConfig, Issuer, PartnerType, TransferPartner } from '../types';
+import type {
+  CardConfig,
+  Issuer,
+  PartnerType,
+  TransferPartner,
+  ValuationBasis,
+} from '../types';
 
 // These tests validate the ACTUAL shipped data files, not synthetic
 // fixtures — catching data-entry mistakes (typo'd issuer keys, malformed
@@ -321,5 +332,67 @@ describe('real data: Bank of America (no transfer partners, per-card cash-back f
     });
     expect(paths.every((p) => p.kind === 'portal')).toBe(true);
     expect(paths.length).toBe(boaCards.length);
+  });
+});
+
+describe('real data: valuation basis holds up across every issuer', () => {
+  const ALL_BASES: ValuationBasis[] = ['cashBack', 'guaranteed', 'transfer'];
+
+  it('keeps cashBack <= guaranteed <= transfer for every real issuer', () => {
+    for (const issuer of ISSUER_ORDER) {
+      const issuerCards = cards.filter((c) => c.issuer === issuer);
+      if (issuerCards.length === 0) continue;
+      const [floor, marker, ceiling] = ALL_BASES.map((basis) =>
+        getRateForBasis(issuerCards, transferPartners, issuer, basis),
+      );
+      expect(floor, `${issuer} floor rate`).toBeLessThanOrEqual(marker);
+      expect(marker, `${issuer} marker rate`).toBeLessThanOrEqual(ceiling);
+    }
+  });
+
+  it('collapses the transfer basis to the guaranteed rate for Bank of America', () => {
+    // BoA has no transfer partners at all, so "best case transfer value"
+    // has nothing to reach for — it must degrade to the guaranteed rate
+    // rather than silently applying a premium that can't be realized.
+    const boaCards = cards.filter((c) => c.issuer === 'bankOfAmerica');
+    const transferRate = getRateForBasis(boaCards, transferPartners, 'bankOfAmerica', 'transfer');
+    const guaranteedRate = getRateForBasis(
+      boaCards,
+      transferPartners,
+      'bankOfAmerica',
+      'guaranteed',
+    );
+    expect(transferRate).toBeCloseTo(guaranteedRate);
+  });
+
+  it('still applies Citi Strata\'s blanket ratio shortfall at the transfer basis', () => {
+    const strataOnly = cards.filter((c) => c.id === 'citistrata');
+    const strataPlusPremier = cards.filter(
+      (c) => c.id === 'citistrata' || c.id === 'citistratapremier',
+    );
+    const soloRate = getRateForBasis(strataOnly, transferPartners, 'citi', 'transfer');
+    const pooledRate = getRateForBasis(strataPlusPremier, transferPartners, 'citi', 'transfer');
+    expect(soloRate).toBeLessThan(pooledRate);
+  });
+
+  it('produces usable, ordered paths at every basis for a full real portfolio', () => {
+    const allBalances = Object.fromEntries(cards.map((c) => [c.id, 100_000]));
+    for (const basis of ALL_BASES) {
+      const paths = computeRedemptionPaths({
+        cards,
+        transferPartners,
+        balances: allBalances,
+        tripCashPrice: 500,
+        pointsRequiredByPartner: { hyatt: 30_000 },
+        basis,
+      });
+      expect(paths.length, `${basis} produced no paths`).toBeGreaterThan(0);
+      for (let i = 1; i < paths.length; i++) {
+        expect(paths[i].cost, `${basis} sort order`).toBeGreaterThanOrEqual(paths[i - 1].cost);
+      }
+      expect(paths.every((p) => Number.isFinite(p.cost)), `${basis} produced a non-finite cost`).toBe(
+        true,
+      );
+    }
   });
 });

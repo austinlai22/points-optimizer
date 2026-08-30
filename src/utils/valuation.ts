@@ -1,4 +1,11 @@
-import type { CardConfig, CardValuation, Issuer, RedemptionPath, TransferPartner } from '../types';
+import type {
+  CardConfig,
+  CardValuation,
+  Issuer,
+  RedemptionPath,
+  TransferPartner,
+  ValuationBasis,
+} from '../types';
 
 // Base rate for travel-restricted redemption (Chase's portal / Capital
 // One's "Purchase Eraser" against a travel purchase) — a program rule, not
@@ -124,6 +131,79 @@ function getBestPortalCard(cardsInScope: CardConfig[]): CardConfig {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Per-point rates, one per valuation basis.
+//
+// These exist so Portfolio and Trip Optimizer derive their dollar figures
+// from the SAME expressions. They previously each computed a rate inline,
+// which let them drift into contradicting each other: Portfolio would say
+// your Chase points might be worth 1.75c (its ceiling) while Trip Optimizer
+// called a 1c portal redemption "break even" — both can't be true. Anything
+// that turns points into dollars must route through here.
+//
+// All three take the same (cardsInScope, transferPartners, issuer) shape so
+// they're interchangeable behind getRateForBasis, even where an argument is
+// unused. cardsInScope must already be filtered to ONE issuer's cards —
+// see getBestPortalCard on why crossing programs would be wrong.
+// ---------------------------------------------------------------------------
+
+// Unconditional cash-out rate: no travel-purchase restriction at all.
+function getFloorRate(cardsInScope: CardConfig[]): number {
+  return getBestCashBackRate(cardsInScope);
+}
+
+// Guaranteed travel-portal rate — what you can book today, any trip, no
+// award availability required.
+function getMarkerRate(cardsInScope: CardConfig[]): number {
+  return BASE_CPP * getBestPortalCard(cardsInScope).portalMultiplier;
+}
+
+// Best-case transfer rate. Only gets the transfer premium if the card you'd
+// pool into is itself transfer-eligible; otherwise no card in this issuer's
+// held roster unlocks transfer value at all (every Bank of America card,
+// today) and the ceiling collapses back to the guaranteed rate. If that
+// card itself carries a blanket ratio shortfall — meaning no better
+// same-issuer card exists to pool into — the rate reflects THAT card's own
+// real, worse ratio, or a Citi-Strata-only holder would see an inflated
+// figure they could never actually redeem.
+function getCeilingRate(
+  cardsInScope: CardConfig[],
+  transferPartners: TransferPartner[],
+  issuer: Issuer,
+): number {
+  const marker = getMarkerRate(cardsInScope);
+  const bestCard = getBestPortalCard(cardsInScope);
+  if (!bestCard.transferEligible) return marker;
+
+  const ratioMultiplier = getBestTransferRatio(transferPartners, issuer);
+  const bestCardOwnRatio = hasReducedRatioFor(bestCard, null)
+    ? ratioMultiplier * (bestCard.blanketRatioMultiplier ?? 1)
+    : ratioMultiplier;
+  return marker * TRANSFER_PREMIUM_FACTOR * bestCardOwnRatio;
+}
+
+// The single per-point rate to value points at, given the user's chosen
+// basis. Scaling this changes the VERDICT (savings, "poor deal") much more
+// than the ranking — within an issuer, moving every path's rate together
+// leaves the cheapest path cheapest. Award cash fees are the one component
+// that doesn't scale with it, since those are paid in dollars, not points.
+export function getRateForBasis(
+  cardsInScope: CardConfig[],
+  transferPartners: TransferPartner[],
+  issuer: Issuer,
+  basis: ValuationBasis,
+): number {
+  switch (basis) {
+    case 'cashBack':
+      return getFloorRate(cardsInScope);
+    case 'transfer':
+      return getCeilingRate(cardsInScope, transferPartners, issuer);
+    case 'guaranteed':
+    default:
+      return getMarkerRate(cardsInScope);
+  }
+}
+
 interface ComputeCardValuationArgs {
   card: CardConfig;
   balance: number;
@@ -140,7 +220,6 @@ export function computeCardValuation({
   // Scope pooling to this card's own issuer — Chase points and Capital One
   // miles never pool together.
   const sameIssuerCards = allCards.filter((c) => c.issuer === card.issuer);
-  const ratioMultiplier = getBestTransferRatio(transferPartners, card.issuer);
   const bestCard = getBestPortalCard(sameIssuerCards);
 
   // Same "consolidate into your best card first" reasoning as the portal
@@ -148,7 +227,7 @@ export function computeCardValuation({
   // America, where Travel Rewards' own cash-out rate is worse than Premium
   // Rewards/Elite's. A no-op for every other issuer, since none of them
   // have a per-card cashBackRateOverride.
-  const bestCashBackRate = getBestCashBackRate(sameIssuerCards);
+  const bestCashBackRate = getFloorRate(sameIssuerCards);
   const floor = balance * bestCashBackRate;
 
   // "Pooled" means consolidating into bestCard (or, for cash-back, into
@@ -170,21 +249,11 @@ export function computeCardValuation({
     (hasReducedRatioFor(card, null) && bestCard.id !== card.id) ||
     getCashBackRate(card) < bestCashBackRate;
 
-  const marker = balance * BASE_CPP * bestCard.portalMultiplier;
-
-  // Ceiling only gets the transfer premium if the pool target itself is
-  // transfer-eligible; otherwise no card in this issuer's held roster
-  // unlocks transfer value. If bestCard itself carries a blanket ratio
-  // shortfall — meaning no better same-issuer card exists to pool into —
-  // the ceiling must reflect THAT card's own real (worse) ratio rather than
-  // the issuer's generic best rate, or a Strata-only holder would see an
-  // inflated ceiling they could never actually redeem.
-  const bestCardOwnRatio = hasReducedRatioFor(bestCard, null)
-    ? ratioMultiplier * (bestCard.blanketRatioMultiplier ?? 1)
-    : ratioMultiplier;
-  const ceiling = bestCard.transferEligible
-    ? marker * TRANSFER_PREMIUM_FACTOR * bestCardOwnRatio
-    : marker;
+  // Both figures come from the shared per-point rate helpers, so a card's
+  // Portfolio range and the rate Trip Optimizer prices against are the same
+  // numbers by construction rather than by two expressions agreeing.
+  const marker = balance * getMarkerRate(sameIssuerCards);
+  const ceiling = balance * getCeilingRate(sameIssuerCards, transferPartners, card.issuer);
 
   return {
     floor,
@@ -215,6 +284,10 @@ interface ComputeRedemptionPathsArgs {
   // property of the award booking itself, so it's issuer-independent.
   // Defaults to 0.
   awardCashFees?: number;
+  // Which per-point rate to value the points at. Defaults to the guaranteed
+  // travel rate, which is what this function always used before the basis
+  // became selectable — so omitting it reproduces the original numbers.
+  basis?: ValuationBasis;
 }
 
 export function computeRedemptionPaths({
@@ -224,6 +297,7 @@ export function computeRedemptionPaths({
   tripCashPrice,
   pointsRequiredByPartner,
   awardCashFees = 0,
+  basis = 'guaranteed',
 }: ComputeRedemptionPathsArgs): RedemptionPath[] {
   if (!tripCashPrice || tripCashPrice <= 0) return [];
 
@@ -244,13 +318,13 @@ export function computeRedemptionPaths({
   for (const issuer of issuers) {
     const issuerCards = cards.filter((c) => c.issuer === issuer);
     const transferEligibleCards = issuerCards.filter((c) => c.transferEligible);
-    // Cost is priced at what these points are worth at your issuer's best
-    // guaranteed rate — the same "realistic value" basis as Portfolio — not
-    // at trip price or at any one card's own weaker rate. That's what makes
-    // every card within an issuer show the identical cost for the same
-    // redemption: it's genuinely the same points, valued the same way.
-    const bestCard = getBestPortalCard(issuerCards);
-    const issuerRealisticRate = BASE_CPP * bestCard.portalMultiplier;
+    // Cost is priced at what these points are worth under the chosen basis
+    // — the exact same per-point rate Portfolio shows for this issuer, via
+    // the shared helpers — not at trip price and not at any one card's own
+    // weaker rate. That's what makes every card within an issuer show the
+    // identical cost for the same redemption: it's genuinely the same
+    // points, valued the same way.
+    const issuerRate = getRateForBasis(issuerCards, transferPartners, issuer, basis);
     const pooledBalance = totalBalanceByIssuer[issuer] ?? 0;
 
     // TRANSFER: one path per partner this issuer can reach, not one per
@@ -297,7 +371,7 @@ export function computeRedemptionPaths({
         // and carrier surcharges — so the honest total is the sum. Without
         // this, a "cheap" award with $600 of surcharges would rank above a
         // portal booking that actually costs you less overall.
-        const cost = pointsUsed * issuerRealisticRate + awardCashFees;
+        const cost = pointsUsed * issuerRate + awardCashFees;
 
         const ownBalance = balances[recommendedCard.id] ?? 0;
         // Cash fees are paid with money, not points, so they never affect
@@ -341,7 +415,7 @@ export function computeRedemptionPaths({
       const balance = balances[card.id] ?? 0;
       const cppPortal = BASE_CPP * card.portalMultiplier;
       const pointsUsed = tripCashPrice / cppPortal;
-      const cost = pointsUsed * issuerRealisticRate;
+      const cost = pointsUsed * issuerRate;
 
       paths.push({
         card,
