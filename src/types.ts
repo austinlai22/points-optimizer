@@ -62,6 +62,24 @@ export type ValuationBasis = 'cashBack' | 'guaranteed' | 'transfer';
 
 export const DEFAULT_VALUATION_BASIS: ValuationBasis = 'guaranteed';
 
+// Which field of a CardValuation (and of any floor/marker/ceiling total
+// built from one) each basis selects. Shared so the portfolio summary, the
+// per-card range bar, and anything else reading a valuation all highlight
+// the same figure for a given basis.
+export const VALUATION_KEY_BY_BASIS: Record<ValuationBasis, 'floor' | 'marker' | 'ceiling'> = {
+  cashBack: 'floor',
+  guaranteed: 'marker',
+  transfer: 'ceiling',
+};
+
+// Label for the selected figure, used wherever that figure is shown on its
+// own rather than as part of the floor-to-ceiling range.
+export const VALUATION_LABEL_BY_BASIS: Record<ValuationBasis, string> = {
+  cashBack: 'Cash-back floor',
+  guaranteed: 'Realistic value',
+  transfer: 'Transfer value',
+};
+
 export interface CardValuation {
   floor: number;
   marker: number;
