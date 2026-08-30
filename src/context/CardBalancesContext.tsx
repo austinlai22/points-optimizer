@@ -46,8 +46,14 @@ function loadInitialBalances(): Record<string, number> {
   }
 }
 
+// Nobody holds all twelve of these cards, so defaulting them all to "owned"
+// made every new visitor start from a portfolio they'd have to dismantle.
+// Start empty and let people opt in instead. The spread below means anyone
+// who already made a choice keeps it — stored values always win over this
+// default — and a card added to cards.json later stays off until claimed
+// rather than silently appearing in someone's portfolio.
 function loadInitialOwnership(): Record<string, boolean> {
-  const defaults = Object.fromEntries(cards.map((card) => [card.id, true]));
+  const defaults = Object.fromEntries(cards.map((card) => [card.id, false]));
 
   try {
     const stored = localStorage.getItem(OWNERSHIP_STORAGE_KEY);

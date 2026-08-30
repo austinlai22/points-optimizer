@@ -289,131 +289,164 @@ export function TripOptimizerView() {
         Trip Optimizer
       </h2>
       <p className="mb-8 max-w-2xl text-navy-950/60">
-        Enter a trip's cash price, then choose the hotel or flight brand you'd redeem it through
-        to see redemption paths ranked by cost — the lowest cost is the best deal.
+        Choose the hotel or flight brand you'd redeem through, then enter the trip's cash price
+        and what the award costs, to see every redemption path ranked by cost — the lowest cost
+        is the best deal.
       </p>
 
       <div className={`${CARD_SURFACE} mb-8 p-6`}>
-        <div className="mb-1.5 flex flex-wrap items-start justify-between gap-3">
-          <label htmlFor="trip-price" className={LABEL}>
-            Trip cash price
-          </label>
-          {(tripCashPrice > 0 || selectedPartnerId) && (
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className={`rounded-lg border border-navy/20 px-3 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
-            >
-              {copyStatus === 'copied' ? 'Copied!' : 'Copy link'}
-            </button>
+        {/* Brand leads, because it's what determines whether the award
+            fields to its lower-right apply at all. */}
+        <div className="mb-6">
+          <div className="mb-1.5 flex flex-wrap items-start justify-between gap-3">
+            <label htmlFor="brand-select" className={LABEL}>
+              Hotel or flight brand
+            </label>
+            {(tripCashPrice > 0 || selectedPartnerId) && (
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className={`rounded-lg border border-navy/20 px-3 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
+              >
+                {copyStatus === 'copied' ? 'Copied!' : 'Copy link'}
+              </button>
+            )}
+          </div>
+          {availablePartners.length === 0 ? (
+            <p className="max-w-md text-sm text-navy-950/55">
+              No transfer partners available — you don't currently hold a transfer-eligible card.
+              Redeeming via each card's own portal is still shown below once you enter a trip
+              price.
+            </p>
+          ) : (
+            <div className="relative max-w-md">
+              <select
+                id="brand-select"
+                value={selectedPartnerId}
+                onChange={(event) => handleBrandChange(event.target.value)}
+                className={`${FIELD} appearance-none pr-9 ${TAP_TARGET} ${FOCUS_RING}`}
+              >
+                <option value="" disabled>
+                  Choose a brand…
+                </option>
+                {PARTNER_TYPE_ORDER.map((type) => {
+                  const partnersOfType = availablePartners.filter((p) => p.type === type);
+                  if (partnersOfType.length === 0) return null;
+                  return (
+                    <optgroup key={type} label={PARTNER_TYPE_LABELS[type]}>
+                      {partnersOfType.map((partner) => (
+                        <option key={partner.id} value={partner.id}>
+                          {partner.name} —{' '}
+                          {relevantIssuersFor(partner)
+                            .map((issuer) => ISSUER_LABELS[issuer])
+                            .join(' & ')}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </select>
+              <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-navy-950/35">
+                <ChevronDownIcon />
+              </span>
+            </div>
           )}
         </div>
-        <div className="relative mb-7 max-w-xs">
-          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center font-mono text-navy-950/35">
-            $
-          </span>
-          <input
-            id="trip-price"
-            type="number"
-            min={0}
-            inputMode="numeric"
-            value={tripCashPrice || ''}
-            onChange={(event) => setTripCashPrice(parseNonNegativeNumber(event.target.value))}
-            placeholder="0"
-            className={`${FIELD} pl-7 ${TAP_TARGET} ${FOCUS_RING}`}
-          />
-        </div>
 
-        <label htmlFor="brand-select" className={`mb-1.5 block ${LABEL}`}>
-          Hotel or flight brand
-        </label>
-        {availablePartners.length === 0 ? (
-          <p className="max-w-md text-sm text-navy-950/55">
-            No transfer partners available — you don't currently hold a transfer-eligible card.
-            Redeeming via each card's own portal is still shown below once you enter a trip price.
-          </p>
-        ) : (
-          <div className="relative max-w-xs">
-            <select
-              id="brand-select"
-              value={selectedPartnerId}
-              onChange={(event) => handleBrandChange(event.target.value)}
-              className={`${FIELD} appearance-none pr-9 ${TAP_TARGET} ${FOCUS_RING}`}
-            >
-              <option value="" disabled>
-                Choose a brand…
-              </option>
-              {PARTNER_TYPE_ORDER.map((type) => {
-                const partnersOfType = availablePartners.filter((p) => p.type === type);
-                if (partnersOfType.length === 0) return null;
-                return (
-                  <optgroup key={type} label={PARTNER_TYPE_LABELS[type]}>
-                    {partnersOfType.map((partner) => (
-                      <option key={partner.id} value={partner.id}>
-                        {partner.name} —{' '}
-                        {relevantIssuersFor(partner)
-                          .map((issuer) => ISSUER_LABELS[issuer])
-                          .join(' & ')}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </select>
-            <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-navy-950/35">
-              <ChevronDownIcon />
-            </span>
-          </div>
-        )}
-
-        {selectedPartner && (
-          <div className="mt-6">
-            <p className={`mb-1.5 ${LABEL}`}>
-              Points required for {selectedPartner.name}{' '}
-              <span className="normal-case text-navy-950/40">
-                ({selectedPartnerIssuers.map((issuer) => ISSUER_LABELS[issuer]).join(' & ')}{' '}
-                cards only)
-              </span>
-            </p>
-            <input
-              id="points-required"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={pointsRequired || ''}
-              onChange={(event) => setPointsRequired(parseNonNegativeNumber(event.target.value))}
-              placeholder="0"
-              className={`${FIELD} max-w-xs ${TAP_TARGET} ${FOCUS_RING}`}
-            />
-
-            <label htmlFor="award-fees" className={`mb-1.5 mt-6 block ${LABEL}`}>
-              Cash fees on the award{' '}
-              <span className="normal-case text-navy-950/40">
-                (taxes &amp; surcharges — transfers only)
-              </span>
+        {/* Cash price on the left is what you're comparing against; the
+            award's own numbers sit together on the right. */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <label htmlFor="trip-price" className={`mb-1.5 block ${LABEL}`}>
+              Trip cash price
             </label>
-            <div className="relative max-w-xs">
+            <div className="relative">
               <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center font-mono text-navy-950/35">
                 $
               </span>
               <input
-                id="award-fees"
+                id="trip-price"
                 type="number"
                 min={0}
                 inputMode="numeric"
-                value={awardCashFees || ''}
-                onChange={(event) => setAwardCashFees(parseNonNegativeNumber(event.target.value))}
+                value={tripCashPrice || ''}
+                onChange={(event) => setTripCashPrice(parseNonNegativeNumber(event.target.value))}
                 placeholder="0"
                 className={`${FIELD} pl-7 ${TAP_TARGET} ${FOCUS_RING}`}
               />
             </div>
-            <p className="mt-1.5 max-w-md text-xs text-navy-950/45">
-              What you'd still pay out of pocket when booking this award — often just a few
-              dollars, but hundreds on airlines that add carrier surcharges. Portal bookings
-              don't get this, since the trip's cash price already covers taxes.
+            <p className="mt-1.5 text-xs text-navy-950/45">
+              What this trip would cost if you just paid cash — the benchmark every redemption
+              below is measured against.
             </p>
           </div>
-        )}
+
+          {selectedPartner ? (
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="points-required" className={`mb-1.5 block ${LABEL}`}>
+                  Points required{' '}
+                  <span className="normal-case text-navy-950/40">
+                    ({selectedPartnerIssuers.map((issuer) => ISSUER_LABELS[issuer]).join(' & ')}{' '}
+                    cards only)
+                  </span>
+                </label>
+                <input
+                  id="points-required"
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={pointsRequired || ''}
+                  onChange={(event) => setPointsRequired(parseNonNegativeNumber(event.target.value))}
+                  placeholder="0"
+                  className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="award-fees" className={`mb-1.5 block ${LABEL}`}>
+                  Cash fees on the award{' '}
+                  <span className="normal-case text-navy-950/40">
+                    (taxes &amp; surcharges — transfers only)
+                  </span>
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center font-mono text-navy-950/35">
+                    $
+                  </span>
+                  <input
+                    id="award-fees"
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    value={awardCashFees || ''}
+                    onChange={(event) =>
+                      setAwardCashFees(parseNonNegativeNumber(event.target.value))
+                    }
+                    placeholder="0"
+                    className={`${FIELD} pl-7 ${TAP_TARGET} ${FOCUS_RING}`}
+                  />
+                </div>
+                <p className="mt-1.5 text-xs text-navy-950/45">
+                  What you'd still pay out of pocket booking this award — often a few dollars, but
+                  hundreds on airlines that add carrier surcharges. Portal bookings don't get
+                  this, since the cash price already covers taxes.
+                </p>
+              </div>
+            </div>
+          ) : (
+            availablePartners.length > 0 && (
+              // Holds the column's shape before a brand is picked, so the
+              // grid doesn't visibly reflow when the award fields appear.
+              <div className="hidden rounded-xl border border-dashed border-navy/15 p-4 sm:flex sm:items-center">
+                <p className="text-xs text-navy-950/40">
+                  Pick a brand above to enter its award price in points and any cash fees, and
+                  compare transferring against each card's own portal.
+                </p>
+              </div>
+            )
+          )}
+        </div>
 
         <div className="mt-7 border-t border-navy/10 pt-6">
           <ValuationBasisSelect />

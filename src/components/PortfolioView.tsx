@@ -66,7 +66,7 @@ export function PortfolioView() {
                   card={card}
                   balance={balances[card.id] ?? 0}
                   onBalanceChange={(value) => setBalance(card.id, value)}
-                  owned={ownership[card.id] ?? true}
+                  owned={ownership[card.id] ?? false}
                   onOwnedChange={(value) => setOwned(card.id, value)}
                   allCards={ownedCards}
                   transferPartners={transferPartners}
