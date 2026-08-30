@@ -44,6 +44,24 @@ export interface TransferPartner {
 
 export type ViewName = 'portfolio' | 'tripOptimizer';
 
+// Which of the three per-point rates this app models should drive every
+// dollar figure it shows. These map 1:1 onto the floor / realistic /
+// ceiling figures Portfolio already displays, so the choice is "which end
+// of the range do you actually believe" rather than a new concept — and
+// every option traces to an existing documented constant, with nothing
+// invented in between.
+//
+// This exists because the basis is a genuine judgment call about YOUR
+// redemption behavior, not a fact: someone who reliably books premium
+// transfers really is giving up ~1.75c/point by using the portal, while
+// someone whose realistic alternative IS the portal is not. Note it
+// changes the verdict (savings, "poor deal") far more than the ranking,
+// since scaling every path's rate together leaves the cheapest one
+// cheapest.
+export type ValuationBasis = 'cashBack' | 'guaranteed' | 'transfer';
+
+export const DEFAULT_VALUATION_BASIS: ValuationBasis = 'guaranteed';
+
 export interface CardValuation {
   floor: number;
   marker: number;

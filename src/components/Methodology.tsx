@@ -93,6 +93,42 @@ export function Methodology() {
           they're paid in cash rather than points.
         </p>
         <p>
+          <span className="font-medium text-navy-950/70">Valuation basis:</span> "what a point is
+          worth" isn't a fact — it depends on what you'd otherwise have done with it. The{' '}
+          <em>Value points at</em> selector lets you choose, and the three options are exactly the
+          three figures above: the cash-back floor, the guaranteed travel rate (the default), and
+          the transfer ceiling. Whichever you pick drives every dollar figure in both views, so
+          Portfolio and Trip Optimizer can't contradict each other. Worth knowing what it does and
+          doesn't change: because cost is points × rate, raising the basis scales every path's
+          cost together, so <em>the ranking barely moves — the cheapest path stays the cheapest</em>.
+          What changes is the verdict: at the transfer basis a portal redemption costs{' '}
+          {TRANSFER_PREMIUM_FACTOR}× the trip's cash price and so always reads as a poor deal,
+          which is the correct message if you can genuinely transfer instead, and the wrong one if
+          the portal is realistically your only option. The single exception to "ranking doesn't
+          move" is award cash fees, which are paid in dollars and so don't scale with the basis —
+          a heavily surcharged award looks relatively better the higher you value your points.
+        </p>
+        <p>
+          <span className="font-medium text-navy-950/70">
+            How this compares to The Points Guy and NerdWallet:
+          </span>{' '}
+          published valuations like TPG's (~2¢ for Chase) are <em>optimized-use</em> numbers —
+          roughly "what could you get if you played this well," weighted toward high-value
+          transfer-partner redemptions. The main critique of that approach is that it values
+          premium-cabin awards at their full cash price, and almost nobody would actually pay
+          $8,000 for that seat, so "saving $8,000" overstates what landed in your pocket. This
+          app's comparable figure isn't its {formatUSDPerPoint(BASE_CPP)}/point default — it's the
+          transfer basis above, which for Chase works out to{' '}
+          {formatUSDPerPoint(BASE_CPP * TRANSFER_PREMIUM_FACTOR)}/point, close to TPG's headline.
+          NerdWallet, which is more conservative, publishes a 1–1.8¢ range for Chase against this
+          app's {formatUSDPerPoint(BASE_CPP)}–
+          {formatUSDPerPoint(BASE_CPP * TRANSFER_PREMIUM_FACTOR)} — nearly the same territory. So
+          this app isn't out of step with published valuations; it defaults to the guaranteed end
+          of the same range and makes the optimistic end an explicit choice rather than the
+          headline. (TPG also subtracts taxes and fees before computing cents per point — the same
+          reasoning behind the award-fee input above.)
+        </p>
+        <p>
           <span className="font-medium text-navy-950/70">Annual fee:</span> shown on each
           redemption card as reference only — it's a sunk cost once you already hold the card, so
           it does not affect cost or the ranking. Use it to judge whether a pricier card is worth
