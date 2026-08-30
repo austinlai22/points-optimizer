@@ -20,17 +20,20 @@ const OPTIONS: { value: ValuationBasis; label: string; sublabel: string }[] = [
   { value: 'transfer', label: 'Transfer value', sublabel: 'Best case' },
 ];
 
-// Shown under the control whenever the basis isn't the default, so its
-// consequences don't read as a bug. The transfer note matters most: at that
-// basis every portal path is ALWAYS a poor deal (portal cost is exactly
-// tripPrice x the premium), so the badge stops being informative and needs
-// explaining rather than suppressing.
-const BASIS_NOTES: Record<ValuationBasis, string | null> = {
+// Every basis carries a note, including the default. Leaving the default's
+// blank made the surrounding box change height on every switch; keeping all
+// three present (and similar in length) holds the layout still, and the
+// default deserves an explanation as much as the others do. The transfer
+// note matters most: at that basis every portal path is ALWAYS a poor deal
+// (portal cost is exactly tripPrice x the premium), so the badge stops
+// being informative and needs explaining rather than suppressing.
+const BASIS_NOTES: Record<ValuationBasis, string> = {
   cashBack:
-    'Valuing points at what you could cash out for, with no travel restriction — the most conservative benchmark.',
-  guaranteed: null,
+    'What you could cash out for, with no travel restriction — the most conservative benchmark.',
+  guaranteed:
+    "Bookable today through your issuer's travel portal, for any trip, with no award availability needed.",
   transfer:
-    'Valuing points at their best-case transfer worth. Portal redemptions will always look like losses here — because they are, if you can reliably transfer instead.',
+    'Best-case award value. Portal bookings always look like losses at this basis — because they are, if you can transfer instead.',
 };
 
 export function ValuationBasisSelect({ onDark = false }: ValuationBasisSelectProps) {
@@ -90,7 +93,9 @@ export function ValuationBasisSelect({ onDark = false }: ValuationBasisSelectPro
           );
         })}
       </div>
-      {note && <p className={`mt-2 text-xs ${noteClass}`}>{note}</p>}
+      {/* min-height absorbs the remaining line-count difference between the
+          three notes, so switching basis never nudges what's below. */}
+      <p className={`mt-2 min-h-[2.25rem] text-xs ${noteClass}`}>{note}</p>
     </div>
   );
 }
