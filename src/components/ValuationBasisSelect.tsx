@@ -1,23 +1,26 @@
 import { useCardBalances } from '../context/CardBalancesContext';
-import { FIELD, FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
+import { FOCUS_RING, LABEL } from '../styles/constants';
 import type { ValuationBasis } from '../types';
 
 // Rendered on both views, since the basis drives Portfolio's headline total
 // AND Trip Optimizer's cost — a user only ever sees one view at a time, so
 // this reads as contextual rather than duplicated.
 interface ValuationBasisSelectProps {
-  // Portfolio renders this on the dark hero surface, where the light-text
-  // treatment applies; Trip Optimizer renders it on a light card.
+  // Portfolio renders this on the dark hero surface; Trip Optimizer renders
+  // it on a light card.
   onDark?: boolean;
 }
 
-const BASIS_LABELS: Record<ValuationBasis, string> = {
-  cashBack: 'Cash-back floor',
-  guaranteed: 'Guaranteed travel rate',
-  transfer: 'Transfer value (best case)',
-};
+// Short labels so all three fit one row on a phone; the sublabel carries the
+// precision. Kept in the same floor -> ceiling order as Portfolio's range,
+// so the control reads as "pick a point on that spectrum."
+const OPTIONS: { value: ValuationBasis; label: string; sublabel: string }[] = [
+  { value: 'cashBack', label: 'Cash-back floor', sublabel: 'If you cashed out' },
+  { value: 'guaranteed', label: 'Guaranteed travel', sublabel: 'Book any trip today' },
+  { value: 'transfer', label: 'Transfer value', sublabel: 'Best case' },
+];
 
-// Shown under the selector whenever the basis isn't the default, so its
+// Shown under the control whenever the basis isn't the default, so its
 // consequences don't read as a bug. The transfer note matters most: at that
 // basis every portal path is ALWAYS a poor deal (portal cost is exactly
 // tripPrice x the premium), so the badge stops being informative and needs
@@ -30,59 +33,64 @@ const BASIS_NOTES: Record<ValuationBasis, string | null> = {
     'Valuing points at their best-case transfer worth. Portal redemptions will always look like losses here — because they are, if you can reliably transfer instead.',
 };
 
-function ChevronDownIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-4 w-4"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
 export function ValuationBasisSelect({ onDark = false }: ValuationBasisSelectProps) {
   const { basis, setBasis } = useCardBalances();
   const note = BASIS_NOTES[basis];
 
-  const labelClass = onDark ? 'text-[11px] font-medium uppercase tracking-wider text-slate-50/50' : LABEL;
+  const labelClass = onDark
+    ? 'text-[11px] font-medium uppercase tracking-wider text-slate-50/50'
+    : LABEL;
   const noteClass = onDark ? 'text-slate-50/55' : 'text-navy-950/45';
-  const fieldClass = onDark
-    ? 'w-full rounded-xl border border-slate-50/20 bg-navy-950/40 px-3.5 font-mono text-slate-50 transition-colors hover:border-slate-50/35 motion-reduce:transition-none'
-    : FIELD;
-  const chevronClass = onDark ? 'text-slate-50/40' : 'text-navy-950/35';
+  const trackClass = onDark
+    ? 'border-slate-50/15 bg-navy-950/40'
+    : 'border-navy/10 bg-slate-50';
+  const idleText = onDark ? 'text-slate-50/60' : 'text-navy-950/55';
+  const idleSub = onDark ? 'text-slate-50/35' : 'text-navy-950/35';
 
   return (
     <div>
-      <label htmlFor="valuation-basis" className={`mb-1.5 block ${labelClass}`}>
+      <p className={`mb-1.5 ${labelClass}`} id="valuation-basis-label">
         Value points at
-      </label>
-      <div className="relative max-w-xs">
-        <select
-          id="valuation-basis"
-          value={basis}
-          onChange={(event) => setBasis(event.target.value as ValuationBasis)}
-          className={`${fieldClass} appearance-none pr-9 ${TAP_TARGET} ${FOCUS_RING}`}
-        >
-          {(Object.keys(BASIS_LABELS) as ValuationBasis[]).map((value) => (
-            <option key={value} value={value}>
-              {BASIS_LABELS[value]}
-            </option>
-          ))}
-        </select>
-        <span
-          className={`pointer-events-none absolute inset-y-0 right-3.5 flex items-center ${chevronClass}`}
-        >
-          <ChevronDownIcon />
-        </span>
+      </p>
+      {/* A radiogroup rather than a <select>: three fixed choices the user is
+          meant to compare and flip between, so they belong on screen at once
+          instead of behind a dropdown. */}
+      <div
+        role="radiogroup"
+        aria-labelledby="valuation-basis-label"
+        className={`grid grid-cols-3 gap-1 rounded-2xl border p-1 ${trackClass}`}
+      >
+        {OPTIONS.map(({ value, label, sublabel }) => {
+          const isActive = basis === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={isActive}
+              // Stable id so the value is addressable for testing regardless
+              // of which of the two views is rendering the control.
+              id={`valuation-basis-${value}`}
+              onClick={() => setBasis(value)}
+              className={`flex min-h-11 flex-col items-center justify-center rounded-xl px-1.5 py-2 text-center transition-colors duration-150 motion-reduce:transition-none ${FOCUS_RING} ${
+                isActive
+                  ? 'bg-navy text-slate-50 shadow-sm'
+                  : `${idleText} hover:bg-navy/5`
+              }`}
+            >
+              <span className="text-[13px] font-medium leading-tight">{label}</span>
+              <span
+                className={`mt-0.5 text-[10px] leading-tight ${
+                  isActive ? 'text-slate-50/60' : idleSub
+                }`}
+              >
+                {sublabel}
+              </span>
+            </button>
+          );
+        })}
       </div>
-      {note && <p className={`mt-1.5 max-w-md text-xs ${noteClass}`}>{note}</p>}
+      {note && <p className={`mt-2 text-xs ${noteClass}`}>{note}</p>}
     </div>
   );
 }
