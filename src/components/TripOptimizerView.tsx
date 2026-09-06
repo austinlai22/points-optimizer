@@ -330,7 +330,14 @@ export function TripOptimizerView() {
                   Choose a brand…
                 </option>
                 {PARTNER_TYPE_ORDER.map((type) => {
-                  const partnersOfType = availablePartners.filter((p) => p.type === type);
+                  // Alphabetical within each group: the roster is large
+                  // enough now (Chase alone reaches 14) that cards.json
+                  // ordering would just look arbitrary to someone scanning
+                  // for a specific program.
+                  const partnersOfType = availablePartners
+                    .filter((p) => p.type === type)
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name));
                   if (partnersOfType.length === 0) return null;
                   return (
                     <optgroup key={type} label={PARTNER_TYPE_LABELS[type]}>

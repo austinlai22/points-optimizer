@@ -335,6 +335,40 @@ describe('real data: Bank of America (no transfer partners, per-card cash-back f
   });
 });
 
+describe('real data: transfer partner roster is complete per issuer', () => {
+  // Counts verified against each issuer's published partner list. Pinned so
+  // that dropping or duplicating a partner fails loudly rather than quietly
+  // shrinking what Trip Optimizer can compare. Update deliberately when an
+  // issuer actually adds or removes a partner.
+  const EXPECTED: Record<Issuer, { airlines: number; hotels: number }> = {
+    chase: { airlines: 10, hotels: 4 },
+    capitalOne: { airlines: 18, hotels: 4 },
+    amex: { airlines: 16, hotels: 4 },
+    citi: { airlines: 15, hotels: 5 },
+    // Bank of America has no transfer partners at all — see the dedicated
+    // Bank of America block above.
+    bankOfAmerica: { airlines: 0, hotels: 0 },
+  };
+
+  it('matches each issuer\'s published airline and hotel partner counts', () => {
+    for (const issuer of ISSUER_ORDER) {
+      const reachable = transferPartners.filter((p) => p.ratiosByIssuer[issuer] !== undefined);
+      const airlines = reachable.filter((p) => p.type === 'airline').length;
+      const hotels = reachable.filter((p) => p.type === 'hotel').length;
+      expect({ issuer, airlines, hotels }).toEqual({ issuer, ...EXPECTED[issuer] });
+    }
+  });
+
+  it('gives every issuer-partner pairing a positive, finite ratio', () => {
+    for (const partner of transferPartners) {
+      for (const [issuer, ratio] of Object.entries(partner.ratiosByIssuer)) {
+        expect(Number.isFinite(ratio), `${partner.id}/${issuer}`).toBe(true);
+        expect(ratio, `${partner.id}/${issuer}`).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
 describe('real data: valuation basis holds up across every issuer', () => {
   const ALL_BASES: ValuationBasis[] = ['cashBack', 'guaranteed', 'transfer'];
 
