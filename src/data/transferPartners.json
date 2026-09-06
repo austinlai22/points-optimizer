@@ -1,63 +1,15 @@
 [
   {
-    "id": "hyatt",
-    "name": "World of Hyatt",
+    "id": "accor",
+    "name": "Accor Live Limitless (ALL)",
     "type": "hotel",
-    "ratiosByIssuer": { "chase": 1 }
+    "ratiosByIssuer": { "capitalOne": 0.5, "citi": 0.5 }
   },
   {
-    "id": "united",
-    "name": "United MileagePlus",
-    "type": "airline",
-    "ratiosByIssuer": { "chase": 1 }
-  },
-  {
-    "id": "southwest",
-    "name": "Southwest Rapid Rewards",
-    "type": "airline",
-    "ratiosByIssuer": { "chase": 1 }
-  },
-  {
-    "id": "flyingblue",
-    "name": "Air France-KLM Flying Blue",
-    "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
-  },
-  {
-    "id": "britishairways",
-    "name": "British Airways Avios",
-    "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
-  },
-  {
-    "id": "wyndham",
-    "name": "Wyndham Rewards",
+    "id": "choice",
+    "name": "Choice Privileges",
     "type": "hotel",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "citi": 1 }
-  },
-  {
-    "id": "turkish",
-    "name": "Turkish Airlines Miles&Smiles",
-    "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "citi": 1 }
-  },
-  {
-    "id": "emirates",
-    "name": "Emirates Skywards",
-    "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 0.75, "amex": 0.8, "citi": 0.8 }
-  },
-  {
-    "id": "iprefer",
-    "name": "Preferred Hotels & Resorts (I Prefer)",
-    "type": "hotel",
-    "ratiosByIssuer": { "capitalOne": 2 }
-  },
-  {
-    "id": "delta",
-    "name": "Delta SkyMiles",
-    "type": "airline",
-    "ratiosByIssuer": { "amex": 1 }
+    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1.5 }
   },
   {
     "id": "hilton",
@@ -66,15 +18,201 @@
     "ratiosByIssuer": { "amex": 2 }
   },
   {
-    "id": "aa",
-    "name": "American Airlines AAdvantage",
-    "type": "airline",
-    "ratiosByIssuer": { "citi": 1 }
+    "id": "hyatt",
+    "name": "World of Hyatt",
+    "type": "hotel",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "ihg",
+    "name": "IHG One Rewards",
+    "type": "hotel",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "iprefer",
+    "name": "Preferred Hotels & Resorts (I Prefer)",
+    "type": "hotel",
+    "ratiosByIssuer": { "capitalOne": 2, "citi": 2 }
+  },
+  {
+    "id": "leadinghotels",
+    "name": "Leading Hotels of the World (Leaders Club)",
+    "type": "hotel",
+    "ratiosByIssuer": { "amex": 0.25, "citi": 0.2 }
   },
   {
     "id": "marriott",
     "name": "Marriott Bonvoy",
     "type": "hotel",
     "ratiosByIssuer": { "chase": 1, "amex": 1 }
+  },
+  {
+    "id": "wyndham",
+    "name": "Wyndham Rewards",
+    "type": "hotel",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "citi": 1 }
+  },
+  {
+    "id": "aa",
+    "name": "American Airlines AAdvantage",
+    "type": "airline",
+    "ratiosByIssuer": { "citi": 1 }
+  },
+  {
+    "id": "aerlingus",
+    "name": "Aer Lingus AerClub",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "amex": 1 }
+  },
+  {
+    "id": "aeromexico",
+    "name": "Aeromexico Rewards",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "amex": 1.6, "citi": 1 }
+  },
+  {
+    "id": "aeroplan",
+    "name": "Air Canada Aeroplan",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
+  },
+  {
+    "id": "ana",
+    "name": "ANA Mileage Club",
+    "type": "airline",
+    "ratiosByIssuer": { "amex": 1 }
+  },
+  {
+    "id": "avianca",
+    "name": "Avianca LifeMiles",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1 }
+  },
+  {
+    "id": "britishairways",
+    "name": "British Airways Avios",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
+  },
+  {
+    "id": "cathay",
+    "name": "Cathay Pacific Asia Miles",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "amex": 0.8, "citi": 1 }
+  },
+  {
+    "id": "delta",
+    "name": "Delta SkyMiles",
+    "type": "airline",
+    "ratiosByIssuer": { "amex": 1 }
+  },
+  {
+    "id": "emirates",
+    "name": "Emirates Skywards",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 0.75, "amex": 0.8, "citi": 0.8 }
+  },
+  {
+    "id": "etihad",
+    "name": "Etihad Guest",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "citi": 1 }
+  },
+  {
+    "id": "eva",
+    "name": "EVA Air Infinity MileageLands",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 0.75, "citi": 1 }
+  },
+  {
+    "id": "finnair",
+    "name": "Finnair Plus",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1 }
+  },
+  {
+    "id": "flyingblue",
+    "name": "Air France-KLM Flying Blue",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1, "citi": 1 }
+  },
+  {
+    "id": "iberia",
+    "name": "Iberia Plus",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "amex": 1 }
+  },
+  {
+    "id": "jal",
+    "name": "Japan Airlines Mileage Bank",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 0.75 }
+  },
+  {
+    "id": "jetblue",
+    "name": "JetBlue TrueBlue",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 0.6, "amex": 0.8, "citi": 1 }
+  },
+  {
+    "id": "qantas",
+    "name": "Qantas Frequent Flyer",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1 }
+  },
+  {
+    "id": "qatar",
+    "name": "Qatar Airways Privilege Club",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1 }
+  },
+  {
+    "id": "singapore",
+    "name": "Singapore Airlines KrisFlyer",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1, "citi": 1 }
+  },
+  {
+    "id": "southwest",
+    "name": "Southwest Rapid Rewards",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "tap",
+    "name": "TAP Air Portugal Miles&Go",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1 }
+  },
+  {
+    "id": "thai",
+    "name": "Thai Airways Royal Orchid Plus",
+    "type": "airline",
+    "ratiosByIssuer": { "citi": 1 }
+  },
+  {
+    "id": "turkish",
+    "name": "Turkish Airlines Miles&Smiles",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1, "citi": 1 }
+  },
+  {
+    "id": "united",
+    "name": "United MileagePlus",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1 }
+  },
+  {
+    "id": "virginatlantic",
+    "name": "Virgin Atlantic Flying Club",
+    "type": "airline",
+    "ratiosByIssuer": { "chase": 1, "amex": 1, "citi": 1 }
+  },
+  {
+    "id": "virginred",
+    "name": "Virgin Red",
+    "type": "airline",
+    "ratiosByIssuer": { "capitalOne": 1 }
   }
 ]
