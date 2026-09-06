@@ -205,14 +205,8 @@
   },
   {
     "id": "virginatlantic",
-    "name": "Virgin Atlantic Flying Club",
+    "name": "Virgin Atlantic Flying Club (Virgin Points)",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "amex": 1, "citi": 1 }
-  },
-  {
-    "id": "virginred",
-    "name": "Virgin Red",
-    "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1 }
+    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1, "citi": 1 }
   }
 ]
