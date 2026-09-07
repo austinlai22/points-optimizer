@@ -706,6 +706,33 @@ describe('valuation basis', () => {
       }
     });
 
+    it('does not let an above-parity transfer ratio inflate the ceiling', () => {
+      // bonusPartner pays 2 partner points per Capital One mile. Without the
+      // cap that doubled the ceiling, as though 2 points of a weaker currency
+      // were worth twice as much — the Hilton/I Prefer problem. The ceiling
+      // should match what a plain 1:1 partner produces.
+      const withBonus = getRateForBasis(
+        [ventureOne],
+        [bonusPartner, flyingBlue],
+        'capitalOne',
+        'transfer',
+      );
+      const parityOnly = getRateForBasis([ventureOne], [flyingBlue], 'capitalOne', 'transfer');
+      expect(withBonus).toBeCloseTo(parityOnly);
+      expect(withBonus).toBeCloseTo(BASE_CPP * TRANSFER_PREMIUM_FACTOR);
+    });
+
+    it('still applies a BELOW-parity ratio in full, since that loss is real', () => {
+      const poorPartner: TransferPartner = {
+        id: 'poor',
+        name: 'Poor ratio partner',
+        type: 'airline',
+        ratiosByIssuer: { capitalOne: 0.5 },
+      };
+      const rate = getRateForBasis([ventureOne], [poorPartner], 'capitalOne', 'transfer');
+      expect(rate).toBeCloseTo(BASE_CPP * TRANSFER_PREMIUM_FACTOR * 0.5);
+    });
+
     it('falls back to the guaranteed rate when no card in the issuer is transfer-eligible', () => {
       const noTransferCards: CardConfig[] = [
         { ...freedom, id: 'a', transferEligible: false },

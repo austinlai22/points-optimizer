@@ -65,7 +65,15 @@ export function Methodology() {
           rate times {TRANSFER_PREMIUM_FACTOR}×, this app's own reasoned estimate of the upside
           from redeeming at fixed award-chart prices against premium-cabin or peak-date cash
           prices, further scaled by the best transfer ratio among that issuer's own partners —
-          only if the pooled-into card is itself transfer-eligible. Bank of America is a genuine
+          only if the pooled-into card is itself transfer-eligible. That ratio is capped at 1:1
+          on the way up: several partners hand out more than one point per point transferred
+          (Amex gives 2 Hilton points, Capital One and Citi give 2 I Prefer points), but those
+          are weaker currencies — Hilton points run about half a cent, so the "double" lands near
+          break-even. Crediting the exchange rate as if it were free value would overstate every
+          one of those ceilings, so this app declines to. Ratios <em>below</em> 1:1 still count in
+          full, because that loss is one you'd genuinely take. The practical effect is that all
+          four transfer-capable issuers share the same ceiling multiple, and the real published
+          differences between them show up in the floor instead. Bank of America is a genuine
           structural exception here, not a simplification: none of its cards have any airline or
           hotel transfer partners at all, so a Bank of America card's ceiling always equals its
           realistic value — there's no further upside to model because none exists.
