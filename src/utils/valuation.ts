@@ -63,6 +63,22 @@ function getBestCashBackRate(cardsInScope: CardConfig[]): number {
 // rate — it is not sourced from any published point-valuation guide.
 export const TRANSFER_PREMIUM_FACTOR = 1.75;
 
+// The most a transfer ratio is allowed to contribute to the ceiling.
+//
+// The ceiling multiplies by how many partner points you receive per point
+// transferred, which quietly assumes every partner's points are worth the
+// same. They are not, and an above-1:1 ratio is usually the market pricing
+// in a weaker currency rather than offering free value: Amex gives 2 Hilton
+// points per point, but Hilton points run about half a cent, so the "double"
+// lands near break-even. Same story for Capital One and Citi at 1:2 to
+// I Prefer, and Citi at 1:1.5 to Choice.
+//
+// Rather than publish our own value for all 35 partners — the subjective
+// third-party guesswork this app deliberately avoids — we simply decline to
+// credit ratios above parity. Ratios BELOW parity still count in full, since
+// those are a real loss you'd actually take.
+export const MAX_CEILING_RATIO = 1;
+
 // Best transfer rate this issuer's cards can reach across the whole partner
 // roster. Partners aren't exclusive to one issuer — e.g. Air France-KLM
 // Flying Blue, British Airways, and Wyndham all accept transfers from both
@@ -175,7 +191,12 @@ function getCeilingRate(
   const bestCard = getBestPortalCard(cardsInScope);
   if (!bestCard.transferEligible) return marker;
 
-  const ratioMultiplier = getBestTransferRatio(transferPartners, issuer);
+  // Capped rather than taken raw — see MAX_CEILING_RATIO on why an
+  // above-parity ratio isn't free value.
+  const ratioMultiplier = Math.min(
+    getBestTransferRatio(transferPartners, issuer),
+    MAX_CEILING_RATIO,
+  );
   const bestCardOwnRatio = hasReducedRatioFor(bestCard, null)
     ? ratioMultiplier * (bestCard.blanketRatioMultiplier ?? 1)
     : ratioMultiplier;
