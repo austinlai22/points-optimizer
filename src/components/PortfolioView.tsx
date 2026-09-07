@@ -6,20 +6,25 @@ import { PortfolioSummary } from './PortfolioSummary';
 import { Methodology } from './Methodology';
 import { computeCardValuation } from '../utils/valuation';
 import { FOCUS_RING, ISSUER_LABELS, ISSUER_ORDER, TAP_TARGET } from '../styles/constants';
-import { VALUATION_KEY_BY_BASIS } from '../types';
 import type { CardConfig, TransferPartner } from '../types';
 
 const cards = cardsData as CardConfig[];
 const transferPartners = transferPartnersData as TransferPartner[];
 
 export function PortfolioView() {
-  const { balances, setBalance, clearAllBalances, ownership, setOwned, basis } = useCardBalances();
+  const { balances, setBalance, clearAllBalances, ownership, setOwned } = useCardBalances();
   const ownedCards = cards.filter((card) => ownership[card.id]);
 
   // One axis for every card's bar, so bar length reads as dollars and cards
-  // are comparable side by side. Covers the largest figure any bar will draw:
-  // the guaranteed value, or the selected basis where that runs higher (the
-  // marker steps outside the published band at the potential-transfer basis).
+  // are comparable side by side.
+  //
+  // Deliberately keyed off the ceiling rather than the selected basis: if the
+  // axis grew when you picked potential transfer value, every published
+  // figure would slide left even though nothing about it changed — a $600
+  // floor jumping from half-way along the bar to a third of the way is
+  // exactly the kind of movement that makes a chart untrustworthy. Reserving
+  // the full range up front costs some empty track at the lower bases and
+  // buys an axis that never moves.
   const axisMax = ownedCards.reduce((max, card) => {
     const valuation = computeCardValuation({
       card,
@@ -27,7 +32,7 @@ export function PortfolioView() {
       allCards: ownedCards,
       transferPartners,
     });
-    return Math.max(max, valuation.marker, valuation[VALUATION_KEY_BY_BASIS[basis]]);
+    return Math.max(max, valuation.ceiling);
   }, 0);
 
   const handleClearAll = () => {

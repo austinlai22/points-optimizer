@@ -82,11 +82,17 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
           aria-hidden="true"
         />
       </div>
-      <div className="mt-2 flex justify-between gap-2 font-mono text-xs text-navy-950/55">
-        <span>
+      {/* A legend keyed to the segment colours, NOT figures pinned to the
+          bar's two ends. Pinning them implied the guaranteed value sat at the
+          far right, which stopped being true once the axis reserved room for
+          the estimate — the label said one thing while the fill said another. */}
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-navy-950/55">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-navy" aria-hidden="true" />
           {formatUSD(floor)} <span className="font-sans text-navy-950/40">floor</span>
         </span>
-        <span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-navy/35" aria-hidden="true" />
           {formatUSD(marker)} <span className="font-sans text-navy-950/40">guaranteed</span>
         </span>
       </div>
