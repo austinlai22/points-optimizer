@@ -11,9 +11,9 @@ Nothing is sent to a server — all balances and inputs stay in your browser (`l
 **Portfolio** — Enter the balance on each card you hold and see three figures per card:
 - **Cash-back floor** — the guaranteed, unconditional value if you cashed out today
 - **Realistic value** — the guaranteed travel-portal redemption rate
-- **Transfer ceiling** — this app's reasoned estimate of the upside from transferring to airline/hotel partners for premium-cabin or peak-date bookings
+- **Potential transfer value** — this app's own estimate of award upside, available via the "Value points at" selector rather than shown by default, since no issuer publishes it
 
-Balances pool automatically across cards in the same issuer's family (e.g. a no-transfer Chase Freedom balance inherits a held Sapphire Reserve's transfer ceiling), the same way a rational cardholder would actually consolidate points before redeeming.
+Balances pool automatically across cards in the same issuer's family (e.g. a no-transfer Chase Freedom balance inherits a held Sapphire Reserve's transfer access), the same way a rational cardholder would actually consolidate points before redeeming.
 
 **Trip Optimizer** — Enter a trip's cash price and the hotel/airline brand you'd redeem through, and see every redemption path (each card's own portal, plus any transfer partner) ranked by cost — the opportunity cost of spending those points instead of your best guaranteed alternative. Lower cost is a better deal. The current scenario is reflected in the URL, so you can copy the link to share or bookmark it.
 

@@ -17,7 +17,9 @@ interface ValuationBasisSelectProps {
 const OPTIONS: { value: ValuationBasis; label: string; sublabel: string }[] = [
   { value: 'cashBack', label: 'Cash-back floor', sublabel: 'If you cashed out' },
   { value: 'guaranteed', label: 'Guaranteed travel', sublabel: 'Book any trip today' },
-  { value: 'transfer', label: 'Transfer value', sublabel: 'Best case' },
+  // The only one of the three that isn't a published rate, hence "potential"
+  // and the "our estimate" sublabel — the wording is the disclosure.
+  { value: 'transfer', label: 'Potential transfer value', sublabel: 'Our estimate' },
 ];
 
 // Every basis carries a note, including the default. Leaving the default's
@@ -33,7 +35,7 @@ const BASIS_NOTES: Record<ValuationBasis, string> = {
   guaranteed:
     "Bookable today through your issuer's travel portal, for any trip, with no award availability needed.",
   transfer:
-    'Best-case award value. Portal bookings always look like losses at this basis — because they are, if you can transfer instead.',
+    "This app's own estimate of award upside, not a published rate. Portal bookings always look like losses here — because they are, if you can transfer instead.",
 };
 
 export function ValuationBasisSelect({ onDark = false }: ValuationBasisSelectProps) {

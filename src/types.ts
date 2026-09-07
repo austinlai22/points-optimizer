@@ -77,7 +77,9 @@ export const VALUATION_KEY_BY_BASIS: Record<ValuationBasis, 'floor' | 'marker' |
 export const VALUATION_LABEL_BY_BASIS: Record<ValuationBasis, string> = {
   cashBack: 'Cash-back floor',
   guaranteed: 'Realistic value',
-  transfer: 'Transfer value',
+  // "Potential" is load-bearing: unlike the other two, this figure is this
+  // app's own assumption rather than a rate any issuer publishes.
+  transfer: 'Potential transfer value',
 };
 
 export interface CardValuation {

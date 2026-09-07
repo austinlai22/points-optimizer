@@ -24,7 +24,7 @@ const ZERO_TOTALS: Totals = { floor: 0, marker: 0, ceiling: 0 };
 const HEADLINE_LABEL_BY_BASIS: Record<ValuationBasis, string> = {
   cashBack: 'Total if cashed out',
   guaranteed: 'Total portfolio value',
-  transfer: 'Total at transfer value',
+  transfer: 'Total at potential transfer value',
 };
 
 function sumValuations(cards: CardConfig[], balances: Record<string, number>, allCards: CardConfig[], transferPartners: TransferPartner[]): Totals {
@@ -91,15 +91,18 @@ export function PortfolioSummary({ ownedCards, balances, transferPartners }: Por
           <ValuationBasisSelect onDark />
         </div>
       </div>
-      {/* The range the headline sits inside. Both bounds are always shown so
-          this block never changes shape; the one matching the current basis
-          is brightened so the headline repeating it reads as deliberate
-          rather than as a duplicated number. */}
+      {/* The two figures issuers actually publish. The transfer ceiling used
+          to sit here, but it's a flat multiple of the guaranteed value and so
+          added nothing to a summary while giving our own estimate equal
+          billing with two sourced numbers — it lives in the basis selector
+          now. Both are always shown so this block never changes shape; the
+          one matching the current basis is brightened, so the headline
+          repeating it reads as deliberate rather than duplicated. */}
       <div className="flex gap-8 sm:flex-col sm:gap-5">
         {(
           [
             { key: 'floor' as const, label: 'Cash-back floor' },
-            { key: 'ceiling' as const, label: 'Transfer ceiling' },
+            { key: 'marker' as const, label: 'Guaranteed travel' },
           ]
         ).map(({ key, label }) => {
           const isActive = headlineKey === key;

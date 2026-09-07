@@ -4,15 +4,31 @@ import { useCardBalances } from '../context/CardBalancesContext';
 import { PortfolioCard } from './PortfolioCard';
 import { PortfolioSummary } from './PortfolioSummary';
 import { Methodology } from './Methodology';
+import { computeCardValuation } from '../utils/valuation';
 import { FOCUS_RING, ISSUER_LABELS, ISSUER_ORDER, TAP_TARGET } from '../styles/constants';
+import { VALUATION_KEY_BY_BASIS } from '../types';
 import type { CardConfig, TransferPartner } from '../types';
 
 const cards = cardsData as CardConfig[];
 const transferPartners = transferPartnersData as TransferPartner[];
 
 export function PortfolioView() {
-  const { balances, setBalance, clearAllBalances, ownership, setOwned } = useCardBalances();
+  const { balances, setBalance, clearAllBalances, ownership, setOwned, basis } = useCardBalances();
   const ownedCards = cards.filter((card) => ownership[card.id]);
+
+  // One axis for every card's bar, so bar length reads as dollars and cards
+  // are comparable side by side. Covers the largest figure any bar will draw:
+  // the guaranteed value, or the selected basis where that runs higher (the
+  // marker steps outside the published band at the potential-transfer basis).
+  const axisMax = ownedCards.reduce((max, card) => {
+    const valuation = computeCardValuation({
+      card,
+      balance: balances[card.id] ?? 0,
+      allCards: ownedCards,
+      transferPartners,
+    });
+    return Math.max(max, valuation.marker, valuation[VALUATION_KEY_BY_BASIS[basis]]);
+  }, 0);
 
   const handleClearAll = () => {
     if (window.confirm('Clear all entered balances? This cannot be undone.')) {
@@ -35,8 +51,10 @@ export function PortfolioView() {
         </button>
       </div>
       <p className="mb-8 max-w-2xl text-navy-950/60">
-        Enter your current balance for each card to see its cash-back floor, realistic value, and
-        transfer ceiling. Points only pool within the same issuer's family of cards.
+        Enter your current balance for each card to see what those points are worth — from the
+        cash-back floor you could take today, up to your issuer's guaranteed travel rate. Every
+        bar shares one scale, so cards are directly comparable. Points only pool within the same
+        issuer's family of cards.
       </p>
 
       <PortfolioSummary
@@ -70,6 +88,7 @@ export function PortfolioView() {
                   onOwnedChange={(value) => setOwned(card.id, value)}
                   allCards={ownedCards}
                   transferPartners={transferPartners}
+                  axisMax={axisMax}
                 />
               ))}
             </div>
