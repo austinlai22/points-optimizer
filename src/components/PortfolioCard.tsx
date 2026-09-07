@@ -13,6 +13,8 @@ interface PortfolioCardProps {
   onOwnedChange: (value: boolean) => void;
   allCards: CardConfig[];
   transferPartners: TransferPartner[];
+  // Shared across every card so the bars are comparable — see ValueRangeBar.
+  axisMax: number;
 }
 
 function CardIcon() {
@@ -41,6 +43,7 @@ export function PortfolioCard({
   onOwnedChange,
   allCards,
   transferPartners,
+  axisMax,
 }: PortfolioCardProps) {
   const valuation = owned
     ? computeCardValuation({ card, balance, allCards, transferPartners })
@@ -85,7 +88,7 @@ export function PortfolioCard({
             />
           </div>
 
-          {valuation && <ValueRangeBar valuation={valuation} />}
+          {valuation && <ValueRangeBar valuation={valuation} axisMax={axisMax} />}
         </>
       ) : (
         <p className="text-sm text-navy-950/50">

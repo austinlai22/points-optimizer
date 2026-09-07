@@ -61,11 +61,18 @@ export function Methodology() {
           promotional) card-tier rate boost across all five issuers.
         </p>
         <p>
-          <span className="font-medium text-navy-950/70">Transfer ceiling:</span> the realistic
-          rate times {TRANSFER_PREMIUM_FACTOR}×, this app's own reasoned estimate of the upside
-          from redeeming at fixed award-chart prices against premium-cabin or peak-date cash
-          prices, further scaled by the best transfer ratio among that issuer's own partners —
-          only if the pooled-into card is itself transfer-eligible. That ratio is capped at 1:1
+          <span className="font-medium text-navy-950/70">Potential transfer value:</span> the
+          realistic rate times {TRANSFER_PREMIUM_FACTOR}×, this app's own reasoned estimate of the
+          upside from redeeming at fixed award-chart prices against premium-cabin or peak-date
+          cash prices, further scaled by the best transfer ratio among that issuer's own partners
+          — only if the pooled-into card is itself transfer-eligible. It is called{' '}
+          <em>potential</em> because, unlike the floor and the guaranteed rate, no issuer publishes
+          it; it is the one figure here this app invents. That's also why it no longer appears in
+          the portfolio bars or the summary: it's now a flat multiple of the guaranteed value,
+          so it added no information to those views while lending an estimate the same visual
+          weight as two sourced numbers. Select it in "Value points at" to apply it, and the
+          marker on each bar steps outside the published band — deliberately, so you can see
+          you've moved past what's guaranteed. That ratio is capped at 1:1
           on the way up: several partners hand out more than one point per point transferred
           (Amex gives 2 Hilton points, Capital One and Citi give 2 I Prefer points), but those
           are weaker currencies — Hilton points run about half a cent, so the "double" lands near
@@ -105,7 +112,7 @@ export function Methodology() {
           worth" isn't a fact — it depends on what you'd otherwise have done with it. The{' '}
           <em>Value points at</em> selector lets you choose, and the three options are exactly the
           three figures above: the cash-back floor, the guaranteed travel rate (the default), and
-          the transfer ceiling. Whichever you pick drives every dollar figure in both views, so
+          the potential transfer value. Whichever you pick drives every dollar figure in both views, so
           Portfolio and Trip Optimizer can't contradict each other. Worth knowing what it does and
           doesn't change: because cost is points × rate, raising the basis scales every path's
           cost together, so <em>the ranking barely moves — the cheapest path stays the cheapest</em>.
