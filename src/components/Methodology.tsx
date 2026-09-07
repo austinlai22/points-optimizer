@@ -103,12 +103,15 @@ export function Methodology() {
         </p>
         <p>
           <span className="font-medium text-navy-950/70">Trip Optimizer cost:</span> each
-          redemption path prices the points it uses at your issuer's best guaranteed rate — the
-          same realistic-value rate above — not the trip's cash price and not any one card's own
-          weaker rate. That's why every card within an issuer shows the identical cost for the
-          same partner: it's genuinely the same points, valued the same way. Lower cost is a
-          better deal; "Poor deal" means the cost exceeds the trip's cash price, i.e. you'd be
-          burning more point value than the trip is worth.
+          redemption path prices the points it uses at whichever rate you've picked in "Value
+          points at" — the same per-point figure Portfolio shows for that issuer — not the trip's
+          cash price and not any one card's own weaker rate. Lower cost is a better deal; "Poor
+          deal" means the cost exceeds the trip's cash price, i.e. you'd be burning more point
+          value than the trip is worth. Each issuer contributes one row per transfer partner and
+          one for its own portal, rather than a row per card: within an issuer your points are
+          interchangeable, so a row per card would repeat the same redemption several times over.
+          The card named on each row is the one to actually book through — the best rate
+          available, and among equals the lowest annual fee.
         </p>
         <p>
           <span className="font-medium text-navy-950/70">Cash fees on awards:</span> an award

@@ -145,6 +145,12 @@ function getBestPortalCard(cardsInScope: CardConfig[]): CardConfig {
     const cCashBack = getCashBackRate(c);
     const bestCashBack = getCashBackRate(best);
     if (cCashBack !== bestCashBack) return cCashBack > bestCashBack ? c : best;
+    // Genuinely equivalent on every dimension modelled here, so fall back to
+    // the cheapest — matching how transfer paths pick which card to name, and
+    // making the choice deliberate rather than "whichever cards.json listed
+    // first". Without this the portal row named VentureOne or Venture X
+    // depending purely on array order.
+    if (c.annualFee !== best.annualFee) return c.annualFee < best.annualFee ? c : best;
     return best;
   });
 }
@@ -439,39 +445,48 @@ export function computeRedemptionPaths({
       }
     }
 
-    // PORTAL: kept per-card, since portal efficiency genuinely differs by
-    // card (each has its own portalMultiplier) — unlike transfer, these
-    // aren't the same redemption twice. Pooling doesn't apply; every card
-    // uses only its own balance for its own portal. Cost still prices the
-    // points used at the ISSUER's best rate, so a card with a weaker portal
-    // than your best one correctly shows as burning more value than the
-    // trip is worth.
+    // PORTAL: one path per issuer, naming the card with the best portal rate
+    // — the same collapsing already applied to transfers, and for the same
+    // reason. It used to emit one path per card on the grounds that portal
+    // efficiency differs by card, but every card within an issuer has since
+    // converged on the same flat rate (Bank of America Premium Rewards Elite
+    // aside), so that produced a dozen rows reading identically apart from
+    // the card name. Where rates DO differ you would always book through the
+    // best one anyway, which is exactly the card named here.
+    //
+    // Balance is the pooled issuer balance, matching transfers. Charging a
+    // portal booking against one card's balance alone contradicted the rest
+    // of the model: if you can combine points to transfer them, you can
+    // combine them to book, and the old rule hid a valid option from anyone
+    // whose points were spread across two cards — while still offering them
+    // the transfer path off the very same pooled balance.
     //
     // No cash fees here, deliberately: booking through a portal pays the
     // trip's full cash price in points, and that price already includes
     // taxes — there's no separate award surcharge left to hand over. That
     // asymmetry with transfer paths is the whole point of tracking fees;
     // it's often what makes a portal booking the better deal.
-    for (const card of issuerCards) {
-      const balance = balances[card.id] ?? 0;
-      const cppPortal = BASE_CPP * card.portalMultiplier;
-      const pointsUsed = tripCashPrice / cppPortal;
-      const cost = pointsUsed * issuerRate;
+    const portalCard = getBestPortalCard(issuerCards);
+    const portalPointsUsed = tripCashPrice / (BASE_CPP * portalCard.portalMultiplier);
+    const portalOwnBalance = balances[portalCard.id] ?? 0;
+    const portalSufficient = pooledBalance >= portalPointsUsed;
+    const portalUsesPooling = portalOwnBalance < portalPointsUsed && portalSufficient;
 
-      paths.push({
-        card,
-        issuer,
-        kind: 'portal',
-        partner: null,
-        pointsUsed,
-        cashFees: 0,
-        cost,
-        sufficient: balance >= pointsUsed,
-        isPoorDeal: cost > tripCashPrice,
-        usesPooling: false,
-        pooledFromCards: [],
-      });
-    }
+    paths.push({
+      card: portalCard,
+      issuer,
+      kind: 'portal',
+      partner: null,
+      pointsUsed: portalPointsUsed,
+      cashFees: 0,
+      cost: portalPointsUsed * issuerRate,
+      sufficient: portalSufficient,
+      isPoorDeal: portalPointsUsed * issuerRate > tripCashPrice,
+      usesPooling: portalUsesPooling,
+      pooledFromCards: portalUsesPooling
+        ? issuerCards.filter((c) => c.id !== portalCard.id && (balances[c.id] ?? 0) > 0)
+        : [],
+    });
   }
 
   return paths.filter((path) => path.sufficient).sort((a, b) => a.cost - b.cost);
