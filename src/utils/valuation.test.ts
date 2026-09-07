@@ -127,7 +127,11 @@ describe('computeCardValuation', () => {
       transferPartners: [hyatt],
     });
     expect(freedomResult.isPooled).toBe(true);
-    expect(freedomResult.pooledViaCard?.id).toBe('reserve');
+    // Reserve and Preferred redeem identically, so the cheaper one is named —
+    // it's the same advice at a lower cost to keep. This previously asserted
+    // 'reserve', which was only ever true because of fixture ordering.
+    expect(freedomResult.pooledViaCard?.transferEligible).toBe(true);
+    expect(freedomResult.pooledViaCard?.id).toBe('preferred');
     // Ceiling should reflect the transfer premium, not just the flat portal rate.
     expect(freedomResult.ceiling).toBeGreaterThan(freedomResult.marker);
     expect(freedomResult.ceiling).toBeCloseTo(
@@ -737,6 +741,84 @@ describe('computeRedemptionPaths', () => {
     for (let i = 1; i < paths.length; i++) {
       expect(paths[i].cost).toBeGreaterThanOrEqual(paths[i - 1].cost);
     }
+  });
+});
+
+describe('computeRedemptionPaths — portal paths', () => {
+  it('lets a portal booking draw on the pooled issuer balance, like transfers do', () => {
+    // 60,000 Chase points split across two cards, against a $600 trip that
+    // needs exactly 60,000. Charging this to one card's balance alone used to
+    // hide the portal option entirely — while still offering the transfer
+    // path off the very same pooled balance, which was self-contradictory.
+    const paths = computeRedemptionPaths({
+      cards: [reserve, freedom],
+      transferPartners: [hyatt],
+      balances: { reserve: 10_000, freedom: 50_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: {},
+    });
+    const portalPath = paths.find((p) => p.kind === 'portal');
+    expect(portalPath).toBeDefined();
+    expect(portalPath?.sufficient).toBe(true);
+    expect(portalPath?.usesPooling).toBe(true);
+    expect(portalPath?.pooledFromCards.map((c) => c.id)).toContain('freedom');
+  });
+
+  it('still excludes a portal booking the pooled balance cannot cover', () => {
+    const paths = computeRedemptionPaths({
+      cards: [reserve, freedom],
+      transferPartners: [hyatt],
+      balances: { reserve: 10_000, freedom: 20_000 }, // 30,000 of the 60,000 needed
+      tripCashPrice: 600,
+      pointsRequiredByPartner: {},
+    });
+    expect(paths.find((p) => p.kind === 'portal')).toBeUndefined();
+  });
+
+  it('collapses to one portal path per issuer, naming the best portal card', () => {
+    // Three Chase cards used to mean three identical rows; with every card on
+    // the same flat rate they differed only by name.
+    const paths = computeRedemptionPaths({
+      cards: [reserve, preferred, freedom],
+      transferPartners: [hyatt],
+      balances: { reserve: 200_000, preferred: 200_000, freedom: 200_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: {},
+    });
+    expect(paths.filter((p) => p.kind === 'portal')).toHaveLength(1);
+  });
+
+  it('names the cheapest card among equals, regardless of array order', () => {
+    // Reserve and Preferred are identical on every dimension modelled here
+    // except fee, so the named card must be Preferred either way round. This
+    // used to depend purely on cards.json ordering.
+    for (const order of [
+      [reserve, preferred],
+      [preferred, reserve],
+    ]) {
+      const paths = computeRedemptionPaths({
+        cards: order,
+        transferPartners: [hyatt],
+        balances: { reserve: 200_000, preferred: 200_000 },
+        tripCashPrice: 600,
+        pointsRequiredByPartner: {},
+      });
+      expect(paths.find((p) => p.kind === 'portal')?.card.id).toBe('preferred');
+    }
+  });
+
+  it('names the higher-rate card when portal rates within an issuer differ', () => {
+    const paths = computeRedemptionPaths({
+      cards: [preferred, boostedCard],
+      transferPartners: [hyatt],
+      balances: { preferred: 200_000, boosted: 200_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: {},
+    });
+    const portalPath = paths.find((p) => p.kind === 'portal');
+    expect(portalPath?.card.id).toBe('boosted');
+    // 1.5x portal rate, so fewer points for the same trip.
+    expect(portalPath?.pointsUsed).toBeCloseTo(600 / (BASE_CPP * 1.5));
   });
 });
 

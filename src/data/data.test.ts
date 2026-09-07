@@ -359,7 +359,12 @@ describe('real data: Bank of America (no transfer partners, per-card cash-back f
       pointsRequiredByPartner: {},
     });
     expect(paths.every((p) => p.kind === 'portal')).toBe(true);
-    expect(paths.length).toBe(boaCards.length);
+    // One collapsed portal path, not one per card, naming Premium Rewards
+    // Elite — the only Bank of America card with a portal rate above 1c, and
+    // therefore the one you'd always book through if you hold it.
+    expect(paths).toHaveLength(1);
+    expect(paths[0].card.id).toBe('boapremiumrewardselite');
+    expect(paths[0].pointsUsed).toBeCloseTo(500 / (0.01 * 1.25));
   });
 });
 
