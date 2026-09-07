@@ -321,6 +321,27 @@ describe('real data: Bank of America (no transfer partners, per-card cash-back f
     expect(result.floor).toBeCloseTo(50_000 * 0.01);
   });
 
+  it('lets the no-fee Citi Strata reach American Airlines at the reduced ratio, not zero', () => {
+    // Worth pinning because the published guidance genuinely conflicts, and
+    // the conflict is a timeline rather than a disagreement. American was
+    // added in July 2025 for premium Citi cards only (Strata Premier, Elite,
+    // Prestige at 1:1), and several guides still describe that state. Later
+    // in July 2025 Citi extended it to the no-annual-fee cards at 10:7. So
+    // Strata DOES reach American, just badly — the blanket 0.7 is right, and
+    // an { aa: 0 } "no access" entry would be wrong.
+    const strataOnly = cards.filter((c) => c.id === 'citistrata');
+    const paths = computeRedemptionPaths({
+      cards: strataOnly,
+      transferPartners,
+      balances: { citistrata: 500_000 },
+      tripCashPrice: 900,
+      pointsRequiredByPartner: { aa: 30_000 },
+    });
+    const aaPath = paths.find((p) => p.kind === 'transfer' && p.partner?.id === 'aa');
+    expect(aaPath).toBeDefined();
+    expect(aaPath?.pointsUsed).toBeCloseTo(30_000 / 0.7);
+  });
+
   it('produces zero transfer paths for Bank of America in Trip Optimizer (portal-only)', () => {
     const boaCards = cards.filter((c) => c.issuer === 'bankOfAmerica');
     const paths = computeRedemptionPaths({
