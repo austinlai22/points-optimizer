@@ -44,6 +44,11 @@ export interface TransferPartner {
   // more than one issuer, often at different ratios each — this is a map
   // of every issuer that can reach this partner, not a single owner.
   ratiosByIssuer: Partial<Record<Issuer, number>>;
+  // ISO date these ratios were last checked against a published source.
+  // Optional on the type so synthetic test fixtures needn't carry one, but
+  // required of every real partner — data.test.ts enforces that, and fails
+  // once any of them ages past the freshness window. See utils/freshness.ts.
+  verifiedOn?: string;
 }
 
 export type ViewName = 'portfolio' | 'tripOptimizer';

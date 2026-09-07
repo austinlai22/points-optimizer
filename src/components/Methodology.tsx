@@ -1,6 +1,22 @@
 import { BASE_CPP, CASH_BACK_RATE, TRANSFER_PREMIUM_FACTOR } from '../utils/valuation';
 import { formatUSDPerPoint } from '../utils/format';
+import {
+  CARD_TERMS_VERIFIED_ON,
+  MAX_VERIFICATION_AGE_MONTHS,
+  formatVerifiedOn,
+  oldestVerifiedOn,
+} from '../utils/freshness';
+import transferPartnersData from '../data/transferPartners.json';
 import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
+import type { TransferPartner } from '../types';
+
+// The oldest partner date, not the newest: the app is only as current as its
+// weakest datum, and quoting the best one would flatter the data.
+const ratiosVerifiedOn = oldestVerifiedOn(
+  (transferPartnersData as TransferPartner[])
+    .map((partner) => partner.verifiedOn)
+    .filter((date): date is string => Boolean(date)),
+);
 
 export function Methodology() {
   return (
@@ -197,11 +213,25 @@ export function Methodology() {
           partner at all, in which case that route simply isn't offered rather than being priced
           optimistically.
         </p>
+        <p>
+          <span className="font-medium text-navy-950/70">How current this is:</span> transfer
+          ratios were last checked against each issuer's published list in{' '}
+          {ratiosVerifiedOn ? formatVerifiedOn(ratiosVerifiedOn) : 'an unrecorded month'}, and card
+          terms — annual fees, portal rates, cash-back rates — in{' '}
+          {formatVerifiedOn(CARD_TERMS_VERIFIED_ON)}. Both dates are read from the data itself
+          rather than typed here, so this line cannot drift from what the app is actually using,
+          and the test suite fails outright once anything passes{' '}
+          {MAX_VERIFICATION_AGE_MONTHS} months. Worth knowing why that matters: issuers change
+          these without notice — Amex cut its Cathay Pacific ratio from 1:1 to 5:4 in March 2026
+          and dropped Etihad entirely that June — and when those were checked, three well-known
+          published guides were already out of date, one still listing a program that folded in
+          2019. Treat every figure here as a snapshot.
+        </p>
         <p className="italic">
           These are this app's own transparent assumptions for estimation purposes — not a claim
-          to match The Points Guy, NerdWallet, or any other published point-valuation guide. Card
-          terms shown here were last verified August 2026 and can change; confirm current terms
-          directly with each issuer before making redemption decisions.
+          to match The Points Guy, NerdWallet, or any other published point-valuation guide.
+          Terms can change at any time; confirm current terms directly with each issuer before
+          making redemption decisions.
         </p>
       </div>
     </details>

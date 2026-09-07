@@ -19,7 +19,7 @@ Balances pool automatically across cards in the same issuer's family (e.g. a no-
 
 ## Valuation model
 
-This app's own transparent, reasoned assumptions — not a claim to match The Points Guy, NerdWallet, or any other published valuation guide. Full breakdown (with live numbers) is in the "Methodology & assumptions" disclosure at the bottom of each page in the app. Card terms were last verified August 2026 and can change — confirm current terms directly with each issuer before making redemption decisions.
+This app's own transparent, reasoned assumptions — not a claim to match The Points Guy, NerdWallet, or any other published valuation guide. Full breakdown (with live numbers) is in the "Methodology & assumptions" disclosure at the bottom of each page in the app. Transfer ratios and card terms carry per-datum verification dates, shown in that disclosure and enforced by a test that fails once anything ages past six months — issuers change these without notice. Confirm current terms directly with each issuer before making redemption decisions.
 
 ## Tech stack
 
