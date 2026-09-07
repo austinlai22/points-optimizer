@@ -7,19 +7,23 @@ export interface CardConfig {
   annualFee: number;
   portalMultiplier: number;
   transferEligible: boolean;
-  // Partner ids where THIS specific card's real transfer ratio is known to
-  // be worse than the issuer-wide rate this app otherwise assumes uniformly
-  // across every card in the issuer (e.g. Chase Sapphire Preferred's Hyatt
-  // ratio specifically). Use the sentinel "*" to mean every partner (e.g. a
-  // no-fee card whose whole tier gets a blanket reduced ratio). Omit, or
-  // leave empty, for a card with no known exceptions.
-  reducedRatioPartners?: string[];
-  // Only meaningful when reducedRatioPartners includes "*". The real
-  // multiplier on top of the issuer-wide ratio when THIS card is the only
-  // one available to redeem with (no better same-issuer card to pool the
-  // balance into first) — e.g. Citi Strata's real 10:7 transfer ratio is
-  // 0.7. Defaults to 1 (no further degradation) if omitted.
-  blanketRatioMultiplier?: number;
+  // How THIS card's real transfer ratio compares to the issuer-wide ratio
+  // this app otherwise assumes across the issuer's whole lineup, keyed by
+  // partner id. The sentinel "*" covers every partner; a specific id beats
+  // it. Omit entirely for a card with no known exceptions.
+  //
+  //   { hyatt: 0.75 }  Chase Sapphire Preferred's 4:3 Hyatt ratio — 75% of
+  //                    the 1:1 that Reserve gets, and only on Hyatt.
+  //   { "*": 0.7 }     Citi's no-fee Strata card, 10:7 to every partner.
+  //   { aa: 0 }        Zero means the card cannot reach that partner AT ALL,
+  //                    which is different from reaching it badly: the path
+  //                    is dropped rather than priced.
+  //
+  // One map rather than the old "list of bad partners" plus a separate
+  // blanket multiplier, because those two couldn't express a partner-specific
+  // penalty numerically (so it could only be routed around, never priced) and
+  // couldn't express no-access at all.
+  partnerRatioOverrides?: Record<string, number>;
   // This specific card's real unconditional cash-back rate, when it differs
   // from its issuer's usual rate (CASH_BACK_RATE). Every issuer modeled so
   // far has one uniform floor across its whole lineup EXCEPT Bank of

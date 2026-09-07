@@ -14,7 +14,9 @@
     "annualFee": 95,
     "portalMultiplier": 1.0,
     "transferEligible": true,
-    "reducedRatioPartners": ["hyatt"]
+    "partnerRatioOverrides": {
+      "hyatt": 0.75
+    }
   },
   {
     "id": "freedom",
@@ -79,8 +81,9 @@
     "annualFee": 0,
     "portalMultiplier": 1.0,
     "transferEligible": true,
-    "reducedRatioPartners": ["*"],
-    "blanketRatioMultiplier": 0.7
+    "partnerRatioOverrides": {
+      "*": 0.7
+    }
   },
   {
     "id": "citistratapremier",

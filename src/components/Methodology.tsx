@@ -164,7 +164,7 @@ export function Methodology() {
           known ratio caveat, so none of them need pooling at all. Citi's cards are all
           transfer-eligible too, but the no-fee Strata card specifically still benefits from
           pooling into Strata Premier or Elite — not to gain access it already has, but to escape
-          its own reduced transfer ratio (see "Known simplifications" below) by riding a better
+          its own reduced transfer ratio (see "Card-specific transfer ratios" below) by riding a better
           held card's rate instead. Bank of America pools in yet a different way: since none of its
           cards are transfer-eligible, pooling never unlocks a ceiling for it — but it still moves
           two other numbers. If you hold Travel Rewards alongside Premium Rewards or Premium
@@ -184,18 +184,18 @@ export function Methodology() {
           Optimizer paths, are marked "via pooling" or "requires transfer-in."
         </p>
         <p>
-          <span className="font-medium text-navy-950/70">Known simplifications:</span> this app
-          otherwise uses one transfer ratio per issuer, not per specific card — with two documented
-          real exceptions. Chase Sapphire Preferred's Hyatt transfer ratio is changing to 4:3 (a
-          real devaluation) while Sapphire Reserve keeps the standard 1:1: Preferred is never
-          recommended for a Hyatt transfer specifically (Reserve is, despite its higher fee), but
-          this app doesn't compute a separate cost for Preferred's other partners, where no
-          devaluation has been announced. Citi's no-annual-fee Strata card transfers to every
-          partner at a reduced 10:7 ratio versus Strata Premier/Elite's full rate — this one IS
-          reflected in the numbers: if you hold Premier or Elite too, Strata is never recommended
-          and its figures assume pooling into the better card; if Strata is the only Citi card you
-          hold, both its Portfolio ceiling and any Trip Optimizer cost through it are computed at
-          its real, worse 10:7 rate rather than the generic issuer-wide one.
+          <span className="font-medium text-navy-950/70">Card-specific transfer ratios:</span>{' '}
+          this app uses one transfer ratio per issuer, except where a particular card is
+          documented to do worse — and those exceptions are priced, not just avoided. Chase
+          Sapphire Preferred transfers to World of Hyatt at 4:3 while Sapphire Reserve keeps the
+          standard 1:1, and Citi's no-annual-fee Strata card transfers to every partner at 10:7
+          versus Strata Premier/Elite's full rate. In both cases, holding the better card means
+          the app routes you to it and quotes its rate; holding only the weaker one means you're
+          quoted the weaker one. A Preferred-only holder booking a 30,000-point Hyatt award is
+          shown 40,000 points, not the 30,000 a Reserve holder would spend — the figure has to be
+          the one you can actually get. The same mechanism can record that a card cannot reach a
+          partner at all, in which case that route simply isn't offered rather than being priced
+          optimistically.
         </p>
         <p className="italic">
           These are this app's own transparent assumptions for estimation purposes — not a claim

@@ -96,15 +96,17 @@ export function getBestTransferRatio(transferPartners: TransferPartner[], issuer
   return Math.max(...ratios);
 }
 
-// Whether a card has a known, documented transfer-ratio shortfall for a
-// given partner — "*" (via reducedRatioPartners) means every partner (a
-// blanket, card-tier-wide shortfall like Citi Strata's); pass partnerId null
-// to test only for that blanket case, ignoring partner-specific ones like
-// Chase Preferred's Hyatt exception.
-function hasReducedRatioFor(card: CardConfig, partnerId: string | null): boolean {
-  if (!card.reducedRatioPartners) return false;
-  if (card.reducedRatioPartners.includes('*')) return true;
-  return partnerId !== null && card.reducedRatioPartners.includes(partnerId);
+// How this card's real transfer ratio to a partner compares to the
+// issuer-wide ratio: 1 for no known shortfall, a fraction where the card
+// underperforms, and 0 where it cannot reach that partner at all.
+function getPartnerRatioMultiplier(card: CardConfig, partnerId: string | null): number {
+  const overrides = card.partnerRatioOverrides;
+  if (!overrides) return 1;
+  // A partner-specific entry beats the blanket one. Passing null asks only
+  // "does this card have a blanket penalty" — used where the question isn't
+  // about any one partner, such as the issuer-level ceiling.
+  if (partnerId !== null && partnerId in overrides) return overrides[partnerId];
+  return overrides['*'] ?? 1;
 }
 
 // A rational cardholder always consolidates into whichever held card has the
@@ -137,9 +139,9 @@ function getBestPortalCard(cardsInScope: CardConfig[]): CardConfig {
     if (c.transferEligible !== best.transferEligible) {
       return c.transferEligible ? c : best;
     }
-    const cReduced = hasReducedRatioFor(c, null);
-    const bestReduced = hasReducedRatioFor(best, null);
-    if (cReduced !== bestReduced) return cReduced ? best : c;
+    const cBlanket = getPartnerRatioMultiplier(c, null);
+    const bestBlanket = getPartnerRatioMultiplier(best, null);
+    if (cBlanket !== bestBlanket) return cBlanket > bestBlanket ? c : best;
     const cCashBack = getCashBackRate(c);
     const bestCashBack = getCashBackRate(best);
     if (cCashBack !== bestCashBack) return cCashBack > bestCashBack ? c : best;
@@ -174,22 +176,27 @@ function getMarkerRate(cardsInScope: CardConfig[]): number {
   return BASE_CPP * getBestPortalCard(cardsInScope).portalMultiplier;
 }
 
-// Best-case transfer rate. Only gets the transfer premium if the card you'd
-// pool into is itself transfer-eligible; otherwise no card in this issuer's
-// held roster unlocks transfer value at all (every Bank of America card,
-// today) and the ceiling collapses back to the guaranteed rate. If that
-// card itself carries a blanket ratio shortfall — meaning no better
-// same-issuer card exists to pool into — the rate reflects THAT card's own
-// real, worse ratio, or a Citi-Strata-only holder would see an inflated
-// figure they could never actually redeem.
+// Best-case transfer rate: work out what each transfer-eligible card would
+// actually be worth transferring through, and take the best.
+//
+// It used to ask getBestPortalCard for one card and apply that card's
+// shortfall, which had two failure modes. A card could lead on portal rate
+// while being the WRONG card to transfer through, and its shortfall was then
+// applied to the rate even though you'd have transferred from a different
+// card — the points and the rate ended up carrying penalties from two
+// different cards instead of cancelling, understating cost. And a card that
+// led on portal rate but couldn't transfer at all (Bank of America Premium
+// Rewards Elite, if BoA ever gained partners) would collapse the whole
+// issuer's ceiling to its guaranteed rate. Scoring each eligible card on its
+// own merits avoids both.
 function getCeilingRate(
   cardsInScope: CardConfig[],
   transferPartners: TransferPartner[],
   issuer: Issuer,
 ): number {
   const marker = getMarkerRate(cardsInScope);
-  const bestCard = getBestPortalCard(cardsInScope);
-  if (!bestCard.transferEligible) return marker;
+  const eligible = cardsInScope.filter((c) => c.transferEligible);
+  if (eligible.length === 0) return marker;
 
   // Capped rather than taken raw — see MAX_CEILING_RATIO on why an
   // above-parity ratio isn't free value.
@@ -197,10 +204,19 @@ function getCeilingRate(
     getBestTransferRatio(transferPartners, issuer),
     MAX_CEILING_RATIO,
   );
-  const bestCardOwnRatio = hasReducedRatioFor(bestCard, null)
-    ? ratioMultiplier * (bestCard.blanketRatioMultiplier ?? 1)
-    : ratioMultiplier;
-  return marker * TRANSFER_PREMIUM_FACTOR * bestCardOwnRatio;
+  const bestTransferRate = Math.max(
+    ...eligible.map(
+      (c) =>
+        BASE_CPP *
+        c.portalMultiplier *
+        TRANSFER_PREMIUM_FACTOR *
+        ratioMultiplier *
+        getPartnerRatioMultiplier(c, null),
+    ),
+  );
+  // Never below the guaranteed rate: if every transfer route is worse than
+  // just booking the portal, you'd book the portal.
+  return Math.max(bestTransferRate, marker);
 }
 
 // The single per-point rate to value points at, given the user's chosen
@@ -267,7 +283,7 @@ export function computeCardValuation({
   const isPooled =
     card.portalMultiplier < bestCard.portalMultiplier ||
     (!card.transferEligible && bestCard.transferEligible) ||
-    (hasReducedRatioFor(card, null) && bestCard.id !== card.id) ||
+    (getPartnerRatioMultiplier(card, null) < getPartnerRatioMultiplier(bestCard, null)) ||
     getCashBackRate(card) < bestCashBackRate;
 
   // Both figures come from the shared per-point rate helpers, so a card's
@@ -361,32 +377,36 @@ export function computeRedemptionPaths({
         const partnerPointsRequired = pointsRequiredByPartner[partner.id] ?? 0;
         if (!partnerPointsRequired || partnerPointsRequired <= 0 || ratio <= 0) continue;
 
-        // Name whichever eligible card has the lowest annual fee, since with
-        // cost decoupled from fee there's no reason to point at a pricier
-        // one by default — BUT never recommend a card with a documented,
-        // worse-than-modeled ratio for THIS specific partner (e.g. Citi's
-        // no-fee Strata card is worse on every partner; Chase Preferred is
-        // specifically worse on Hyatt) when a better-fee alternative exists
-        // that doesn't carry that caveat.
-        const recommendedCard = transferEligibleCards.reduce((best, c) => {
-          const cReduced = hasReducedRatioFor(c, partner.id);
-          const bestReduced = hasReducedRatioFor(best, partner.id);
-          if (cReduced !== bestReduced) return cReduced ? best : c;
+        // A multiplier of 0 means the card genuinely cannot reach this
+        // partner, so it isn't a worse option — it isn't an option. Drop
+        // those before choosing, and if that leaves nothing, this issuer
+        // has no route to this partner and the path shouldn't exist.
+        const cardsReachingPartner = transferEligibleCards.filter(
+          (c) => getPartnerRatioMultiplier(c, partner.id) > 0,
+        );
+        if (cardsReachingPartner.length === 0) continue;
+
+        // Best real ratio to THIS partner first, then lowest annual fee —
+        // with cost decoupled from fee there's no reason to name a pricier
+        // card among equals, but a better ratio beats a cheaper fee every
+        // time, since the ratio changes what the redemption actually costs.
+        const recommendedCard = cardsReachingPartner.reduce((best, c) => {
+          const cMultiplier = getPartnerRatioMultiplier(c, partner.id);
+          const bestMultiplier = getPartnerRatioMultiplier(best, partner.id);
+          if (cMultiplier !== bestMultiplier) return cMultiplier > bestMultiplier ? c : best;
           return c.annualFee < best.annualFee ? c : best;
         });
 
         // Points required is entered in partner currency; convert to the
-        // issuer's own points actually debited via THIS issuer's transfer
-        // ratio to this partner (a shared partner can have a different
-        // ratio for each issuer that reaches it). If the recommended card
-        // still carries a blanket ratio shortfall (only possible when every
-        // held transfer-eligible card for this issuer has one, i.e. there
-        // was no better card to recommend instead — e.g. holding only Citi
-        // Strata), divide by its real blanketRatioMultiplier too, so the
-        // points/cost shown reflect that card's own worse rate rather than
-        // silently assuming the issuer-wide generic ratio still applies.
-        const pointsUsed =
-          partnerPointsRequired / ratio / (recommendedCard.blanketRatioMultiplier ?? 1);
+        // issuer's own points actually debited, via this issuer's ratio to
+        // this partner (shared partners have a different ratio per issuer)
+        // scaled by whatever shortfall the recommended card carries. When a
+        // better card was available the multiplier is 1 and this is a no-op;
+        // when it wasn't — a Preferred-only holder redeeming Hyatt, a
+        // Strata-only holder redeeming anything — the extra points that card
+        // really costs you show up here instead of being papered over.
+        const cardRatio = ratio * getPartnerRatioMultiplier(recommendedCard, partner.id);
+        const pointsUsed = partnerPointsRequired / cardRatio;
         // An award booking costs you BOTH the points (valued at their
         // opportunity cost) AND whatever cash you still hand over in taxes
         // and carrier surcharges — so the honest total is the sum. Without
