@@ -7,6 +7,13 @@ import {
   getRateForBasis,
   CASH_BACK_RATE,
 } from '../utils/valuation';
+import {
+  CARD_TERMS_VERIFIED_ON,
+  MAX_VERIFICATION_AGE_MONTHS,
+  isStale,
+  isValidIsoDate,
+  monthsSince,
+} from '../utils/freshness';
 import { ISSUER_ORDER } from '../styles/constants';
 import type {
   CardConfig,
@@ -353,6 +360,51 @@ describe('real data: Bank of America (no transfer partners, per-card cash-back f
     });
     expect(paths.every((p) => p.kind === 'portal')).toBe(true);
     expect(paths.length).toBe(boaCards.length);
+  });
+});
+
+describe('real data: freshness', () => {
+  // These are the only tests here designed to fail with the passage of time
+  // rather than a code change, and that is the point. Every ratio and rate in
+  // this app is a snapshot of terms issuers change without notice — two
+  // changed within six months while it was being built, and three published
+  // guides were already stale when checked. Silent staleness is the most
+  // likely way this app becomes wrong, so it is made loud.
+  it('records when every real partner was last verified', () => {
+    for (const partner of transferPartners) {
+      expect(partner.verifiedOn, `${partner.id} has no verifiedOn date`).toBeDefined();
+      expect(
+        isValidIsoDate(partner.verifiedOn ?? ''),
+        `${partner.id} verifiedOn must be YYYY-MM-DD`,
+      ).toBe(true);
+    }
+  });
+
+  it('never claims to have verified anything in the future', () => {
+    const today = new Date();
+    for (const partner of transferPartners) {
+      expect(monthsSince(partner.verifiedOn!, today), `${partner.id}`).toBeGreaterThanOrEqual(0);
+    }
+    expect(monthsSince(CARD_TERMS_VERIFIED_ON, today)).toBeGreaterThanOrEqual(0);
+  });
+
+  it(`has no transfer ratio older than ${MAX_VERIFICATION_AGE_MONTHS} months`, () => {
+    const stale = transferPartners
+      .filter((p) => isStale(p.verifiedOn!))
+      .map((p) => `${p.name} (${p.verifiedOn})`);
+    expect(
+      stale,
+      `Transfer ratios need re-checking against each issuer's published list, then ` +
+        `bump verifiedOn. Stale: ${stale.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it(`has card terms no older than ${MAX_VERIFICATION_AGE_MONTHS} months`, () => {
+    expect(
+      isStale(CARD_TERMS_VERIFIED_ON),
+      `Annual fees, portal rates and cash-back rates need re-checking, then bump ` +
+        `CARD_TERMS_VERIFIED_ON (currently ${CARD_TERMS_VERIFIED_ON}).`,
+    ).toBe(false);
   });
 });
 

@@ -3,210 +3,356 @@
     "id": "accor",
     "name": "Accor Live Limitless (ALL)",
     "type": "hotel",
-    "ratiosByIssuer": { "capitalOne": 0.5, "citi": 0.5 }
+    "ratiosByIssuer": {
+      "capitalOne": 0.5,
+      "citi": 0.5
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "choice",
     "name": "Choice Privileges",
     "type": "hotel",
-    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1.5 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1.5
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "hilton",
     "name": "Hilton Honors",
     "type": "hotel",
-    "ratiosByIssuer": { "amex": 2 }
+    "ratiosByIssuer": {
+      "amex": 2
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "hyatt",
     "name": "World of Hyatt",
     "type": "hotel",
-    "ratiosByIssuer": { "chase": 1 }
+    "ratiosByIssuer": {
+      "chase": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "ihg",
     "name": "IHG One Rewards",
     "type": "hotel",
-    "ratiosByIssuer": { "chase": 1 }
+    "ratiosByIssuer": {
+      "chase": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "iprefer",
     "name": "Preferred Hotels & Resorts (I Prefer)",
     "type": "hotel",
-    "ratiosByIssuer": { "capitalOne": 2, "citi": 2 }
+    "ratiosByIssuer": {
+      "capitalOne": 2,
+      "citi": 2
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "leadinghotels",
     "name": "Leading Hotels of the World (Leaders Club)",
     "type": "hotel",
-    "ratiosByIssuer": { "amex": 0.25, "citi": 0.2 }
+    "ratiosByIssuer": {
+      "amex": 0.25,
+      "citi": 0.2
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "marriott",
     "name": "Marriott Bonvoy",
     "type": "hotel",
-    "ratiosByIssuer": { "chase": 1, "amex": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "wyndham",
     "name": "Wyndham Rewards",
     "type": "hotel",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "aa",
     "name": "American Airlines AAdvantage",
     "type": "airline",
-    "ratiosByIssuer": { "citi": 1 }
+    "ratiosByIssuer": {
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "aerlingus",
     "name": "Aer Lingus AerClub",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "amex": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "aeromexico",
     "name": "Aeromexico Rewards",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "amex": 1.6, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "amex": 1.6,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "aeroplan",
     "name": "Air Canada Aeroplan",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 1,
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "ana",
     "name": "ANA Mileage Club",
     "type": "airline",
-    "ratiosByIssuer": { "amex": 1 }
+    "ratiosByIssuer": {
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "avianca",
     "name": "Avianca LifeMiles",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "britishairways",
     "name": "British Airways Avios",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 1,
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "cathay",
     "name": "Cathay Pacific Asia Miles",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "amex": 0.8, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "amex": 0.8,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "delta",
     "name": "Delta SkyMiles",
     "type": "airline",
-    "ratiosByIssuer": { "amex": 1 }
+    "ratiosByIssuer": {
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "emirates",
     "name": "Emirates Skywards",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 0.75, "amex": 0.8, "citi": 0.8 }
+    "ratiosByIssuer": {
+      "capitalOne": 0.75,
+      "amex": 0.8,
+      "citi": 0.8
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "etihad",
     "name": "Etihad Guest",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "eva",
     "name": "EVA Air Infinity MileageLands",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 0.75, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 0.75,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "finnair",
     "name": "Finnair Plus",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "flyingblue",
     "name": "Air France-KLM Flying Blue",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "iberia",
     "name": "Iberia Plus",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "amex": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "amex": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "jal",
     "name": "Japan Airlines Mileage Bank",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 0.75 }
+    "ratiosByIssuer": {
+      "capitalOne": 0.75
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "jetblue",
     "name": "JetBlue TrueBlue",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 0.6, "amex": 0.8, "citi": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 0.6,
+      "amex": 0.8,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "qantas",
     "name": "Qantas Frequent Flyer",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "qatar",
     "name": "Qatar Airways Privilege Club",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "amex": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "singapore",
     "name": "Singapore Airlines KrisFlyer",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "southwest",
     "name": "Southwest Rapid Rewards",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1 }
+    "ratiosByIssuer": {
+      "chase": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "tap",
     "name": "TAP Air Portugal Miles&Go",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "thai",
     "name": "Thai Airways Royal Orchid Plus",
     "type": "airline",
-    "ratiosByIssuer": { "citi": 1 }
+    "ratiosByIssuer": {
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "turkish",
     "name": "Turkish Airlines Miles&Smiles",
     "type": "airline",
-    "ratiosByIssuer": { "capitalOne": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "united",
     "name": "United MileagePlus",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1 }
+    "ratiosByIssuer": {
+      "chase": 1
+    },
+    "verifiedOn": "2026-09-06"
   },
   {
     "id": "virginatlantic",
     "name": "Virgin Atlantic Flying Club (Virgin Points)",
     "type": "airline",
-    "ratiosByIssuer": { "chase": 1, "capitalOne": 1, "amex": 1, "citi": 1 }
+    "ratiosByIssuer": {
+      "chase": 1,
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
   }
 ]
