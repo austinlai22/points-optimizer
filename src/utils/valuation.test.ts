@@ -223,8 +223,7 @@ describe('computeCardValuation', () => {
       annualFee: 0,
       portalMultiplier: 1.0,
       transferEligible: true,
-      reducedRatioPartners: ['*'],
-      blanketRatioMultiplier: 0.7,
+      partnerRatioOverrides: { '*': 0.7 },
     };
     const strataPremierLike: CardConfig = {
       id: 'strataPremier',
@@ -345,7 +344,7 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
     annualFee: 0,
     portalMultiplier: 1.0,
     transferEligible: true,
-    reducedRatioPartners: ['*'], // worse on every partner, e.g. Citi Strata
+    partnerRatioOverrides: { '*': 0.7 }, // worse on every partner, e.g. Citi Strata
   };
   const hyattSpecificWorse: CardConfig = {
     id: 'hyattworse',
@@ -354,7 +353,7 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
     annualFee: 50,
     portalMultiplier: 1.0,
     transferEligible: true,
-    reducedRatioPartners: ['hyatt'], // worse ONLY on Hyatt, e.g. Chase Preferred
+    partnerRatioOverrides: { hyatt: 0.75 }, // worse ONLY on Hyatt, e.g. Chase Preferred
   };
 
   it('never recommends a blanket-reduced-ratio card when a normal alternative exists, even if it has the lowest fee', () => {
@@ -400,7 +399,25 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
     expect(flyingBluePaths.find((p) => p.kind === 'transfer')?.card.id).toBe('hyattworse');
   });
 
-  it('falls back to a reduced-ratio card when it is the only transfer-eligible option', () => {
+  it('falls back to a reduced-ratio card when it is the only transfer-eligible option, and charges its real ratio', () => {
+    const paths = computeRedemptionPaths({
+      cards: [noFeeButWorse],
+      transferPartners: [hyatt],
+      balances: { nofeeworse: 100_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 40_000 },
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.card.id).toBe('nofeeworse');
+    // With no better card to route through, the card's own 0.7 ratio applies:
+    // 40,000 / 0.7 = ~57,143 points, not the 40,000 a clean card would need.
+    expect(transferPath?.pointsUsed).toBeCloseTo(40_000 / 0.7);
+  });
+
+  it('drops the path entirely when a balance cannot cover the reduced ratio', () => {
+    // 40,000 / 0.7 = ~57,143 needed against a 50,000 balance. Before the
+    // per-partner multipliers this looked affordable at a flat 40,000, so the
+    // app would offer a transfer the holder could not actually make.
     const paths = computeRedemptionPaths({
       cards: [noFeeButWorse],
       transferPartners: [hyatt],
@@ -408,7 +425,7 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
       tripCashPrice: 600,
       pointsRequiredByPartner: { hyatt: 40_000 },
     });
-    expect(paths.find((p) => p.kind === 'transfer')?.card.id).toBe('nofeeworse');
+    expect(paths.find((p) => p.kind === 'transfer')).toBeUndefined();
   });
 
   it('inflates points used (and cost) by a blanket-reduced card\'s real ratio multiplier when it is the only option', () => {
@@ -419,8 +436,7 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
       annualFee: 0,
       portalMultiplier: 1.0,
       transferEligible: true,
-      reducedRatioPartners: ['*'],
-      blanketRatioMultiplier: 0.7,
+      partnerRatioOverrides: { '*': 0.7 },
     };
     const citiPartner: TransferPartner = {
       id: 'citipartner',
@@ -436,7 +452,7 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
       pointsRequiredByPartner: { citipartner: 10_000 },
     });
     const transferPath = paths.find((p) => p.kind === 'transfer');
-    // 10,000 partner points / ratio 1 / blanketRatioMultiplier 0.7 = ~14,285.7
+    // 10,000 partner points / (ratio 1 x the card's own 0.7) = ~14,285.7
     expect(transferPath?.pointsUsed).toBeCloseTo(10_000 / 0.7);
     expect(transferPath?.cost).toBeCloseTo((10_000 / 0.7) * BASE_CPP);
   });
@@ -449,8 +465,7 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
       annualFee: 0,
       portalMultiplier: 1.0,
       transferEligible: true,
-      reducedRatioPartners: ['*'],
-      blanketRatioMultiplier: 0.7,
+      partnerRatioOverrides: { '*': 0.7 },
     };
     const strataPremierLike: CardConfig = {
       id: 'strataPremier',
@@ -476,6 +491,145 @@ describe('computeRedemptionPaths — reduced-ratio recommendation avoidance', ()
     const transferPath = paths.find((p) => p.kind === 'transfer');
     expect(transferPath?.card.id).toBe('strataPremier');
     expect(transferPath?.pointsUsed).toBeCloseTo(10_000);
+  });
+});
+
+describe('per-partner ratio overrides', () => {
+  it('W2: does not apply one card\'s shortfall to the rate while pricing points off another', () => {
+    // The card leading on portal rate carries a blanket shortfall; a second,
+    // cleaner card is the one you'd actually transfer through. Previously the
+    // ceiling took the leader's rate AND its 0.7, while points came from the
+    // clean card — the penalty landed once, unpaired, understating cost by
+    // ~30%. The ceiling now scores each eligible card on its own merits.
+    const leaderWithPenalty: CardConfig = {
+      id: 'leader',
+      name: 'Better portal, worse transfers',
+      issuer: 'chase',
+      annualFee: 500,
+      portalMultiplier: 1.25,
+      transferEligible: true,
+      partnerRatioOverrides: { '*': 0.7 },
+    };
+    const cleanCard: CardConfig = {
+      id: 'clean',
+      name: 'Clean transfers',
+      issuer: 'chase',
+      annualFee: 95,
+      portalMultiplier: 1.0,
+      transferEligible: true,
+    };
+    const cards = [leaderWithPenalty, cleanCard];
+    // Leader: 1.25 x 1.75 x 0.7 = 1.531c. Clean: 1.0 x 1.75 = 1.750c. The
+    // clean card wins, so no penalty should reach the rate at all.
+    expect(getRateForBasis(cards, [hyatt], 'chase', 'transfer')).toBeCloseTo(
+      BASE_CPP * TRANSFER_PREMIUM_FACTOR,
+    );
+
+    const paths = computeRedemptionPaths({
+      cards,
+      transferPartners: [hyatt],
+      balances: { leader: 200_000, clean: 200_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 10_000 },
+      basis: 'transfer',
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    // Routed through the clean card, so neither points nor rate are penalised.
+    expect(transferPath?.card.id).toBe('clean');
+    expect(transferPath?.pointsUsed).toBeCloseTo(10_000);
+    expect(transferPath?.cost).toBeCloseTo(10_000 * BASE_CPP * TRANSFER_PREMIUM_FACTOR);
+  });
+
+  it('W3: a non-transferable card leading on portal rate no longer hides transfer access', () => {
+    // Mirrors Bank of America Premium Rewards Elite (1.25x portal, cannot
+    // transfer) if that issuer ever gained partners. The old ceiling asked
+    // for the best PORTAL card, found it ineligible, and reported no transfer
+    // upside for the whole issuer.
+    const bestPortalNoTransfer: CardConfig = {
+      id: 'eliteish',
+      name: 'Elite-like',
+      issuer: 'chase',
+      annualFee: 550,
+      portalMultiplier: 1.25,
+      transferEligible: false,
+    };
+    const cards = [bestPortalNoTransfer, preferred];
+    const rate = getRateForBasis(cards, [hyatt], 'chase', 'transfer');
+    const marker = getRateForBasis(cards, [hyatt], 'chase', 'guaranteed');
+    expect(rate).toBeGreaterThan(marker);
+    expect(rate).toBeCloseTo(BASE_CPP * 1.0 * TRANSFER_PREMIUM_FACTOR);
+  });
+
+  it('W4: prices a partner-specific shortfall instead of only routing around it', () => {
+    // Chase Sapphire Preferred's 4:3 Hyatt ratio. With Reserve held the app
+    // routes to Reserve; with only Preferred it must charge the real 4:3
+    // rather than quoting a rate that holder cannot get.
+    const preferredWithHyattPenalty: CardConfig = {
+      ...preferred,
+      partnerRatioOverrides: { hyatt: 0.75 },
+    };
+    const soloPaths = computeRedemptionPaths({
+      cards: [preferredWithHyattPenalty],
+      transferPartners: [hyatt],
+      balances: { preferred: 200_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    });
+    const solo = soloPaths.find((p) => p.kind === 'transfer');
+    expect(solo?.pointsUsed).toBeCloseTo(30_000 / 0.75);
+    expect(solo?.cost).toBeCloseTo((30_000 / 0.75) * BASE_CPP);
+
+    // The penalty is Hyatt-only, so another partner is unaffected.
+    const flyingBlueChase: TransferPartner = {
+      id: 'flyingblue',
+      name: 'Flying Blue',
+      type: 'airline',
+      ratiosByIssuer: { chase: 1 },
+    };
+    const otherPaths = computeRedemptionPaths({
+      cards: [preferredWithHyattPenalty],
+      transferPartners: [flyingBlueChase],
+      balances: { preferred: 200_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { flyingblue: 30_000 },
+    });
+    expect(otherPaths.find((p) => p.kind === 'transfer')?.pointsUsed).toBeCloseTo(30_000);
+  });
+
+  it('W7: a zero multiplier removes the path rather than pricing it', () => {
+    const noAccessCard: CardConfig = {
+      ...preferred,
+      id: 'noaccess',
+      partnerRatioOverrides: { hyatt: 0 },
+    };
+    const paths = computeRedemptionPaths({
+      cards: [noAccessCard],
+      transferPartners: [hyatt],
+      balances: { noaccess: 500_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    });
+    // No route exists, so no transfer path — however large the balance.
+    expect(paths.find((p) => p.kind === 'transfer')).toBeUndefined();
+    expect(paths.some((p) => p.kind === 'portal')).toBe(true);
+  });
+
+  it('W7: still offers the partner through a sibling card that CAN reach it', () => {
+    const noAccessCard: CardConfig = {
+      ...preferred,
+      id: 'noaccess',
+      partnerRatioOverrides: { hyatt: 0 },
+    };
+    const paths = computeRedemptionPaths({
+      cards: [noAccessCard, reserve],
+      transferPartners: [hyatt],
+      balances: { noaccess: 200_000, reserve: 200_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { hyatt: 30_000 },
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.card.id).toBe('reserve');
+    expect(transferPath?.pointsUsed).toBeCloseTo(30_000);
   });
 });
 
