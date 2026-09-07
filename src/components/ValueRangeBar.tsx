@@ -39,27 +39,25 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
   }
 
   const pct = (value: number) => Math.min((value / axisMax) * 100, 100);
-  // The band spans the two figures issuers actually publish: what you'd get
-  // cashing out, and what their portal guarantees. The transfer ceiling is
-  // deliberately NOT drawn — after capping above-parity ratios it became a
-  // flat multiple of the realistic value, so it added no information to the
-  // picture while lending our own estimate the same visual authority as two
-  // sourced numbers. It stays reachable through the basis selector, where
-  // choosing it moves the marker outside this band — which is exactly the
-  // point: you can see you've stepped past what's guaranteed.
   const floorPct = pct(floor);
   const markerPct = pct(marker);
   const selectedPct = pct(selected);
-  const isBeyondBand = selected > marker;
+  // Only when the potential-transfer basis pushes the figure past what the
+  // issuer guarantees. The bar grows to cover it in a third, fainter tone
+  // rather than leaving the marker stranded on empty track.
+  const estimatePct = Math.max(selectedPct - markerPct, 0);
 
   return (
     <div>
       {/* Filled from zero rather than drawn as a floating band: bar LENGTH is
           what reads as "how much is this worth" at a glance, which is the
-          comparison a grid of cards invites. The two tones split it into the
-          part you'd get cashing out and the extra the travel portal adds — so
-          the issuer-level gap (none for Chase, half the bar for Capital One)
-          is visible without reading a single number. */}
+          comparison a grid of cards invites. The tones step down in solidity
+          as the figure gets less certain — what you'd get cashing out, the
+          extra the travel portal guarantees, then (only at the potential-
+          transfer basis) this app's estimate on top. That makes the
+          issuer-level gap legible without reading a number: Chase is one
+          solid bar because its two rates are identical, Capital One's is
+          visibly half and half. */}
       <div className="relative">
         <div className="h-2.5 overflow-hidden rounded-full bg-navy/10">
           <div
@@ -72,13 +70,14 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
             style={{ marginLeft: `${floorPct}%`, width: `${Math.max(markerPct - floorPct, 0)}%` }}
             aria-hidden="true"
           />
+          <div
+            className="-mt-2.5 h-full bg-navy/15 transition-all duration-300 motion-reduce:transition-none"
+            style={{ marginLeft: `${markerPct}%`, width: `${estimatePct}%` }}
+            aria-hidden="true"
+          />
         </div>
         <div
-          className={`absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-md ring-4 ring-slate-50 transition-[left] duration-300 motion-reduce:transition-none ${
-            // Hollowed out beyond the published range, so an estimate never
-            // looks like the same kind of number as a sourced one.
-            isBeyondBand ? 'border-2 border-teal bg-slate-50' : 'bg-teal'
-          }`}
+          className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal shadow-md ring-4 ring-slate-50 transition-[left] duration-300 motion-reduce:transition-none"
           style={{ left: dotLeft(selectedPct) }}
           aria-hidden="true"
         />
