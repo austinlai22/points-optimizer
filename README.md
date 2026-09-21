@@ -34,6 +34,10 @@ npm test         # run the vitest suite
 npm run build    # type-check and produce a production build
 ```
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ## Disclaimer
 
 PointCompass is an independent estimation tool and is not affiliated with, endorsed by, or sponsored by Chase, Capital One, American Express, Citi, Bank of America, or any airline or hotel program referenced in the app. Figures are illustrative estimates based on this app's own assumptions — not financial advice.
