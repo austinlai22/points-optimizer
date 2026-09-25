@@ -37,6 +37,13 @@ export const CASH_BACK_RATE: Record<Issuer, number> = {
   amex: 0.006,
   citi: 0.0075,
   bankOfAmerica: BASE_CPP,
+  // - Bilt: a statement credit is 0.55 cents/point, the lowest travel-rate-to-
+  //   cash-out gap of any issuer here. Note Bilt's best GUARANTEED use is not
+  //   travel at all — rent and mortgage payments redeem at 1.5 cents, above
+  //   its 1.25-cent travel portal. This app models the travel rate because it
+  //   prices trips, so for Bilt specifically the true opportunity cost of a
+  //   redemption is understated; see the Methodology.
+  bilt: 0.0055,
 };
 
 // A card's own true cash-back rate: its cashBackRateOverride if it has one

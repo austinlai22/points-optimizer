@@ -125,5 +125,29 @@
     "annualFee": 550,
     "portalMultiplier": 1.25,
     "transferEligible": false
+  },
+  {
+    "id": "biltblue",
+    "name": "Bilt Blue",
+    "issuer": "bilt",
+    "annualFee": 0,
+    "portalMultiplier": 1.25,
+    "transferEligible": true
+  },
+  {
+    "id": "biltobsidian",
+    "name": "Bilt Obsidian",
+    "issuer": "bilt",
+    "annualFee": 95,
+    "portalMultiplier": 1.25,
+    "transferEligible": true
+  },
+  {
+    "id": "biltpalladium",
+    "name": "Bilt Palladium",
+    "issuer": "bilt",
+    "annualFee": 495,
+    "portalMultiplier": 1.25,
+    "transferEligible": true
   }
 ]

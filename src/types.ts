@@ -1,4 +1,10 @@
-export type Issuer = 'chase' | 'capitalOne' | 'amex' | 'citi' | 'bankOfAmerica';
+export type Issuer =
+  | 'chase'
+  | 'capitalOne'
+  | 'amex'
+  | 'citi'
+  | 'bankOfAmerica'
+  | 'bilt';
 
 export interface CardConfig {
   id: string;

@@ -114,6 +114,20 @@ export function Methodology() {
           available, and among equals the lowest annual fee.
         </p>
         <p>
+          <span className="font-medium text-navy-950/70">Bilt, and one caveat about it:</span>{' '}
+          Bilt is here for a specific reason — it is the only transferable currency that reaches
+          Atmos Rewards, the merged Alaska and Hawaiian program. Neither Chase, Capital One, Amex,
+          Citi nor Bank of America transfers there at all, so without Bilt that partner simply
+          cannot appear. Bilt also has the highest guaranteed rate of any issuer modelled here,
+          {formatUSDPerPoint(0.0125)}/point on Bilt Travel for cardholders, against the lowest
+          cash-out floor at {formatUSDPerPoint(CASH_BACK_RATE.bilt)}/point. The caveat: Bilt's
+          best <em>guaranteed</em> use isn't travel. Points go toward rent or a mortgage at about
+          1.5¢, above the travel rate — so for Bilt specifically, the true opportunity cost of
+          spending points on a trip is higher than this app shows. It prices trips, so it uses the
+          travel rate; just know that a Bilt redemption which looks break-even here is probably a
+          small loss against paying your rent with the same points.
+        </p>
+        <p>
           <span className="font-medium text-navy-950/70">Points you already hold:</span> most
           people have a stranded balance sitting with an airline or hotel, and it changes the
           answer. Entering it means only the <em>shortfall</em> is transferred — a 60,000-point

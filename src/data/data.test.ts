@@ -426,6 +426,9 @@ describe('real data: transfer partner roster is complete per issuer', () => {
     // Bank of America has no transfer partners at all — see the dedicated
     // Bank of America block above.
     bankOfAmerica: { airlines: 0, hotels: 0 },
+    // Bilt is the only transferable currency that reaches Atmos (Alaska and
+    // Hawaiian), which is why it's modelled at all.
+    bilt: { airlines: 17, hotels: 7 },
   };
 
   it('matches each issuer\'s published airline and hotel partner counts', () => {
@@ -444,6 +447,41 @@ describe('real data: transfer partner roster is complete per issuer', () => {
         expect(ratio, `${partner.id}/${issuer}`).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('real data: Bilt is the only route to Atmos', () => {
+  it('reaches Atmos from Bilt and from nowhere else', () => {
+    // Alaska was the long-standing holdout among transferable currencies and
+    // the Hawaiian merger into Atmos didn't change it: Bilt is the only one
+    // of the six issuers here that transfers in. Adding Atmos under any other
+    // issuer would offer a transfer that cannot be made.
+    const atmos = transferPartners.find((p) => p.id === 'atmos');
+    expect(atmos).toBeDefined();
+    expect(Object.keys(atmos!.ratiosByIssuer)).toEqual(['bilt']);
+    expect(atmos!.ratiosByIssuer.bilt).toBe(1);
+  });
+
+  it('offers no Atmos path to a cardholder without Bilt', () => {
+    const nonBilt = cards.filter((c) => c.issuer !== 'bilt');
+    const paths = computeRedemptionPaths({
+      cards: nonBilt,
+      transferPartners,
+      balances: Object.fromEntries(nonBilt.map((c) => [c.id, 500_000])),
+      tripCashPrice: 700,
+      pointsRequiredByPartner: { atmos: 30_000 },
+    });
+    expect(paths.some((p) => p.partner?.id === 'atmos')).toBe(false);
+  });
+
+  it('gives Bilt the best guaranteed rate of any transfer-capable issuer', () => {
+    // 1.25c on Bilt Travel, matched only by Bank of America Premium Rewards
+    // Elite — which has no transfer partners at all. That combination is why
+    // Bilt's ceiling comes out highest.
+    const biltCards = cards.filter((c) => c.issuer === 'bilt');
+    expect(biltCards).toHaveLength(3);
+    expect(biltCards.every((c) => c.portalMultiplier === 1.25)).toBe(true);
+    expect(biltCards.every((c) => c.transferEligible)).toBe(true);
   });
 });
 

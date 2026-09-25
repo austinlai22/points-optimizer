@@ -2,7 +2,7 @@
 
 **[pointcompass.vercel.app](https://pointcompass.vercel.app)**
 
-A free, client-only tool that values your Chase, Capital One, American Express, Citi, and Bank of America points/miles, and helps you figure out which card to redeem through for a specific trip.
+A free, client-only tool that values your Chase, Capital One, American Express, Citi, Bank of America and Bilt points/miles, and helps you figure out which card to redeem through for a specific trip.
 
 Nothing is sent to a server — all balances and inputs stay in your browser (`localStorage`).
 
@@ -40,4 +40,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Disclaimer
 
-PointCompass is an independent estimation tool and is not affiliated with, endorsed by, or sponsored by Chase, Capital One, American Express, Citi, Bank of America, or any airline or hotel program referenced in the app. Figures are illustrative estimates based on this app's own assumptions — not financial advice.
+PointCompass is an independent estimation tool and is not affiliated with, endorsed by, or sponsored by Chase, Capital One, American Express, Citi, Bank of America, Bilt, or any airline or hotel program referenced in the app. Figures are illustrative estimates based on this app's own assumptions — not financial advice.

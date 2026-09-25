@@ -5,7 +5,8 @@
     "type": "hotel",
     "ratiosByIssuer": {
       "capitalOne": 0.5,
-      "citi": 0.5
+      "citi": 0.5,
+      "bilt": 0.667
     },
     "verifiedOn": "2026-09-06"
   },
@@ -25,16 +26,8 @@
     "name": "Hilton Honors",
     "type": "hotel",
     "ratiosByIssuer": {
-      "amex": 2
-    },
-    "verifiedOn": "2026-09-06"
-  },
-  {
-    "id": "hyatt",
-    "name": "World of Hyatt",
-    "type": "hotel",
-    "ratiosByIssuer": {
-      "chase": 1
+      "amex": 2,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -43,17 +36,8 @@
     "name": "IHG One Rewards",
     "type": "hotel",
     "ratiosByIssuer": {
-      "chase": 1
-    },
-    "verifiedOn": "2026-09-06"
-  },
-  {
-    "id": "iprefer",
-    "name": "Preferred Hotels & Resorts (I Prefer)",
-    "type": "hotel",
-    "ratiosByIssuer": {
-      "capitalOne": 2,
-      "citi": 2
+      "chase": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -73,7 +57,29 @@
     "type": "hotel",
     "ratiosByIssuer": {
       "chase": 1,
-      "amex": 1
+      "amex": 1,
+      "bilt": 1
+    },
+    "verifiedOn": "2026-09-06"
+  },
+  {
+    "id": "iprefer",
+    "name": "Preferred Hotels & Resorts (I Prefer)",
+    "type": "hotel",
+    "ratiosByIssuer": {
+      "capitalOne": 2,
+      "citi": 2,
+      "bilt": 2
+    },
+    "verifiedOn": "2026-09-06"
+  },
+  {
+    "id": "hyatt",
+    "name": "World of Hyatt",
+    "type": "hotel",
+    "ratiosByIssuer": {
+      "chase": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -84,16 +90,17 @@
     "ratiosByIssuer": {
       "chase": 1,
       "capitalOne": 1,
-      "citi": 1
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
   {
-    "id": "aa",
-    "name": "American Airlines AAdvantage",
+    "id": "ana",
+    "name": "ANA Mileage Club",
     "type": "airline",
     "ratiosByIssuer": {
-      "citi": 1
+      "amex": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -103,7 +110,8 @@
     "type": "airline",
     "ratiosByIssuer": {
       "chase": 1,
-      "amex": 1
+      "amex": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -125,18 +133,41 @@
     "ratiosByIssuer": {
       "chase": 1,
       "capitalOne": 1,
-      "amex": 1
+      "amex": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
   {
-    "id": "ana",
-    "name": "ANA Mileage Club",
+    "id": "flyingblue",
+    "name": "Air France-KLM Flying Blue",
     "type": "airline",
     "ratiosByIssuer": {
-      "amex": 1
+      "chase": 1,
+      "capitalOne": 1,
+      "amex": 1,
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
+  },
+  {
+    "id": "aa",
+    "name": "American Airlines AAdvantage",
+    "type": "airline",
+    "ratiosByIssuer": {
+      "citi": 1
+    },
+    "verifiedOn": "2026-09-06"
+  },
+  {
+    "id": "atmos",
+    "name": "Atmos Rewards (Alaska & Hawaiian)",
+    "type": "airline",
+    "ratiosByIssuer": {
+      "bilt": 1
+    },
+    "verifiedOn": "2026-09-25"
   },
   {
     "id": "avianca",
@@ -145,7 +176,8 @@
     "ratiosByIssuer": {
       "capitalOne": 1,
       "amex": 1,
-      "citi": 1
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -156,7 +188,8 @@
     "ratiosByIssuer": {
       "chase": 1,
       "capitalOne": 1,
-      "amex": 1
+      "amex": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -167,7 +200,8 @@
     "ratiosByIssuer": {
       "capitalOne": 1,
       "amex": 0.8,
-      "citi": 1
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -177,27 +211,6 @@
     "type": "airline",
     "ratiosByIssuer": {
       "amex": 1
-    },
-    "verifiedOn": "2026-09-06"
-  },
-  {
-    "id": "emirates",
-    "name": "Emirates Skywards",
-    "type": "airline",
-    "ratiosByIssuer": {
-      "capitalOne": 0.75,
-      "amex": 0.8,
-      "citi": 0.8
-    },
-    "verifiedOn": "2026-09-06"
-  },
-  {
-    "id": "etihad",
-    "name": "Etihad Guest",
-    "type": "airline",
-    "ratiosByIssuer": {
-      "capitalOne": 1,
-      "citi": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -212,6 +225,29 @@
     "verifiedOn": "2026-09-06"
   },
   {
+    "id": "emirates",
+    "name": "Emirates Skywards",
+    "type": "airline",
+    "ratiosByIssuer": {
+      "capitalOne": 0.75,
+      "amex": 0.8,
+      "citi": 0.8,
+      "bilt": 1
+    },
+    "verifiedOn": "2026-09-06"
+  },
+  {
+    "id": "etihad",
+    "name": "Etihad Guest",
+    "type": "airline",
+    "ratiosByIssuer": {
+      "capitalOne": 1,
+      "citi": 1,
+      "bilt": 1
+    },
+    "verifiedOn": "2026-09-06"
+  },
+  {
     "id": "finnair",
     "name": "Finnair Plus",
     "type": "airline",
@@ -221,24 +257,13 @@
     "verifiedOn": "2026-09-06"
   },
   {
-    "id": "flyingblue",
-    "name": "Air France-KLM Flying Blue",
-    "type": "airline",
-    "ratiosByIssuer": {
-      "chase": 1,
-      "capitalOne": 1,
-      "amex": 1,
-      "citi": 1
-    },
-    "verifiedOn": "2026-09-06"
-  },
-  {
     "id": "iberia",
     "name": "Iberia Plus",
     "type": "airline",
     "ratiosByIssuer": {
       "chase": 1,
-      "amex": 1
+      "amex": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -247,7 +272,8 @@
     "name": "Japan Airlines Mileage Bank",
     "type": "airline",
     "ratiosByIssuer": {
-      "capitalOne": 0.75
+      "capitalOne": 0.75,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -281,7 +307,8 @@
     "ratiosByIssuer": {
       "capitalOne": 1,
       "amex": 1,
-      "citi": 1
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -302,7 +329,8 @@
     "name": "Southwest Rapid Rewards",
     "type": "airline",
     "ratiosByIssuer": {
-      "chase": 1
+      "chase": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -311,7 +339,8 @@
     "name": "TAP Air Portugal Miles&Go",
     "type": "airline",
     "ratiosByIssuer": {
-      "capitalOne": 1
+      "capitalOne": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -330,7 +359,8 @@
     "type": "airline",
     "ratiosByIssuer": {
       "capitalOne": 1,
-      "citi": 1
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -339,7 +369,8 @@
     "name": "United MileagePlus",
     "type": "airline",
     "ratiosByIssuer": {
-      "chase": 1
+      "chase": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   },
@@ -351,7 +382,8 @@
       "chase": 1,
       "capitalOne": 1,
       "amex": 1,
-      "citi": 1
+      "citi": 1,
+      "bilt": 1
     },
     "verifiedOn": "2026-09-06"
   }
