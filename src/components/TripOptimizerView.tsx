@@ -35,6 +35,7 @@ interface TripInputs {
   tripCashPrice: number;
   selectedPartnerId: string;
   pointsRequired: number;
+  partnerPointsHeld: number;
   awardCashFees: number;
 }
 
@@ -42,6 +43,7 @@ const DEFAULT_TRIP_INPUTS: TripInputs = {
   tripCashPrice: 0,
   selectedPartnerId: '',
   pointsRequired: 0,
+  partnerPointsHeld: 0,
   awardCashFees: 0,
 };
 
@@ -56,11 +58,12 @@ function sanitizeStoredNumber(value: unknown): number {
 // deliberately never included, so sharing a link never leaks your points.
 function loadInitialTripInputs(): TripInputs {
   const params = new URLSearchParams(window.location.search);
-  if (params.has('price') || params.has('partner') || params.has('points') || params.has('fees')) {
+  if (params.has('price') || params.has('partner') || params.has('points') || params.has('held') || params.has('fees')) {
     return {
       tripCashPrice: parseNonNegativeNumber(params.get('price') ?? ''),
       selectedPartnerId: params.get('partner') ?? '',
       pointsRequired: parseNonNegativeNumber(params.get('points') ?? ''),
+      partnerPointsHeld: parseNonNegativeNumber(params.get('held') ?? ''),
       awardCashFees: parseNonNegativeNumber(params.get('fees') ?? ''),
     };
   }
@@ -72,6 +75,7 @@ function loadInitialTripInputs(): TripInputs {
       tripCashPrice: sanitizeStoredNumber(parsed.tripCashPrice),
       selectedPartnerId: typeof parsed.selectedPartnerId === 'string' ? parsed.selectedPartnerId : '',
       pointsRequired: sanitizeStoredNumber(parsed.pointsRequired),
+      partnerPointsHeld: sanitizeStoredNumber(parsed.partnerPointsHeld),
       awardCashFees: sanitizeStoredNumber(parsed.awardCashFees),
     };
   } catch {
@@ -169,6 +173,7 @@ export function TripOptimizerView() {
   // time, and its award cost doesn't depend on which of your cards you'd
   // transfer from.
   const [pointsRequired, setPointsRequired] = useState(initialTripInputs.pointsRequired);
+  const [partnerPointsHeld, setPartnerPointsHeld] = useState(initialTripInputs.partnerPointsHeld);
   const [awardCashFees, setAwardCashFees] = useState(initialTripInputs.awardCashFees);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
@@ -209,9 +214,18 @@ export function TripOptimizerView() {
         tripCashPrice,
         pointsRequiredByPartner,
         awardCashFees,
+        partnerPointsHeld,
         basis,
       }),
-    [ownedCards, balances, tripCashPrice, pointsRequiredByPartner, awardCashFees, basis],
+    [
+      ownedCards,
+      balances,
+      tripCashPrice,
+      pointsRequiredByPartner,
+      awardCashFees,
+      partnerPointsHeld,
+      basis,
+    ],
   );
 
   const ranks = useMemo(() => computeDenseRanks(paths.map((p) => p.cost)), [paths]);
@@ -230,6 +244,7 @@ export function TripOptimizerView() {
     // and its taxes/surcharges no longer apply, so don't silently carry
     // either over.
     setPointsRequired(0);
+    setPartnerPointsHeld(0);
     setAwardCashFees(0);
   };
 
@@ -252,7 +267,13 @@ export function TripOptimizerView() {
     try {
       localStorage.setItem(
         TRIP_STORAGE_KEY,
-        JSON.stringify({ tripCashPrice, selectedPartnerId, pointsRequired, awardCashFees }),
+        JSON.stringify({
+          tripCashPrice,
+          selectedPartnerId,
+          pointsRequired,
+          partnerPointsHeld,
+          awardCashFees,
+        }),
       );
     } catch {
       // localStorage unavailable (private mode / quota) — inputs still work in-memory.
@@ -262,6 +283,7 @@ export function TripOptimizerView() {
     if (tripCashPrice > 0) params.set('price', String(tripCashPrice));
     if (selectedPartnerId) params.set('partner', selectedPartnerId);
     if (pointsRequired > 0) params.set('points', String(pointsRequired));
+    if (partnerPointsHeld > 0) params.set('held', String(partnerPointsHeld));
     if (awardCashFees > 0) params.set('fees', String(awardCashFees));
     // Basis lives in shared context (Portfolio uses it too) but is
     // serialized here alongside the other trip inputs, so one copied link
@@ -270,7 +292,7 @@ export function TripOptimizerView() {
     if (basis !== DEFAULT_VALUATION_BASIS) params.set('basis', basis);
     const query = params.toString();
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
-  }, [tripCashPrice, selectedPartnerId, pointsRequired, awardCashFees, basis]);
+  }, [tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, basis]);
 
   const handleCopyLink = async () => {
     try {
@@ -408,6 +430,32 @@ export function TripOptimizerView() {
                   placeholder="0"
                   className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
                 />
+              </div>
+
+              <div>
+                <label htmlFor="partner-points-held" className={`mb-1.5 block ${LABEL}`}>
+                  Points you already have{' '}
+                  <span className="normal-case text-navy-950/40">
+                    (in your {selectedPartner.name} account)
+                  </span>
+                </label>
+                <input
+                  id="partner-points-held"
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={partnerPointsHeld || ''}
+                  onChange={(event) =>
+                    setPartnerPointsHeld(parseNonNegativeNumber(event.target.value))
+                  }
+                  placeholder="0"
+                  className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
+                />
+                <p className="mt-1.5 text-xs text-navy-950/45">
+                  Only the shortfall gets transferred, so these change what the award actually
+                  costs you. They're treated as already spent — this app has no basis for pricing
+                  a partner's own currency.
+                </p>
               </div>
 
               <div>

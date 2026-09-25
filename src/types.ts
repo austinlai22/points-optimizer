@@ -111,7 +111,15 @@ export interface RedemptionPath {
   issuer: Issuer;
   kind: RedemptionKind;
   partner: TransferPartner | null;
+  // Issuer points this path actually spends. On a transfer path that is the
+  // SHORTFALL after any points you already hold with the partner, not the
+  // award's full price.
   pointsUsed: number;
+  // How many of your existing partner points this path puts toward the award.
+  // Only ever nonzero on transfer paths — a portal booking can't spend Hyatt
+  // points. When it equals the award price, nothing needs transferring at all
+  // and pointsUsed is zero.
+  partnerPointsApplied: number;
   // Out-of-pocket cash you still have to pay on top of the points — award
   // taxes and carrier-imposed surcharges. Only ever nonzero on transfer
   // paths: a portal booking is paid entirely in points at the trip's cash

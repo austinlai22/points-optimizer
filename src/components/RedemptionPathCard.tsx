@@ -47,8 +47,20 @@ function PortalIcon() {
 }
 
 export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: RedemptionPathCardProps) {
-  const { card, kind, partner, pointsUsed, cashFees, cost, isPoorDeal, usesPooling, pooledFromCards } =
-    path;
+  const {
+    card,
+    kind,
+    partner,
+    pointsUsed,
+    partnerPointsApplied,
+    cashFees,
+    cost,
+    isPoorDeal,
+    usesPooling,
+    pooledFromCards,
+  } = path;
+  // Nothing left to transfer — the partner balance already covers the award.
+  const needsNoTransfer = kind === 'transfer' && pointsUsed === 0;
   const isTopPick = rank === 1;
   const savings = tripCashPrice - cost;
 
@@ -84,12 +96,27 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
         <h3 className={`font-display text-lg leading-tight ${textPrimary}`}>{card.name}</h3>
         <p className={`mt-1 flex items-center gap-1.5 text-sm ${textSecondary}`}>
           {kind === 'transfer' ? <TransferIcon /> : <PortalIcon />}
-          {kind === 'transfer' ? `Transfer to ${partner?.name}` : 'Redeem via card portal'}
+          {kind === 'portal'
+            ? 'Redeem via card portal'
+            : needsNoTransfer
+              ? // Calling this a transfer would be wrong: there is nothing to move.
+                `Book directly with ${partner?.name}`
+              : `Transfer to ${partner?.name}`}
         </p>
         <p className={`mt-0.5 font-mono text-xs ${textMuted}`}>
           {formatUSD(card.annualFee)}/yr annual fee
         </p>
       </div>
+
+      {partnerPointsApplied > 0 && (
+        // Without this the points figure looks wrong: someone who entered a
+        // 30,000-point award sees 10,000 and needs to know why.
+        <p className={`text-xs ${textSecondary}`}>
+          {needsNoTransfer
+            ? `Covered by the ${formatPoints(partnerPointsApplied)} ${partner?.name} points you already hold — nothing to transfer`
+            : `Uses ${formatPoints(partnerPointsApplied)} ${partner?.name} points you already hold, so only the shortfall transfers`}
+        </p>
+      )}
 
       {usesPooling && pooledFromCards.length > 0 && (
         <p className={`text-xs ${textSecondary}`}>

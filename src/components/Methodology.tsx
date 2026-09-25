@@ -114,6 +114,21 @@ export function Methodology() {
           available, and among equals the lowest annual fee.
         </p>
         <p>
+          <span className="font-medium text-navy-950/70">Points you already hold:</span> most
+          people have a stranded balance sitting with an airline or hotel, and it changes the
+          answer. Entering it means only the <em>shortfall</em> is transferred — a 60,000-point
+          award against 20,000 points you already have moves 40,000, not 60,000 — so the cost
+          shown falls accordingly, and an award your card balance couldn't have covered outright
+          may become reachable. Hold the full price and nothing transfers at all; the row says
+          "book directly" rather than pretending there's a transfer to make. One caveat worth
+          being explicit about: those existing points are treated as already spent, costing
+          nothing further. That's not because they're worthless but because this app has no
+          defensible way to price a partner's own currency — the same reason it declines to
+          credit above-parity transfer ratios. So read a redemption that leans on them as what
+          the trip costs you <em>from here</em>, not as what it's worth outright. Balances are
+          entered in the partner's own currency, before any transfer ratio applies.
+        </p>
+        <p>
           <span className="font-medium text-navy-950/70">Cash fees on awards:</span> an award
           booking usually isn't free once you've spent the points — you still owe taxes, and on
           some airlines substantial carrier-imposed surcharges. Whatever you enter there is added

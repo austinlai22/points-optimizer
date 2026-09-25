@@ -331,6 +331,17 @@ interface ComputeRedemptionPathsArgs {
   // travel rate, which is what this function always used before the basis
   // became selectable — so omitting it reproduces the original numbers.
   basis?: ValuationBasis;
+  // Points already sitting in the selected partner's own account, in that
+  // partner's currency. Only the SHORTFALL needs transferring, so 20,000
+  // Hyatt points against a 30,000-point award means moving 10,000 — and if
+  // you already hold the full price, nothing moves at all.
+  //
+  // Those existing points are treated as costing nothing further, because
+  // this app has no basis for valuing a partner's currency: that would mean
+  // publishing a cents-per-point figure for all 35 of them, the subjective
+  // guesswork MAX_CEILING_RATIO exists to avoid. So read a path that leans on
+  // them as "what this trip costs you FROM HERE", not as its total worth.
+  partnerPointsHeld?: number;
 }
 
 export function computeRedemptionPaths({
@@ -341,6 +352,7 @@ export function computeRedemptionPaths({
   pointsRequiredByPartner,
   awardCashFees = 0,
   basis = 'guaranteed',
+  partnerPointsHeld = 0,
 }: ComputeRedemptionPathsArgs): RedemptionPath[] {
   if (!tripCashPrice || tripCashPrice <= 0) return [];
 
@@ -412,7 +424,13 @@ export function computeRedemptionPaths({
         // Strata-only holder redeeming anything — the extra points that card
         // really costs you show up here instead of being papered over.
         const cardRatio = ratio * getPartnerRatioMultiplier(recommendedCard, partner.id);
-        const pointsUsed = partnerPointsRequired / cardRatio;
+        // Only the shortfall gets transferred. Points already in the partner
+        // account are counted in that partner's own currency, before any
+        // ratio is applied — 20,000 Hyatt points are 20,000 Hyatt points
+        // however they got there.
+        const partnerPointsApplied = Math.min(partnerPointsHeld, partnerPointsRequired);
+        const partnerPointsShortfall = partnerPointsRequired - partnerPointsApplied;
+        const pointsUsed = partnerPointsShortfall / cardRatio;
         // An award booking costs you BOTH the points (valued at their
         // opportunity cost) AND whatever cash you still hand over in taxes
         // and carrier surcharges — so the honest total is the sum. Without
@@ -435,6 +453,7 @@ export function computeRedemptionPaths({
           kind: 'transfer',
           partner,
           pointsUsed,
+          partnerPointsApplied,
           cashFees: awardCashFees,
           cost,
           sufficient,
@@ -478,6 +497,9 @@ export function computeRedemptionPaths({
       kind: 'portal',
       partner: null,
       pointsUsed: portalPointsUsed,
+      // A portal booking is paid in issuer points; airline and hotel balances
+      // are no use at a travel portal.
+      partnerPointsApplied: 0,
       cashFees: 0,
       cost: portalPointsUsed * issuerRate,
       sufficient: portalSufficient,

@@ -822,6 +822,108 @@ describe('computeRedemptionPaths — portal paths', () => {
   });
 });
 
+describe('computeRedemptionPaths — points already held with the partner', () => {
+  const balances = { reserve: 500_000 };
+  const args = {
+    cards: [reserve],
+    transferPartners: [hyatt],
+    balances,
+    tripCashPrice: 600,
+    pointsRequiredByPartner: { hyatt: 30_000 },
+  };
+
+  it('transfers only the shortfall', () => {
+    const paths = computeRedemptionPaths({ ...args, partnerPointsHeld: 20_000 });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.pointsUsed).toBeCloseTo(10_000);
+    expect(transferPath?.partnerPointsApplied).toBe(20_000);
+    // Only 10,000 points leave the Chase account, so the cost falls with them.
+    expect(transferPath?.cost).toBeCloseTo(10_000 * BASE_CPP);
+  });
+
+  it('needs no transfer at all once the balance covers the award', () => {
+    const paths = computeRedemptionPaths({ ...args, partnerPointsHeld: 30_000 });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.pointsUsed).toBe(0);
+    expect(transferPath?.partnerPointsApplied).toBe(30_000);
+    expect(transferPath?.cost).toBe(0);
+  });
+
+  it('never applies more partner points than the award costs', () => {
+    // Holding 50,000 against a 30,000-point award applies 30,000, not 50,000 —
+    // otherwise pointsUsed would go negative and the cost with it.
+    const paths = computeRedemptionPaths({ ...args, partnerPointsHeld: 50_000 });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.partnerPointsApplied).toBe(30_000);
+    expect(transferPath?.pointsUsed).toBe(0);
+    expect(transferPath?.cost).toBeGreaterThanOrEqual(0);
+  });
+
+  it('still charges cash fees on an award that needs no transfer', () => {
+    // Taxes and surcharges are owed on the booking, not on the transfer.
+    const paths = computeRedemptionPaths({
+      ...args,
+      partnerPointsHeld: 30_000,
+      awardCashFees: 75,
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.pointsUsed).toBe(0);
+    expect(transferPath?.cost).toBeCloseTo(75);
+  });
+
+  it('measures held points in the partner currency, before any ratio', () => {
+    // Capital One reaches this partner at 5:3. Holding 20,000 partner points
+    // covers 20,000 of the award outright; only the 10,000 shortfall is
+    // converted, at 10,000 / 0.6 = ~16,667 miles.
+    const jetBlueLike: TransferPartner = {
+      id: 'jetbluelike',
+      name: 'JetBlue-like',
+      type: 'airline',
+      ratiosByIssuer: { capitalOne: 0.6 },
+    };
+    const paths = computeRedemptionPaths({
+      cards: [ventureOne],
+      transferPartners: [jetBlueLike],
+      balances: { ventureone: 500_000 },
+      tripCashPrice: 600,
+      pointsRequiredByPartner: { jetbluelike: 30_000 },
+      partnerPointsHeld: 20_000,
+    });
+    const transferPath = paths.find((p) => p.kind === 'transfer');
+    expect(transferPath?.pointsUsed).toBeCloseTo(10_000 / 0.6);
+  });
+
+  it('lets held points rescue an award the issuer balance alone could not cover', () => {
+    const paths = computeRedemptionPaths({
+      ...args,
+      balances: { reserve: 15_000 }, // short of the full 30,000
+      partnerPointsHeld: 20_000,
+    });
+    // 10,000 needed against a 15,000 balance — affordable now, and it was not
+    // before.
+    expect(paths.find((p) => p.kind === 'transfer')?.sufficient).toBe(true);
+    expect(
+      computeRedemptionPaths({ ...args, balances: { reserve: 15_000 } }).find(
+        (p) => p.kind === 'transfer',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('leaves portal paths alone, since a portal cannot spend partner points', () => {
+    const paths = computeRedemptionPaths({ ...args, partnerPointsHeld: 30_000 });
+    const portalPath = paths.find((p) => p.kind === 'portal');
+    expect(portalPath?.partnerPointsApplied).toBe(0);
+    expect(portalPath?.pointsUsed).toBeCloseTo(600 / BASE_CPP);
+  });
+
+  it('reproduces the original numbers when no held points are given', () => {
+    const withOmitted = computeRedemptionPaths(args);
+    const withZero = computeRedemptionPaths({ ...args, partnerPointsHeld: 0 });
+    expect(withOmitted.map((p) => p.cost)).toEqual(withZero.map((p) => p.cost));
+    expect(withOmitted.find((p) => p.kind === 'transfer')?.pointsUsed).toBeCloseTo(30_000);
+  });
+});
+
 describe('computeRedemptionPaths — award cash fees', () => {
   const balances = { reserve: 200_000, preferred: 200_000 };
 
