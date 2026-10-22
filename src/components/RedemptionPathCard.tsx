@@ -1,5 +1,6 @@
 import { formatPoints, formatUSD } from '../utils/format';
 import { AnimatedNumber } from './AnimatedNumber';
+import { CardArt } from './visuals/CardArt';
 import { CARD_SURFACE, HERO_SURFACE, LABEL_BASE, LABEL_ON_DARK } from '../styles/constants';
 import type { RedemptionPath } from '../types';
 
@@ -92,7 +93,9 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
         )}
       </div>
 
-      <div>
+      <div className="flex items-start gap-3.5">
+        <CardArt cardId={card.id} issuer={card.issuer} compact className="mt-0.5 w-14" />
+        <div className="min-w-0">
         <h3 className={`font-display text-lg leading-tight ${textPrimary}`}>{card.name}</h3>
         <p className={`mt-1 flex items-center gap-1.5 text-sm ${textSecondary}`}>
           {kind === 'transfer' ? <TransferIcon /> : <PortalIcon />}
@@ -106,6 +109,7 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
         <p className={`mt-0.5 font-mono text-xs ${textMuted}`}>
           {formatUSD(card.annualFee)}/yr annual fee
         </p>
+        </div>
       </div>
 
       {partnerPointsApplied > 0 && (

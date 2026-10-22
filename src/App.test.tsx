@@ -73,7 +73,7 @@ describe('routes', () => {
     fireEvent.click(within(screen.getByRole('banner')).getByRole('link', { name: 'The numbers' }));
     expect(window.location.pathname).toBe('/');
     expect(window.location.hash).toBe('#numbers');
-    expect(screen.getByRole('heading', { name: 'About the numbers' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Where every figure comes from.' })).toBeInTheDocument();
   });
 
   it('sends an unknown path home', () => {

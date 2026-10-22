@@ -7,7 +7,7 @@ import { useEffect, useState, type MouseEvent } from 'react';
 
 // Height of the sticky banner, so a section scrolled to isn't hidden under it.
 const HEADER_OFFSET_PX = 80;
-const SCROLL_DURATION_MS = 450;
+const SCROLL_DURATION_MS = 250;
 
 export function normalize(path: string): string {
   const trimmed = (path || '/').replace(/\/+$/, '');
@@ -31,7 +31,7 @@ function prefersReducedMotion(): boolean {
 
 // A short eased scroll with a fixed duration. The browser's own smooth
 // scrolling takes longer the further it travels, which feels slow on a long
-// page; this always arrives in under half a second.
+// page; this always arrives in a quarter of a second.
 function scrollToY(target: number, smooth: boolean): void {
   if (!smooth) {
     window.scrollTo(0, target);

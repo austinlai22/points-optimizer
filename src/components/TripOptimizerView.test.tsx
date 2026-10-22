@@ -26,14 +26,14 @@ function type(label: string | RegExp, value: string) {
 }
 
 function verdictCard() {
-  return within(screen.getByText('Recommendation').closest('section')!);
+  return within(document.getElementById('verdict-heading')!.closest('section')!);
 }
 
 describe('TripOptimizerView verdict', () => {
   it('asks for the cash cushion before giving a verdict', () => {
     renderView();
     type(/trip cash price/i, '1000');
-    expect(screen.queryByText('Recommendation')).toBeNull();
+    expect(document.getElementById('verdict-heading')).toBeNull();
     expect(screen.getByText(/add your cash position to see it/i)).toBeInTheDocument();
   });
 

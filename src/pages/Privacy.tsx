@@ -14,7 +14,21 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 export function Privacy() {
   return (
     <>
-      <PageIntro title="Privacy">
+      <PageIntro
+        title="Privacy"
+        visual={
+          <div className="relative flex h-44 w-72 items-center justify-center">
+            <div className="absolute h-40 w-40 rounded-full bg-navy/[0.06]" />
+            <div className="absolute h-28 w-28 rounded-full bg-navy/[0.08]" />
+            <span className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-navy-950 to-navy text-slate-50 shadow-card">
+              <svg viewBox="0 0 24 24" className="h-9 w-9" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+            </span>
+          </div>
+        }
+      >
         <p>
           The website keeps what you enter in your own browser. The WhatsApp pilot needs to
           remember your answers, so it stores as little as possible, and RESET deletes it. You will

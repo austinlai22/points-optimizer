@@ -3,6 +3,7 @@ import { formatUSD, parseNonNegativeNumber } from '../utils/format';
 import { CARD_SURFACE, FIELD, FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
 import { ValueRangeBar } from './ValueRangeBar';
 import { Toggle } from './Toggle';
+import { CardArt } from './visuals/CardArt';
 import type { CardConfig, TransferPartner } from '../types';
 
 interface PortfolioCardProps {
@@ -15,24 +16,6 @@ interface PortfolioCardProps {
   transferPartners: TransferPartner[];
   // Shared across every card so the bars are comparable — see ValueRangeBar.
   axisMax: number;
-}
-
-function CardIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <rect x="2.5" y="5.5" width="19" height="13" rx="2.25" />
-      <line x1="2.5" y1="10" x2="21.5" y2="10" />
-    </svg>
-  );
 }
 
 export function PortfolioCard({
@@ -53,10 +36,8 @@ export function PortfolioCard({
 
   return (
     <div className={`${CARD_SURFACE} flex flex-col gap-5 p-6 ${owned ? '' : 'opacity-80'}`}>
-      <div className="flex items-start gap-3.5">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy/10 text-navy">
-          <CardIcon />
-        </div>
+      <div className="flex items-center gap-4">
+        <CardArt cardId={card.id} issuer={card.issuer} compact className="w-20" />
         <div>
           <h3 className="font-display text-lg leading-tight text-navy-950">{card.name}</h3>
           <p className="mt-1 font-mono text-sm text-navy-950/60">

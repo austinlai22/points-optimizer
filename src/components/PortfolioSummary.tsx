@@ -4,6 +4,7 @@ import { useCardBalances } from '../context/CardBalancesContext';
 import { AnimatedNumber } from './AnimatedNumber';
 import { ValuationBasisSelect } from './ValuationBasisSelect';
 import { HERO_SURFACE, ISSUER_LABELS, ISSUER_ORDER, LABEL_ON_DARK } from '../styles/constants';
+import { ISSUER_TONES } from '../styles/cardArt';
 import { VALUATION_KEY_BY_BASIS } from '../types';
 import type { CardConfig, Issuer, TransferPartner, ValuationBasis } from '../types';
 
@@ -75,9 +76,29 @@ export function PortfolioSummary({ ownedCards, balances, transferPartners }: Por
         <p className="mt-1.5 font-mono text-4xl font-medium text-teal sm:text-5xl">
           <AnimatedNumber value={totals[headlineKey]} format={formatUSD} />
         </p>
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+        {/* How the total splits by bank, as one bar. Empty until a balance
+            is entered, so a new visitor sees the track rather than nothing. */}
+        <div className="mt-5 flex h-3 overflow-hidden rounded-full bg-slate-50/10" aria-hidden="true">
+          {totals[headlineKey] > 0 &&
+            ISSUER_ORDER.map((issuer) => {
+              const share = (totalsByIssuer[issuer]?.[headlineKey] ?? 0) / totals[headlineKey];
+              return share > 0 ? (
+                <div
+                  key={issuer}
+                  className="h-full transition-[width] duration-500 motion-reduce:transition-none"
+                  style={{ width: `${share * 100}%`, backgroundColor: ISSUER_TONES[issuer] }}
+                />
+              ) : null;
+            })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
           {ISSUER_ORDER.map((issuer) => (
-            <p key={issuer} className="text-xs text-slate-50/50">
+            <p key={issuer} className="flex items-center gap-1.5 text-xs text-slate-50/50">
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: ISSUER_TONES[issuer] }}
+                aria-hidden="true"
+              />
               {ISSUER_LABELS[issuer]}{' '}
               <span className="font-mono text-slate-50/80">
                 {formatUSD(totalsByIssuer[issuer]?.[headlineKey] ?? 0)}

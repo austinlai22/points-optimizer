@@ -21,18 +21,32 @@ export function PageShell({ current, children }: { current: PageName; children: 
   );
 }
 
-// The heading block at the top of each app page.
-export function PageIntro({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
+// The heading block at the top of each app page, with an optional picture on
+// the right on wide screens.
+export function PageIntro({
+  title,
+  children,
+  actions,
+  visual,
+}: {
+  title: string;
+  children: ReactNode;
+  actions?: ReactNode;
+  visual?: ReactNode;
+}) {
   return (
-    <div className="border-b border-navy/10 bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="max-w-2xl">
-            <h1 className="font-display text-3xl font-medium tracking-tight text-navy-950 sm:text-4xl">{title}</h1>
-            <div className="mt-3 text-base leading-relaxed text-navy-950/65">{children}</div>
-          </div>
-          {actions}
+    <div className="overflow-hidden border-b border-navy/10 bg-[radial-gradient(ellipse_at_top_right,#dfe8f3,#ffffff_55%)]">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-8 px-4 py-12 sm:px-6 sm:py-14">
+        <div className="max-w-2xl">
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-navy-950 sm:text-5xl">{title}</h1>
+          <div className="mt-4 text-base leading-relaxed text-navy-950/60 sm:text-lg">{children}</div>
+          {actions && <div className="mt-6 flex flex-wrap gap-3">{actions}</div>}
         </div>
+        {visual && (
+          <div aria-hidden="true" className="hidden shrink-0 lg:block">
+            {visual}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,27 +1,15 @@
-import { describeRunway, formatCents, verdictHeadline } from '../lib/verdict';
+import type { ReactNode } from 'react';
+import { formatCents, verdictHeadline } from '../lib/verdict';
 import type { PointsOption, VerdictResult } from '../lib/verdict/types';
 import { HERO_SURFACE, LABEL_ON_DARK } from '../styles/constants';
 import { formatPoints } from '../utils/format';
+import { ISSUER_LABELS } from '../utils/issuers';
+import { BreakevenScale, RunwayMeter, ValueBars } from './visuals/Charts';
 
-function describeValue(option: PointsOption | undefined): { value: string; note: string } {
-  if (!option) return { value: 'None', note: 'No points balance covers this trip' };
-  if (option.cppCents === null) {
-    return { value: 'Covered', note: 'by partner points you already hold' };
-  }
-  return {
-    value: `${formatCents(option.cppCents)} per point`,
-    note: `Usual value ${formatCents(option.benchmarkCents)}${option.isEstimate ? ' · estimate' : ''}`,
-  };
-}
-
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <div className="rounded-2xl bg-slate-50/[0.06] px-4 py-3">
-      <p className={LABEL_ON_DARK}>{label}</p>
-      <p className="mt-1 font-mono text-lg text-slate-50">{value}</p>
-      {note && <p className="mt-0.5 text-xs text-slate-50/50">{note}</p>}
-    </div>
-  );
+function optionLabel(option: PointsOption): string {
+  if (option.kind === 'transfer') return `Transfer to ${option.partner!.name}`;
+  if (option.kind === 'chaseTravel') return option.isEstimate ? 'Chase Travel (estimate)' : 'Chase Travel';
+  return `${ISSUER_LABELS[option.issuer]} travel portal`;
 }
 
 function boostRange(result: VerdictResult): string {
@@ -32,42 +20,67 @@ function boostRange(result: VerdictResult): string {
   return `${floor} to ${formatCents(chase.maxCents)} per point, depending on Points Boost.`;
 }
 
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-slate-50/[0.06] p-4 sm:p-5">
+      <p className={`mb-3 ${LABEL_ON_DARK}`}>{title}</p>
+      {children}
+    </div>
+  );
+}
+
 export function VerdictCard({ result }: { result: VerdictResult }) {
-  // The option the verdict used, or the best one it turned down.
-  const considered = result.bestOption ?? result.options[0];
-  const value = describeValue(considered);
+  // Up to four options, best first, with the recommended one highlighted.
+  const shown = result.options.slice(0, 4);
 
   return (
-    <section aria-labelledby="verdict-heading" className={`${HERO_SURFACE} mb-8 p-6 sm:p-7`}>
+    <section aria-labelledby="verdict-heading" className={`${HERO_SURFACE} mb-10 p-6 sm:p-8`}>
       <p className={LABEL_ON_DARK}>Recommendation</p>
-      <h2 id="verdict-heading" className="mt-1 font-display text-3xl font-medium tracking-tight text-slate-50">
+      <h2 id="verdict-heading" className="mt-1 font-display text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl">
         {verdictHeadline(result)}
       </h2>
-      <p className="mt-2 max-w-2xl text-slate-50/75">{result.reason}</p>
+      <p className="mt-3 max-w-2xl leading-relaxed text-slate-50/75">{result.reason}</p>
 
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Stat label="Points value" value={value.value} note={value.note} />
-        <Stat label="If you pay cash" value={describeRunway(result.runway.payCash)} />
-        <Stat
-          label="If you use points"
-          value={result.runway.usePoints ? describeRunway(result.runway.usePoints) : 'Not applicable'}
-          note={
-            result.runway.usePoints && result.runway.usePoints.outlay > 0
-              ? 'After taxes and fees on the award'
-              : undefined
-          }
-        />
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Panel title="Value per point">
+          {shown.length > 0 ? (
+            <ValueBars
+              tone="dark"
+              benchmarkCents={shown[0].benchmarkCents}
+              rows={shown.map((option) => ({
+                label: optionLabel(option),
+                cents: option.cppCents,
+                benchmarkCents: option.benchmarkCents,
+                highlight: option === result.bestOption,
+              }))}
+            />
+          ) : (
+            <p className="text-sm text-slate-50/60">None of your points balances is large enough for this trip.</p>
+          )}
+        </Panel>
+        <Panel title="Your cash afterwards">
+          <RunwayMeter tone="dark" payCash={result.runway.payCash} usePoints={result.runway.usePoints} />
+        </Panel>
       </div>
 
       {result.chaseTravel && (
-        <div className="mt-5 border-t border-slate-50/10 pt-4">
-          <p className={LABEL_ON_DARK}>Chase Travel · {result.chaseTravel.cardTypeName}</p>
-          <p className="mt-1 text-sm text-slate-50/75">
-            {boostRange(result)}
-            {result.chaseTravel.legacyApplied &&
-              ` Includes the 1.5¢ legacy rate on ${formatPoints(result.chaseTravel.legacyPoints)} of your points.`}
-          </p>
-          <p className="mt-2 font-medium text-slate-50">{result.chaseTravel.sentence}</p>
+        <div className="mt-4">
+          <Panel title={`Chase Travel · ${result.chaseTravel.cardTypeName}`}>
+            <p className="text-sm text-slate-50/70">
+              {boostRange(result)}
+              {result.chaseTravel.legacyApplied &&
+                ` Includes the 1.5¢ legacy rate on ${formatPoints(result.chaseTravel.legacyPoints)} of your points.`}
+            </p>
+            {result.chaseTravel.breakevenPoints > 0 && (
+              <BreakevenScale
+                tone="dark"
+                breakevenPoints={result.chaseTravel.breakevenPoints}
+                standardPoints={result.chaseTravel.nonBoostPoints}
+                pastedPoints={result.chaseTravel.pastedPricePoints}
+              />
+            )}
+            <p className="font-medium text-slate-50">{result.chaseTravel.sentence}</p>
+          </Panel>
         </div>
       )}
 

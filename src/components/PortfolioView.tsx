@@ -5,12 +5,39 @@ import { PortfolioCard } from './PortfolioCard';
 import { PortfolioSummary } from './PortfolioSummary';
 import { Methodology } from './Methodology';
 import { PageIntro } from './PageShell';
+import { CardArt } from './visuals/CardArt';
 import { computeCardValuation } from '../utils/valuation';
 import { FOCUS_RING, ISSUER_LABELS, ISSUER_ORDER, TAP_TARGET } from '../styles/constants';
 import type { CardConfig, TransferPartner } from '../types';
 
 const cards = cardsData as CardConfig[];
 const transferPartners = transferPartnersData as TransferPartner[];
+
+const FAN_DEFAULT = ['csr', 'venturex', 'amexgold'];
+
+// The cards you hold, fanned out like a wallet. Shows a sample until you add
+// your own.
+function CardFan({ cards: fanned }: { cards: CardConfig[] }) {
+  const shown = fanned.slice(0, 3);
+  const middle = (shown.length - 1) / 2;
+  return (
+    <div className="relative h-48 w-80">
+      {shown.map((card, i) => (
+        <div
+          key={card.id}
+          className="absolute"
+          style={{
+            left: `${i * 56}px`,
+            top: `${Math.abs(i - middle) * 12 + 12}px`,
+            transform: `rotate(${(i - middle) * 9}deg)`,
+          }}
+        >
+          <CardArt cardId={card.id} issuer={card.issuer} className="w-52" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function PortfolioView() {
   const { balances, setBalance, clearAllBalances, ownership, setOwned } = useCardBalances();
@@ -46,6 +73,7 @@ export function PortfolioView() {
     <>
       <PageIntro
         title="Portfolio"
+        visual={<CardFan cards={ownedCards.length > 0 ? ownedCards : cards.filter((c) => FAN_DEFAULT.includes(c.id))} />}
         actions={
           <button
             type="button"

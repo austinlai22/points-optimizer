@@ -159,6 +159,30 @@ function TakeawayLine({ topPath, tiedCount, tripCashPrice }: TakeawayLineProps) 
   );
 }
 
+// The picture beside the page title: a trip ticket and the answer it gets.
+// Decorative only.
+function TripIntroVisual() {
+  return (
+    <div className="relative h-44 w-80">
+      <div className="absolute left-0 top-2 w-64 -rotate-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-navy/10">
+        <div className="flex items-center justify-between text-navy-950">
+          <span className="font-display text-2xl font-semibold">JFK</span>
+          <svg viewBox="0 0 24 24" className="h-5 w-5 text-navy/60" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2.5 13.5l7-2 4.5-7.5h2l-2.5 7 5-1.5 1.5-2h1.5l-1 4 1 4h-1.5l-1.5-2-5-1.5 2.5 7h-2l-4.5-7.5-7-2z" />
+          </svg>
+          <span className="font-display text-2xl font-semibold">LIS</span>
+        </div>
+        <div className="mt-3 border-t border-dashed border-navy/15 pt-3 text-xs text-navy-950/50">Cash price</div>
+        <div className="font-mono text-lg text-navy-950">$900</div>
+      </div>
+      <div className="absolute bottom-0 right-0 rotate-2 rounded-2xl bg-gradient-to-br from-navy-950 to-navy px-5 py-3.5 shadow-card">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-50/50">Recommendation</p>
+        <p className="font-display text-lg font-semibold text-slate-50">Transfer points</p>
+      </div>
+    </div>
+  );
+}
+
 function StepHeading({ step, title, children }: { step: number | string; title: string; children?: React.ReactNode }) {
   return (
     <div className="mb-5 flex items-start gap-3">
@@ -424,6 +448,7 @@ export function TripOptimizerView() {
     <>
       <PageIntro
         title="Check a trip"
+        visual={<TripIntroVisual />}
         actions={
           (tripCashPrice > 0 || selectedPartnerId) && (
             <button
