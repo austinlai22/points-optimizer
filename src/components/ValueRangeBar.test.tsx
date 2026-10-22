@@ -181,6 +181,6 @@ describe('ValueRangeBar', () => {
         transferEligible: true,
       },
     });
-    expect(screen.getByText(/Valued via pooling into Chase Sapphire Reserve/)).toBeInTheDocument();
+    expect(screen.getByText(/Valued as if combined with your Chase Sapphire Reserve/)).toBeInTheDocument();
   });
 });

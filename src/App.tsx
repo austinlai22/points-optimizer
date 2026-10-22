@@ -1,28 +1,54 @@
 import { useEffect } from 'react';
-import { navigate, usePath } from './lib/router';
+import { CardBalancesProvider } from './context/CardBalancesContext';
+import { PageShell } from './components/PageShell';
+import type { PageName } from './components/SiteHeader';
+import { PortfolioView } from './components/PortfolioView';
+import { TripOptimizerView } from './components/TripOptimizerView';
+import { navigate, scrollToSection, usePath } from './lib/router';
 import { Landing } from './pages/Landing';
 import { Privacy } from './pages/Privacy';
-import { ToolPage } from './pages/ToolPage';
 
-const TITLES: Record<string, string> = {
-  '/': 'PointCompass — Points or cash? Know before you book.',
-  '/app': 'Check a trip — PointCompass',
-  '/privacy': 'Privacy — PointCompass',
+const PAGES: Record<string, { name: PageName; title: string }> = {
+  '/': { name: 'home', title: 'PointCompass: points or cash? Know before you book.' },
+  '/app': { name: 'check', title: 'Check a trip · PointCompass' },
+  '/portfolio': { name: 'portfolio', title: 'Portfolio · PointCompass' },
+  '/privacy': { name: 'privacy', title: 'Privacy · PointCompass' },
 };
 
 function App() {
   const path = usePath();
-  const known = path in TITLES;
+  const page = PAGES[path];
 
   useEffect(() => {
     // An unknown path goes home rather than showing a blank page.
-    if (!known) navigate('/', { replace: true });
-    else document.title = TITLES[path];
-  }, [path, known]);
+    if (!page) navigate('/', { replace: true });
+    else document.title = page.title;
+  }, [page]);
 
-  if (path === '/app') return <ToolPage />;
-  if (path === '/privacy') return <Privacy />;
-  return <Landing />;
+  // A link straight to a section (e.g. /#faq) arrives before the section has
+  // rendered, so the browser can't jump to it on its own.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) scrollToSection(id, { smooth: false });
+  }, []);
+
+  return (
+    // One provider for every page, so cards and balances follow you between
+    // Portfolio and Check a trip.
+    <CardBalancesProvider>
+      <PageShell current={page?.name ?? 'home'}>
+        {path === '/app' ? (
+          <TripOptimizerView />
+        ) : path === '/portfolio' ? (
+          <PortfolioView />
+        ) : path === '/privacy' ? (
+          <Privacy />
+        ) : (
+          <Landing />
+        )}
+      </PageShell>
+    </CardBalancesProvider>
+  );
 }
 
 export default App;

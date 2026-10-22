@@ -1,92 +1,91 @@
-import { SiteFooter } from '../components/SiteFooter';
-import { linkHandler } from '../lib/router';
+import type { ReactNode } from 'react';
+import { PageIntro } from '../components/PageShell';
 import { FOCUS_RING } from '../styles/constants';
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-8">
+    <section className="rounded-3xl border border-navy/10 bg-white p-6 sm:p-7">
       <h2 className="font-display text-xl font-medium text-navy-950">{title}</h2>
-      <div className="mt-2 space-y-2 text-sm leading-relaxed text-navy-950/70">{children}</div>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-navy-950/70">{children}</div>
     </section>
   );
 }
 
 export function Privacy() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="mx-auto max-w-3xl px-4 pt-6">
-        <a href="/" onClick={linkHandler('/')} className={`rounded font-display text-xl font-semibold tracking-tight text-navy-950 ${FOCUS_RING}`}>
-          PointCompass
-        </a>
-      </header>
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="font-display text-3xl font-medium tracking-tight text-navy-950">Privacy</h1>
-        <p className="mt-3 text-navy-950/65">
-          Short version: the website keeps your numbers in your own browser. The WhatsApp pilot
-          has to remember your answers, so it stores the minimum, and RESET deletes it. Nobody is
-          ever asked for bank logins.
+    <>
+      <PageIntro title="Privacy">
+        <p>
+          The website keeps what you enter in your own browser. The WhatsApp pilot needs to
+          remember your answers, so it stores as little as possible, and RESET deletes it. You will
+          never be asked for bank logins.
         </p>
+      </PageIntro>
 
+      <div className="mx-auto max-w-3xl space-y-5 px-4 py-10 sm:px-6">
         <Block title="On the website">
           <p>
-            Everything you type (cards, balances, trip prices, your cash cushion) is saved in
-            your browser's local storage so it's still there next visit. It isn't sent to us. Clear
-            your browser's site data for pointcompass.vercel.app to delete it.
+            Your cards, balances, trip prices and cash figures are saved in your browser's local
+            storage so they are still there when you return. They are not sent to PointCompass. To
+            delete them, clear your browser's site data for pointcompass.vercel.app.
           </p>
           <p>
-            Trip links you copy contain the trip's price and award details, never your balances or
-            cash figures.
+            Trip links you copy contain the trip's price and award details. They never contain your
+            balances or cash figures.
           </p>
         </Block>
 
         <Block title="Anonymous usage counts">
           <p>
-            To learn whether the pilot is useful, the site counts a few events: a verdict was shown
-            (and which kind: pay cash, transfer, and so on) and a Chase Travel price was pasted.
-            Each count carries a random id your browser makes up, so we can estimate how many
-            different people use it. No prices, balances, cash figures or anything else you type
-            are included. If your browser sends Do Not Track, nothing is counted.
+            To learn whether the pilot is useful, the website counts two events: a recommendation
+            being shown (and which kind it was), and a Chase Travel price being entered. Each count
+            includes a random identifier created by your browser, which allows an estimate of how
+            many different people use the site. No prices, balances, cash figures or other inputs
+            are included. If your browser sends a Do Not Track signal, nothing is counted.
           </p>
         </Block>
 
         <Block title="On WhatsApp (pilot)">
           <p>
-            Messages pass through Meta's WhatsApp Business platform, under{' '}
-            <a href="https://www.whatsapp.com/legal/privacy-policy" className={`underline ${FOCUS_RING}`}>
+            Messages pass through Meta's WhatsApp Business platform and are covered by{' '}
+            <a
+              href="https://www.whatsapp.com/legal/privacy-policy"
+              className={`rounded font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}
+            >
               WhatsApp's privacy policy
             </a>
             .
           </p>
           <p>
-            So it doesn't have to ask everything again, PointCompass stores: your points balance
-            per bank, your Chase card type (and whether you opened a Sapphire Reserve before June
-            23, 2025), your three cash numbers, and the last trip's price. It does not store your
-            trip description or your phone number: records are keyed to a one-way scrambled
-            version of the number.
+            So that you are not asked the same questions each time, PointCompass stores your points
+            balance for each bank, your Chase card type (and whether you opened a Sapphire Reserve
+            before June 23, 2025), your three cash figures, and the price of your last trip. It does
+            not store your trip description or your phone number. Records are filed under a
+            one-way scrambled version of the number.
           </p>
           <p>
-            It's deleted automatically 90 days after your last message. Text{' '}
-            <strong>RESET</strong> at any time to delete it immediately.
+            Stored details are deleted automatically 90 days after your last message. Send{' '}
+            <strong>RESET</strong> at any time to delete them immediately.
           </p>
         </Block>
 
-        <Block title="Demo bank (Plaid sandbox)">
+        <Block title="Demo bank (Plaid test environment)">
           <p>
-            Where it's switched on, "Use a demo bank" fetches made-up balances from Plaid's test
-            environment. It never connects to a real bank, and nothing from it is stored.
+            Where it is enabled, "Use a demo bank" fetches invented balances from Plaid's test
+            environment. It never connects to a real bank, and nothing it returns is stored.
           </p>
         </Block>
 
         <Block title="Hosting">
           <p>
-            The site runs on Vercel, whose servers keep standard request logs (such as IP address
-            and time) for a limited period. Stored data lives in an Upstash Redis database.
+            The website runs on Vercel, which keeps standard request logs, such as IP address and
+            time, for a limited period. Stored WhatsApp details and usage counts are kept in an
+            Upstash Redis database.
           </p>
         </Block>
 
-        <p className="mt-10 text-xs text-navy-950/45">Last updated October 2026.</p>
-      </main>
-      <SiteFooter />
-    </div>
+        <p className="pt-2 text-xs text-navy-950/45">Last updated October 2026.</p>
+      </div>
+    </>
   );
 }

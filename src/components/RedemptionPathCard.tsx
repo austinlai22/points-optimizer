@@ -97,7 +97,7 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
         <p className={`mt-1 flex items-center gap-1.5 text-sm ${textSecondary}`}>
           {kind === 'transfer' ? <TransferIcon /> : <PortalIcon />}
           {kind === 'portal'
-            ? 'Redeem via card portal'
+            ? "Book through the card's travel portal"
             : needsNoTransfer
               ? // Calling this a transfer would be wrong: there is nothing to move.
                 `Book directly with ${partner?.name}`
@@ -113,14 +113,14 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
         // 30,000-point award sees 10,000 and needs to know why.
         <p className={`text-xs ${textSecondary}`}>
           {needsNoTransfer
-            ? `Covered by the ${formatPoints(partnerPointsApplied)} ${partner?.name} points you already hold — nothing to transfer`
-            : `Uses ${formatPoints(partnerPointsApplied)} ${partner?.name} points you already hold, so only the shortfall transfers`}
+            ? `Covered by the ${formatPoints(partnerPointsApplied)} ${partner?.name} points you already hold, so nothing needs transferring`
+            : `Uses the ${formatPoints(partnerPointsApplied)} ${partner?.name} points you already hold, so only the difference is transferred`}
         </p>
       )}
 
       {usesPooling && pooledFromCards.length > 0 && (
         <p className={`text-xs ${textSecondary}`}>
-          Requires transfer-in from {pooledFromCards.map((c) => c.name).join(', ')}
+          Requires moving points from {pooledFromCards.map((c) => c.name).join(', ')}
         </p>
       )}
 
@@ -138,7 +138,7 @@ export function RedemptionPathCard({ path, rank, isTied, tripCashPrice }: Redemp
         // Only worth breaking out when there IS a cash component — showing
         // "+ $0 in fees" on every portal path would be noise.
         <p className={`-mt-1 text-xs ${textSecondary}`}>
-          Includes {formatUSD(cashFees)} paid in cash (taxes &amp; surcharges) on top of{' '}
+          Includes {formatUSD(cashFees)} in taxes and fees paid in cash, in addition to{' '}
           {formatPoints(pointsUsed)} points
         </p>
       )}

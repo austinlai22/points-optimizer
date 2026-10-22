@@ -65,8 +65,6 @@ export interface TransferPartner {
   verifiedOn?: string;
 }
 
-export type ViewName = 'portfolio' | 'tripOptimizer';
-
 // Which of the three per-point rates this app models should drive every
 // dollar figure it shows. These map 1:1 onto the floor / realistic /
 // ceiling figures Portfolio already displays, so the choice is "which end

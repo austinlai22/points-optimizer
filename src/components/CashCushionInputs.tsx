@@ -33,7 +33,7 @@ function CashField({ id, label, hint, value, allowNegative = false, onChange }: 
           className={`${FIELD} pl-7 ${TAP_TARGET} ${FOCUS_RING}`}
         />
       </div>
-      <p className="mt-1.5 text-xs text-navy-950/45">{hint}</p>
+      <p className="mt-1.5 text-xs text-navy-950/50">{hint}</p>
     </div>
   );
 }
@@ -61,18 +61,18 @@ export function CashCushionInputs({ values, onChange }: CashCushionInputsProps) 
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1">
         <CashField
           id="cash-available"
           label="Cash for travel now"
-          hint="What you could spend on travel without stress."
+          hint="Money you could put toward travel without difficulty."
           value={values.available}
           onChange={(available) => onChange({ ...values, available })}
         />
         <CashField
           id="monthly-leftover"
           label="Left over each month"
-          hint="After bills, in a typical month. Can be negative."
+          hint="What remains after bills in a typical month. Enter a negative number if you fall short."
           value={values.leftover}
           allowNegative
           onChange={(leftover) => onChange({ ...values, leftover })}
@@ -80,14 +80,14 @@ export function CashCushionInputs({ values, onChange }: CashCushionInputsProps) 
         <CashField
           id="monthly-spend"
           label="Monthly spending"
-          hint="Everything you spend in a typical month."
+          hint="Your total spending in a typical month."
           value={values.spend}
           onChange={(spend) => onChange({ ...values, spend })}
         />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p className="text-xs text-navy-950/45">
-          Stays in your browser. No bank login needed.
+        <p className="text-xs text-navy-950/50">
+          These figures stay in your browser. No bank connection is needed.
         </p>
         {__PLAID_SANDBOX__ && (
           <button
@@ -96,18 +96,18 @@ export function CashCushionInputs({ values, onChange }: CashCushionInputsProps) 
             disabled={demo === 'loading'}
             className={`rounded-lg border border-dashed border-navy/25 px-3 text-xs font-medium text-navy-950/60 hover:border-navy/45 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}
           >
-            {demo === 'loading' ? 'Connecting…' : 'Use a demo bank (sandbox data)'}
+            {demo === 'loading' ? 'Connecting…' : 'Use a demo bank (test data)'}
           </button>
         )}
       </div>
       {typeof demo === 'object' && (
         <p className="mt-2 text-xs text-amber">
-          Demo data from {demo.institution}: {formatUSD(Number(values.available) || 0)} filled in.
-          This is Plaid's test bank, not your real account.
+          Filled in {formatUSD(Number(values.available) || 0)} from {demo.institution}. This is
+          Plaid's test bank, not a real account.
         </p>
       )}
       {demo === 'error' && (
-        <p className="mt-2 text-xs text-amber">The demo bank isn't available right now.</p>
+        <p className="mt-2 text-xs text-amber">The demo bank is unavailable at the moment.</p>
       )}
     </div>
   );

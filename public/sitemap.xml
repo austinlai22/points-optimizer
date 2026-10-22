@@ -7,6 +7,9 @@
     <loc>https://pointcompass.vercel.app/app</loc>
   </url>
   <url>
+    <loc>https://pointcompass.vercel.app/portfolio</loc>
+  </url>
+  <url>
     <loc>https://pointcompass.vercel.app/privacy</loc>
   </url>
 </urlset>

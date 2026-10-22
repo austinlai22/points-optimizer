@@ -38,8 +38,8 @@ export function ChaseTravelInputs({
     }`;
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-      <div className="space-y-6">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1">
+      <div className="space-y-5">
         <div>
           <label htmlFor="chase-card-type" className={`mb-1.5 block ${LABEL}`}>
             Chase card your points are on
@@ -61,7 +61,7 @@ export function ChaseTravelInputs({
               <ChevronDownIcon />
             </span>
           </div>
-          <p className="mt-1.5 text-xs text-navy-950/45">Sets your Points Boost range.</p>
+          <p className="mt-1.5 text-xs text-navy-950/50">Determines your Points Boost range.</p>
         </div>
 
         {cardType === 'reserve' && (
@@ -77,14 +77,14 @@ export function ChaseTravelInputs({
                 No
               </button>
             </div>
-            <p className="mt-1.5 text-xs text-navy-950/45">
-              If yes, points you earned before Oct 26, 2025 get 1.5¢ in Chase Travel until Oct 26,
-              2027 (per Chase).
+            <p className="mt-1.5 text-xs text-navy-950/50">
+              If so, Chase redeems points earned before October 26, 2025 at 1.5¢ each in Chase Travel
+              until October 26, 2027.
             </p>
             {values.appliedBeforeCutoff && (
               <div className="mt-4">
                 <label htmlFor="legacy-points" className={`mb-1.5 block ${LABEL}`}>
-                  Points earned before Oct 26, 2025
+                  Points earned before October 26, 2025
                 </label>
                 <input
                   id="legacy-points"
@@ -117,9 +117,9 @@ export function ChaseTravelInputs({
           placeholder="0"
           className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
         />
-        <p className="mt-1.5 text-xs text-navy-950/45">
-          Points Boost offers rotate and live inside Chase Travel, which this app never sees. Paste
-          the points price it shows you for this trip and the verdict checks it exactly.
+        <p className="mt-1.5 text-xs text-navy-950/50">
+          Points Boost offers change often and are only visible inside Chase Travel. Enter the points
+          price it shows for this trip to check it exactly.
         </p>
       </div>
     </div>

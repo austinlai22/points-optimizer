@@ -26,15 +26,15 @@ function type(label: string | RegExp, value: string) {
 }
 
 function verdictCard() {
-  return within(screen.getByRole('region', { name: /./ }));
+  return within(screen.getByText('Recommendation').closest('section')!);
 }
 
 describe('TripOptimizerView verdict', () => {
   it('asks for the cash cushion before giving a verdict', () => {
     renderView();
     type(/trip cash price/i, '1000');
-    expect(screen.queryByRole('heading', { name: /pay cash|book|transfer|wait/i, level: 3 })).toBeNull();
-    expect(screen.getByText(/fill in your cash cushion/i)).toBeInTheDocument();
+    expect(screen.queryByText('Recommendation')).toBeNull();
+    expect(screen.getByText(/add your cash position to see it/i)).toBeInTheDocument();
   });
 
   it('says pay cash and keep points when cash is healthy and points only match their value', () => {
@@ -77,6 +77,6 @@ describe('TripOptimizerView verdict', () => {
 
   it('points a first-time visitor to Portfolio', () => {
     renderView({ owned: {}, balances: {} });
-    expect(screen.getByText(/mark the cards you hold/i)).toBeInTheDocument();
+    expect(screen.getByText(/add the cards you hold/i)).toBeInTheDocument();
   });
 });

@@ -52,7 +52,7 @@ export function PortfolioCard({
   const ownedId = `owned-${card.id}`;
 
   return (
-    <div className={`${CARD_SURFACE} flex flex-col gap-5 p-6`}>
+    <div className={`${CARD_SURFACE} flex flex-col gap-5 p-6 ${owned ? '' : 'opacity-80'}`}>
       <div className="flex items-start gap-3.5">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy/10 text-navy">
           <CardIcon />
@@ -74,7 +74,7 @@ export function PortfolioCard({
         <>
           <div>
             <label htmlFor={inputId} className={`mb-1.5 block ${LABEL}`}>
-              Points / cash-back balance
+              Points balance
             </label>
             <input
               id={inputId}
@@ -92,7 +92,7 @@ export function PortfolioCard({
         </>
       ) : (
         <p className="text-sm text-navy-950/50">
-          Not currently held — toggle above to add it to your portfolio.
+          Turn on "I have this card" to include it.
         </p>
       )}
     </div>

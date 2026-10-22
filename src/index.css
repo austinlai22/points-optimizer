@@ -20,6 +20,12 @@
 }
 
 @layer base {
+  /* Leaves room for the sticky banner when the browser itself jumps to an
+     anchor; in-app links use the eased scroll in lib/router.ts. */
+  html {
+    scroll-padding-top: 5rem;
+  }
+
   body {
     @apply bg-slate-50 text-navy-950 font-sans antialiased;
   }

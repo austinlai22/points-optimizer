@@ -158,7 +158,7 @@ describe('verdicts', () => {
     expect(result.runway.payCash.strainReasons).toEqual(['thinBuffer']);
     expect(result.verdict).toBe('WAIT_OR_RECONSIDER');
     expect(result.reason).toBe(
-      "Wait to book. Paying cash would leave about 0.3 months of spending money, and your points can't cover it.",
+      "Wait to book. Paying cash would leave about 0.3 months of your usual spending, and your points are not enough to cover it.",
     );
   });
 
@@ -167,7 +167,7 @@ describe('verdicts', () => {
     const result = run({ balances: { csr: 30_000 }, cash: losing });
     expect(result.runway.payCash.strainReasons).toEqual(['negativeLeftover']);
     expect(result.verdict).toBe('WAIT_OR_RECONSIDER');
-    expect(result.reason).toMatch(/spending more than you earn/);
+    expect(result.reason).toMatch(/spending exceeds your income/);
   });
 
   it('uses points at their usual value when that protects strained cash', () => {
@@ -205,7 +205,7 @@ describe('verdicts', () => {
     });
     expect(result.verdict).toBe('TRANSFER_POINTS');
     expect(result.bestOption!.pointsUsed).toBe(0);
-    expect(result.reason).toMatch(/no transfer needed/);
+    expect(result.reason).toMatch(/No transfer is needed/);
   });
 
   it('says pay cash when no balance covers the trip', () => {
@@ -280,7 +280,7 @@ describe('cash runway', () => {
       cash: { available: 1_050, monthlyLeftover: 100, monthlySpend: 2_000 },
       award: { partnerId: 'hyatt', pointsRequired: 25_000 },
     });
-    expect(result.reason).toMatch(/leave less than a week of spending money\.$/);
+    expect(result.reason).toMatch(/leave less than a week of your usual spending\.$/);
   });
 
   it('reports months of buffer left after paying', () => {

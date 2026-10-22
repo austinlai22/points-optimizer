@@ -78,7 +78,7 @@ describe('RedemptionPathCard', () => {
         tripCashPrice={600}
       />,
     );
-    expect(screen.getByText('Redeem via card portal')).toBeInTheDocument();
+    expect(screen.getByText("Book through the card's travel portal")).toBeInTheDocument();
     expect(screen.queryByText(/Transfer to/)).not.toBeInTheDocument();
   });
 
@@ -142,7 +142,7 @@ describe('RedemptionPathCard', () => {
         tripCashPrice={600}
       />,
     );
-    expect(screen.getByText(/Includes \$50 paid in cash/)).toBeInTheDocument();
+    expect(screen.getByText(/Includes \$50 in taxes and fees paid in cash/)).toBeInTheDocument();
     unmount();
 
     render(<RedemptionPathCard path={makePath()} rank={1} isTied={false} tripCashPrice={600} />);
@@ -159,7 +159,7 @@ describe('RedemptionPathCard', () => {
         tripCashPrice={600}
       />,
     );
-    expect(screen.getByText(/Requires transfer-in from Chase Freedom/)).toBeInTheDocument();
+    expect(screen.getByText(/Requires moving points from Chase Freedom/)).toBeInTheDocument();
   });
 
   it('shows the annual fee as reference, not as part of the cost', () => {

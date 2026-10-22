@@ -57,13 +57,13 @@ async function processMessage(deps: WhatsAppDeps, message: WebhookMessage): Prom
   const { store, send } = deps;
   const inbound = toInbound(message);
   if (!inbound) {
-    await send(message.from, { kind: 'text', body: 'I can only read text for now. Reply HELP for how this works.' });
+    await send(message.from, { kind: 'text', body: 'I can only read text messages. Reply HELP to see how this works.' });
     return;
   }
   if (!store) {
     await send(message.from, {
       kind: 'text',
-      body: "PointCompass's WhatsApp pilot isn't switched on yet. Try the web app: " + `${deps.appUrl}/app`,
+      body: `The PointCompass WhatsApp pilot is not active yet. You can use the website instead: ${deps.appUrl}/app`,
     });
     return;
   }

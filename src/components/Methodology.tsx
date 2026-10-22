@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BASE_CPP, CASH_BACK_RATE, TRANSFER_PREMIUM_FACTOR } from '../utils/valuation';
 import { formatUSDPerPoint } from '../utils/format';
 import {
@@ -7,6 +8,7 @@ import {
   oldestVerifiedOn,
 } from '../utils/freshness';
 import transferPartnersData from '../data/transferPartners.json';
+import verdictConfig from '../data/verdict-config.json';
 import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 import type { TransferPartner } from '../types';
 
@@ -18,12 +20,30 @@ const ratiosVerifiedOn = oldestVerifiedOn(
     .filter((date): date is string => Boolean(date)),
 );
 
+const rate = (dollarsPerPoint: number) => formatUSDPerPoint(dollarsPerPoint);
+const strain = verdictConfig.strain;
+const clearlyBeatsPercent = Math.round((verdictConfig.clearly_beats_benchmark_multiplier - 1) * 100);
+
+function Topic({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <h3 className="font-display text-base font-medium text-navy-950">{title}</h3>
+      <div className="mt-1.5 space-y-2">{children}</div>
+    </section>
+  );
+}
+
+function Term({ children }: { children: ReactNode }) {
+  return <span className="font-medium text-navy-950/80">{children}</span>;
+}
+
 export function Methodology() {
   return (
-    <details className="group mt-12 border-t border-navy/10">
+    <details className="group mt-16 rounded-3xl border border-navy/10 bg-white">
       <summary
-        className={`-ml-1 flex w-fit cursor-pointer select-none items-center gap-1.5 rounded px-1 text-sm text-navy-950/50 ${TAP_TARGET} ${FOCUS_RING}`}
+        className={`flex cursor-pointer select-none items-center justify-between gap-3 rounded-3xl px-6 py-4 text-sm font-medium text-navy-950/70 ${TAP_TARGET} ${FOCUS_RING}`}
       >
+        How the figures are calculated
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -31,262 +51,150 @@ export function Methodology() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
+          className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
         >
           <path d="M9 6l6 6-6 6" />
         </svg>
-        Methodology &amp; assumptions
       </summary>
-      <div className="mt-3 max-w-2xl space-y-2 text-sm leading-relaxed text-navy-950/60">
-        <p>
-          <span className="font-medium text-navy-950/70">Cash-back floor:</span> the true
-          unconditional rate — a plain statement credit or mailed check, no travel-purchase
-          restriction. Chase's is {formatUSDPerPoint(CASH_BACK_RATE.chase)}/point, the same as its
-          travel rate (Freedom's 1:1 statement credit has no strings attached), and Bank of
-          America's default is the same {formatUSDPerPoint(CASH_BACK_RATE.bankOfAmerica)}/point too
-          (true for Premium Rewards and Premium Rewards Elite). The other issuers each publish a
-          real, lower floor than their travel rate: Capital One's unrestricted cash back is{' '}
-          {formatUSDPerPoint(CASH_BACK_RATE.capitalOne)}/mile, Amex's "Cover Your Card Charges"
-          credit is {formatUSDPerPoint(CASH_BACK_RATE.amex)}/point, and Citi's cash back on its
-          ThankYou-earning cards is {formatUSDPerPoint(CASH_BACK_RATE.citi)}/point. Bank of
-          America's no-fee Travel Rewards card is a further, per-card exception on top of its own
-          issuer's default: unlike every other gap here (which applies uniformly across an
-          issuer's whole lineup), Travel Rewards' true cash-out rate is only{' '}
-          {formatUSDPerPoint(0.006)}/point — genuinely worse than its own Premium
-          Rewards/Elite siblings — so this app tracks it as a per-card override rather than
-          treating every Bank of America card as identical.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Realistic value:</span>{' '}
-          {formatUSDPerPoint(BASE_CPP)}/point — the guaranteed travel-purchase redemption rate
-          each issuer's own portal offers (Chase Travel, Capital One's "Cover Travel Purchases",
-          Amex Pay with Points on flights, Citi Travel, Bank of America's Travel Center) — times
-          the best portal multiplier available anywhere in your held cards from the same issuer
-          (see "Point pooling" below), no transferring required. Chase, Capital One, Amex, and Citi
-          have each converged on that same flat 1¢/point guaranteed rate across their whole card
-          lineup, with no card-tier boost above it. Chase replaced its old flat 1.25×/1.5× Sapphire
-          portal rates with "Points Boost": rotating offers on selected hotels and flights worth up
-          to 2× on Sapphire Reserve and 1.5× on Sapphire Preferred. Reserve cardmembers who
-          applied before June 23, 2025 also keep 1.5× on points earned before Oct 26, 2025, until
-          Oct 26, 2027. Portfolio and the ranked paths use only the flat guaranteed rate, because
-          a Boost isn't guaranteed for any given trip. The verdict handles Chase separately: it
-          shows the Boost range, applies the legacy rate where it holds, and gives a breakeven
-          price you can check against what Chase Travel actually shows. Amex and Citi offer
-          selective premium redemptions above 1¢ too, which aren't modeled. Bank of America Premium Rewards Elite is the one real exception
-          to "every card is flat 1¢": redeeming points for airfare through Bank of America's Travel
-          Center gets a genuine, guaranteed 20% discount, worth 1.25¢/point — modeled here as that
-          card's own higher portal multiplier, since it's the one guaranteed (not selective or
-          promotional) card-tier rate boost across all five issuers.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Potential transfer value:</span> the
-          realistic rate times {TRANSFER_PREMIUM_FACTOR}×, this app's own reasoned estimate of the
-          upside from redeeming at fixed award-chart prices against premium-cabin or peak-date
-          cash prices, further scaled by the best transfer ratio among that issuer's own partners
-          — only if the pooled-into card is itself transfer-eligible. It is called{' '}
-          <em>potential</em> because, unlike the floor and the guaranteed rate, no issuer publishes
-          it; it is the one figure here this app invents. That's also why it no longer appears in
-          the portfolio bars or the summary: it's now a flat multiple of the guaranteed value,
-          so it added no information to those views while lending an estimate the same visual
-          weight as two sourced numbers. Select it in "Value points at" to apply it, and the
-          marker on each bar steps outside the published band — deliberately, so you can see
-          you've moved past what's guaranteed. That ratio is capped at 1:1
-          on the way up: several partners hand out more than one point per point transferred
-          (Amex gives 2 Hilton points, Capital One and Citi give 2 I Prefer points), but those
-          are weaker currencies — Hilton points run about half a cent, so the "double" lands near
-          break-even. Crediting the exchange rate as if it were free value would overstate every
-          one of those ceilings, so this app declines to. Ratios <em>below</em> 1:1 still count in
-          full, because that loss is one you'd genuinely take. The practical effect is that all
-          four transfer-capable issuers share the same ceiling multiple, and the real published
-          differences between them show up in the floor instead. Bank of America is a genuine
-          structural exception here, not a simplification: none of its cards have any airline or
-          hotel transfer partners at all, so a Bank of America card's ceiling always equals its
-          realistic value — there's no further upside to model because none exists.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">The verdict:</span> for each way of
-          paying with points, it works out cents per point ((cash price − award taxes) ÷ points)
-          and compares that with what those points are usually worth, meaning the rate you picked
-          in "Value points at". It also checks your cash: paying counts as <em>strained</em> if it
-          would leave less than a month of your usual spending, or take more than a quarter of
-          your cash while you're spending more than you earn. Those two thresholds are this app's
-          rules of thumb, not published figures. Then, in order: if no points option holds its
-          value, pay cash, or wait if cash is strained. If cash is strained and points hold their
-          value, use points. Otherwise points have to clearly beat their usual value (by 20%) to
-          be worth spending, or the answer is pay cash and keep them. The Chase Travel breakeven
-          is the highest points price at which Chase Travel would become the verdict:{' '}
-          cash price × 100 ÷ the cents per point it has to beat, rounded down. Because it uses the
-          same bar as the verdict, the two can't disagree.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Cost of each points option:</span> each
-          redemption path prices the points it uses at whichever rate you've picked in "Value
-          points at" — the same per-point figure Portfolio shows for that issuer — not the trip's
-          cash price and not any one card's own weaker rate. Lower cost is a better deal; "Poor
-          deal" means the cost exceeds the trip's cash price, i.e. you'd be burning more point
-          value than the trip is worth. Each issuer contributes one row per transfer partner and
-          one for its own portal, rather than a row per card: within an issuer your points are
-          interchangeable, so a row per card would repeat the same redemption several times over.
-          The card named on each row is the one to actually book through — the best rate
-          available, and among equals the lowest annual fee.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Bilt, and one caveat about it:</span>{' '}
-          Bilt is here for a specific reason — it is the only transferable currency that reaches
-          Atmos Rewards, the merged Alaska and Hawaiian program. Neither Chase, Capital One, Amex,
-          Citi nor Bank of America transfers there at all, so without Bilt that partner simply
-          cannot appear. Bilt also has the highest guaranteed rate of any issuer modelled here,
-          {formatUSDPerPoint(0.0125)}/point on Bilt Travel for cardholders, against the lowest
-          cash-out floor at {formatUSDPerPoint(CASH_BACK_RATE.bilt)}/point. The caveat: Bilt's
-          best <em>guaranteed</em> use isn't travel. Points go toward rent or a mortgage at about
-          1.5¢, above the travel rate — so for Bilt specifically, the true opportunity cost of
-          spending points on a trip is higher than this app shows. It prices trips, so it uses the
-          travel rate; just know that a Bilt redemption which looks break-even here is probably a
-          small loss against paying your rent with the same points.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Points you already hold:</span> most
-          people have a stranded balance sitting with an airline or hotel, and it changes the
-          answer. Entering it means only the <em>shortfall</em> is transferred — a 60,000-point
-          award against 20,000 points you already have moves 40,000, not 60,000 — so the cost
-          shown falls accordingly, and an award your card balance couldn't have covered outright
-          may become reachable. Hold the full price and nothing transfers at all; the row says
-          "book directly" rather than pretending there's a transfer to make. One caveat worth
-          being explicit about: those existing points are treated as already spent, costing
-          nothing further. That's not because they're worthless but because this app has no
-          defensible way to price a partner's own currency — the same reason it declines to
-          credit above-parity transfer ratios. So read a redemption that leans on them as what
-          the trip costs you <em>from here</em>, not as what it's worth outright. Balances are
-          entered in the partner's own currency, before any transfer ratio applies.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Cash fees on awards:</span> an award
-          booking usually isn't free once you've spent the points — you still owe taxes, and on
-          some airlines substantial carrier-imposed surcharges. Whatever you enter there is added
-          straight onto the cost of every <em>transfer</em> path, because that's real money
-          leaving your pocket alongside the points. It is deliberately <em>not</em> added to
-          portal paths: booking through a portal pays the trip's full cash price in points, and
-          that price already includes taxes, so there's nothing further to hand over. That
-          asymmetry is exactly why the field is worth filling in — a transfer that looks cheaper
-          on points alone can easily lose to a portal booking once a few hundred dollars of
-          surcharges are counted. Fees never affect whether your balance is sufficient, since
-          they're paid in cash rather than points.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Valuation basis:</span> "what a point is
-          worth" isn't a fact — it depends on what you'd otherwise have done with it. The{' '}
-          <em>Value points at</em> selector lets you choose, and the three options are exactly the
-          three figures above: the cash-back floor, the guaranteed travel rate (the default), and
-          the potential transfer value. Whichever you pick drives every dollar figure in both views, so
-          Portfolio and the trip check can't contradict each other. Worth knowing what it does and
-          doesn't change: because cost is points × rate, raising the basis scales every path's
-          cost together, so <em>the ranking barely moves — the cheapest path stays the cheapest</em>.
-          What changes is the verdict: at the transfer basis a portal redemption costs{' '}
-          {TRANSFER_PREMIUM_FACTOR}× the trip's cash price and so always reads as a poor deal,
-          which is the correct message if you can genuinely transfer instead, and the wrong one if
-          the portal is realistically your only option. The single exception to "ranking doesn't
-          move" is award cash fees, which are paid in dollars and so don't scale with the basis —
-          a heavily surcharged award looks relatively better the higher you value your points.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">
-            How this compares to The Points Guy and NerdWallet:
-          </span>{' '}
-          published valuations like TPG's (~2¢ for Chase) are <em>optimized-use</em> numbers —
-          roughly "what could you get if you played this well," weighted toward high-value
-          transfer-partner redemptions. The main critique of that approach is that it values
-          premium-cabin awards at their full cash price, and almost nobody would actually pay
-          $8,000 for that seat, so "saving $8,000" overstates what landed in your pocket. This
-          app's comparable figure isn't its {formatUSDPerPoint(BASE_CPP)}/point default — it's the
-          transfer basis above, which for Chase works out to{' '}
-          {formatUSDPerPoint(BASE_CPP * TRANSFER_PREMIUM_FACTOR)}/point, close to TPG's headline.
-          NerdWallet, which is more conservative, publishes a 1–1.8¢ range for Chase against this
-          app's {formatUSDPerPoint(BASE_CPP)}–
-          {formatUSDPerPoint(BASE_CPP * TRANSFER_PREMIUM_FACTOR)} — nearly the same territory. So
-          this app isn't out of step with published valuations; it defaults to the guaranteed end
-          of the same range and makes the optimistic end an explicit choice rather than the
-          headline. (TPG also subtracts taxes and fees before computing cents per point — the same
-          reasoning behind the award-fee input above.)
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Annual fee:</span> shown on each
-          redemption card as reference only — it's a sunk cost once you already hold the card, so
-          it does not affect cost or the ranking. Use it to judge whether a pricier card is worth
-          keeping overall, not which one to redeem through today.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Point pooling:</span> issuers let you
-          combine balances across cards you hold in the <em>same</em> rewards program — "hold"
-          meaning checked as "I have this card" in Portfolio. A rational cardholder always
-          consolidates into whichever held card in that program has the best rate before
-          redeeming, so every card's realistic value and ceiling is computed as if pooled into the
-          single best card you've marked as held within its own family. Every card from every
-          issuer here now shares the same flat 1¢/point guaranteed portal rate, so pooling no
-          longer changes anyone's <em>realistic</em> value — but a non-transfer-eligible card
-          (like Chase Freedom) still benefits from pooling into a transfer-eligible card in its
-          own family for its <em>ceiling</em>, since it gains transfer-partner access only by
-          consolidating. Every Capital One and Amex card here is directly transfer-eligible with no
-          known ratio caveat, so none of them need pooling at all. Citi's cards are all
-          transfer-eligible too, but the no-fee Strata card specifically still benefits from
-          pooling into Strata Premier or Elite — not to gain access it already has, but to escape
-          its own reduced transfer ratio (see "Card-specific transfer ratios" below) by riding a better
-          held card's rate instead. Bank of America pools in yet a different way: since none of its
-          cards are transfer-eligible, pooling never unlocks a ceiling for it — but it still moves
-          two other numbers. If you hold Travel Rewards alongside Premium Rewards or Premium
-          Rewards Elite, Travel Rewards' floor is computed as if pooled into whichever sibling has
-          the better cash-back rate, escaping its own worse {formatUSDPerPoint(0.006)}/point
-          floor. And if you hold Premium Rewards Elite alongside either of the other two, its 1.25×
-          realistic-value boost carries over to them too — the one case among all five issuers
-          where pooling genuinely changes realistic value, not just ceiling.{' '}
-          <strong>Points never pool across issuers</strong> — Chase Ultimate Rewards, Capital One
-          miles, Amex Membership Rewards, Citi ThankYou Points, and Bank of America points are five
-          separate, non-interchangeable currencies, so a balance in one never moves into another,
-          even though some individual hotel/airline partners (like Air France-KLM Flying Blue,
-          Emirates, or Wyndham Rewards) happen to accept transfers from more than one of them —
-          each issuer still transfers there at its own ratio, from its own separate pool of
-          points. If you only hold one card in a program, its own rate applies since there's no
-          better card in that family to pool into. That's why some cards' figures, and some ranked
-          paths, are marked "via pooling" or "requires transfer-in."
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">Card-specific transfer ratios:</span>{' '}
-          this app uses one transfer ratio per issuer, except where a particular card is
-          documented to do worse — and those exceptions are priced, not just avoided. Chase
-          Sapphire Preferred transfers to World of Hyatt at 4:3 while Sapphire Reserve keeps the
-          standard 1:1, and Citi's no-annual-fee Strata card transfers to every partner at 10:7
-          versus Strata Premier/Elite's full rate. In both cases, holding the better card means
-          the app routes you to it and quotes its rate; holding only the weaker one means you're
-          quoted the weaker one. A Preferred-only holder booking a 30,000-point Hyatt award is
-          shown 40,000 points, not the 30,000 a Reserve holder would spend — the figure has to be
-          the one you can actually get. The same mechanism can record that a card cannot reach a
-          partner at all, in which case that route simply isn't offered rather than being priced
-          optimistically.
-        </p>
-        <p>
-          <span className="font-medium text-navy-950/70">How current this is:</span> transfer
-          ratios were last checked in{' '}
-          {ratiosVerifiedOn ? formatVerifiedOn(ratiosVerifiedOn) : 'an unrecorded month'}: against
-          Capital One's own published list, and for Chase, Amex, Citi and Bilt, which show their
-          lists only to signed-in cardholders, against a recent public guide. Each ratio's source
-          is recorded in the data. Card terms (annual fees, portal rates, cash-back rates) were
-          last fully checked in {formatVerifiedOn(CARD_TERMS_VERIFIED_ON)}, each card linked to its
-          issuer's page. Both dates are read from the data itself
-          rather than typed here, so this line cannot drift from what the app is actually using,
-          and the test suite fails outright once anything passes{' '}
-          {MAX_VERIFICATION_AGE_MONTHS} months. Worth knowing why that matters: issuers change
-          these without notice — Citi dropped Aeromexico in January 2026 and added Japan Airlines that
-          September, Amex cut its Cathay Pacific ratio from 1:1 to 5:4 in March 2026
-          and dropped Etihad entirely that June — and when those were checked, three well-known
-          published guides were already out of date, one still listing a program that folded in
-          2019. Treat every figure here as a snapshot.
-        </p>
-        <p className="italic">
-          These are this app's own transparent assumptions for estimation purposes — not a claim
-          to match The Points Guy, NerdWallet, or any other published point-valuation guide.
-          Terms can change at any time; confirm current terms directly with each issuer before
-          making redemption decisions.
-        </p>
+      <div className="max-w-3xl space-y-6 px-6 pb-8 text-sm leading-relaxed text-navy-950/65">
+        <Topic title="The recommendation">
+          <p>
+            For each way of paying with points, PointCompass calculates the value per point: the
+            cash price, less any taxes on the award, divided by the points used. It compares that
+            with what those points are usually worth, according to the setting chosen under "Value
+            points at".
+          </p>
+          <p>
+            It also checks whether paying cash would leave you stretched. That is the case if less
+            than {strain.min_months_of_buffer} month of your usual spending would remain, or if the
+            trip would cost more than {strain.negative_leftover_max_share_of_cash * 100}% of your
+            cash while your spending exceeds your income. Both thresholds are this app's own rules
+            of thumb.
+          </p>
+          <p>
+            Four rules then decide the recommendation. If no points option reaches its usual value,
+            pay cash, or wait if paying would leave you stretched. If paying would leave you
+            stretched and a points option holds its value, use points. Otherwise, points must beat
+            their usual value by at least {clearlyBeatsPercent}% to be worth spending, and if they
+            do not, pay cash and keep them.
+          </p>
+          <p>
+            The Chase Travel breakeven is the highest points price at which Chase Travel would
+            become the recommendation: the cash price multiplied by 100, divided by the value per
+            point Chase Travel needs to reach, rounded down. It uses the same test as the
+            recommendation, so the two always agree.
+          </p>
+        </Topic>
+
+        <Topic title="Three ways to value points">
+          <p>
+            <Term>Cash-back floor.</Term> What the points would pay out as cash. Chase and Bank of
+            America pay {rate(CASH_BACK_RATE.chase)} per point, the same as their travel rate. The
+            others pay less in cash than in travel: Capital One {rate(CASH_BACK_RATE.capitalOne)},
+            Amex {rate(CASH_BACK_RATE.amex)}, Citi {rate(CASH_BACK_RATE.citi)} and Bilt{' '}
+            {rate(CASH_BACK_RATE.bilt)}. Bank of America's Travel Rewards card pays{' '}
+            {rate(0.006)}, less than the bank's other cards.
+          </p>
+          <p>
+            <Term>Guaranteed travel.</Term> What the points buy through the bank's own travel
+            portal, for any trip, with no award seat required. This is {rate(BASE_CPP)} per point
+            for most cards. Bilt's travel portal pays {rate(0.0125)}, and Bank of America's Premium
+            Rewards Elite takes 20% off airfare, which is worth {rate(0.0125)}.
+          </p>
+          <p>
+            Chase is treated separately in the recommendation. Points Boost offers can raise the
+            value to as much as 2× on the Sapphire Reserve and 1.5× on the Sapphire Preferred.
+            Reserve cardmembers who applied before June 23, 2025 also receive 1.5× on points earned
+            before October 26, 2025, until October 26, 2027. Because no Boost offer is guaranteed
+            for a particular trip, Portfolio and the ranked options use the standard rate.
+          </p>
+          <p>
+            <Term>Potential transfer value.</Term> This app's own estimate of what transfers to
+            airline and hotel partners can achieve: {TRANSFER_PREMIUM_FACTOR}× the guaranteed rate.
+            Award charts price seats in a fixed number of points while cash fares rise with demand,
+            which is where the extra value comes from. No bank publishes this figure, so it is
+            labelled as an estimate and is never the default. Transfer ratios above 1:1 are not
+            counted as extra value, because partners that give more points per point usually have
+            points worth less. Ratios below 1:1 are counted in full. Bank of America has no
+            transfer partners, so its potential value equals its guaranteed value.
+          </p>
+        </Topic>
+
+        <Topic title="Pricing each option">
+          <p>
+            Each option's cost is the points it uses, valued at the chosen rate, plus any taxes
+            and fees on the award. A lower cost is better, and "Poor deal" means the cost exceeds
+            the cash price. Each bank contributes one option per transfer partner and one for its
+            travel portal. The card named is the one to use: the best rate available, and among
+            equal rates, the lowest annual fee. Annual fees do not affect the ranking, since they
+            are paid either way.
+          </p>
+          <p>
+            Taxes and fees apply only to transfers. A portal booking is paid entirely in points at
+            the cash price, which already includes taxes. This is often why a portal booking beats
+            an award with large surcharges.
+          </p>
+          <p>
+            Points you already hold with an airline or hotel reduce what needs transferring. They
+            are treated as already spent, because this app does not assign a value to partner
+            currencies, so such an option shows what the trip costs from this point onward.
+          </p>
+        </Topic>
+
+        <Topic title="Combining points">
+          <p>
+            Banks let you combine points across cards in the same program, and PointCompass
+            assumes you would move them to your best card before redeeming. Chase Freedom points,
+            for example, gain transfer access when combined with a Sapphire card. Points never
+            combine across banks: Chase, Capital One, Amex, Citi, Bank of America and Bilt are
+            separate currencies, even when they share a transfer partner.
+          </p>
+          <p>
+            Where a specific card transfers at a worse ratio, the cost reflects it. The Sapphire
+            Preferred transfers to World of Hyatt at 4:3 rather than 1:1, and the no-fee Citi
+            Strata card transfers to every partner at 10:7. Holding a better card in the same
+            program removes the penalty.
+          </p>
+        </Topic>
+
+        <Topic title="A note on Bilt">
+          <p>
+            Bilt is included because it is the only transferable currency that reaches Atmos
+            Rewards, the combined Alaska and Hawaiian program. Its best guaranteed use is paying
+            rent or a mortgage, at about 1.5¢ per point, which is above its travel rate. A Bilt
+            redemption that appears to break even here is likely to be a small loss compared with
+            putting the same points toward rent.
+          </p>
+        </Topic>
+
+        <Topic title="Comparison with published valuations">
+          <p>
+            The Points Guy values Chase points at about 2¢, and NerdWallet at between 1¢ and 1.8¢.
+            Those figures assume skilled use of transfer partners, often for premium cabins valued
+            at their full cash price. PointCompass defaults to the guaranteed rate and treats the
+            optimistic figure as a choice. For Chase, its potential transfer value is{' '}
+            {rate(BASE_CPP * TRANSFER_PREMIUM_FACTOR)}, within the same range.
+          </p>
+        </Topic>
+
+        <Topic title="How current the data is">
+          <p>
+            Transfer ratios were last checked in{' '}
+            {ratiosVerifiedOn ? formatVerifiedOn(ratiosVerifiedOn) : 'an unrecorded month'}, against
+            Capital One's published list and, for Chase, Amex, Citi and Bilt, which show their lists
+            only to signed-in cardholders, against recent public guides. Card terms were last fully
+            checked in {formatVerifiedOn(CARD_TERMS_VERIFIED_ON)}. Every ratio and card is linked to
+            its source in the data, and the test suite fails if anything goes{' '}
+            {MAX_VERIFICATION_AGE_MONTHS} months without a check.
+          </p>
+          <p>
+            Banks change these terms without notice. In 2026 alone, Citi ended transfers to
+            Aeromexico and added Japan Airlines, while Amex reduced its Cathay Pacific ratio and
+            ended transfers to Etihad. Treat every figure as a snapshot, and confirm current terms
+            with the bank before redeeming.
+          </p>
+        </Topic>
       </div>
     </details>
   );

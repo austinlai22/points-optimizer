@@ -34,7 +34,7 @@ const atLeast = (value: number, threshold: number) => value >= threshold - EPSIL
 const BASIS_DESCRIPTION: Record<ValuationBasis, string> = {
   cashBack: 'cash-back value',
   guaranteed: 'guaranteed travel value',
-  transfer: "potential transfer value (this app's own estimate)",
+  transfer: "potential transfer value, which is this app's own estimate",
 };
 
 type DecisionCode =
@@ -107,9 +107,9 @@ function strainSentence(runway: RunwayResult): string {
     return `Paying cash would leave you ${formatUSD(-runway.bufferAfter)} short`;
   }
   if (runway.strainReasons.includes('thinBuffer')) {
-    return `Paying cash would leave ${describeMonths(runway.monthsOfBuffer)} of spending money`;
+    return `Paying cash would leave ${describeMonths(runway.monthsOfBuffer)} of your usual spending`;
   }
-  return "Paying cash would take a big share of your cash while you're spending more than you earn";
+  return 'Paying cash would use a large share of your savings while your spending exceeds your income';
 }
 
 function describeOption(option: PointsOption): string {
@@ -124,7 +124,7 @@ function describeVerdict(decision: Decision): string {
 }
 
 function valueClause(option: PointsOption): string {
-  return `${formatCents(option.cppCents!)} a point vs. the usual ${formatCents(option.benchmarkCents)}.`;
+  return `which returns ${formatCents(option.cppCents!)} per point against a usual value of ${formatCents(option.benchmarkCents)}.`;
 }
 
 function buildReason(decision: Decision, payCash: RunwayResult): string {
@@ -134,25 +134,25 @@ function buildReason(decision: Decision, payCash: RunwayResult): string {
     const cashNote = code === 'protectsCash' ? ` ${strainSentence(payCash)}.` : '';
     if (option.kind === 'transfer') {
       if (option.cppCents === null) {
-        return `Book with ${option.partner!.name} using the points you already hold; no transfer needed.${cashNote}`;
+        return `Book with ${option.partner!.name} using the points you already hold. No transfer is needed.${cashNote}`;
       }
-      return `Transfer ${formatPoints(option.pointsUsed)} ${ISSUER_LABELS[option.issuer]} points to ${option.partner!.name}: ${valueClause(option)}${cashNote}`;
+      return `Transfer ${formatPoints(option.pointsUsed)} ${ISSUER_LABELS[option.issuer]} points to ${option.partner!.name}, ${valueClause(option)}${cashNote}`;
     }
     if (option.kind === 'chaseTravel') {
-      return `Book in Chase Travel for ${formatPoints(option.pointsUsed)} points: ${valueClause(option)}${cashNote}`;
+      return `Book in Chase Travel for ${formatPoints(option.pointsUsed)} points, ${valueClause(option)}${cashNote}`;
     }
-    return `Book through ${ISSUER_LABELS[option.issuer]}'s travel portal for ${formatPoints(option.pointsUsed)} points: ${valueClause(option)}${cashNote}`;
+    return `Book through ${ISSUER_LABELS[option.issuer]}'s travel portal for ${formatPoints(option.pointsUsed)} points, ${valueClause(option)}${cashNote}`;
   }
 
   switch (code) {
     case 'noOptions':
-      return 'Pay cash. None of your points balances cover this trip.';
+      return 'Pay cash. None of your points balances is large enough for this trip.';
     case 'belowBenchmark':
-      return `Pay cash. Your best points option gets ${formatCents(best!.cppCents!)} a point, under the ${formatCents(best!.benchmarkCents)} those points are usually worth.`;
+      return `Pay cash. Your best points option returns ${formatCents(best!.cppCents!)} per point, less than the ${formatCents(best!.benchmarkCents)} these points are usually worth.`;
     case 'marginal':
-      return `Pay cash and keep your points. ${formatCents(best!.cppCents!)} a point isn't clearly better than the usual ${formatCents(best!.benchmarkCents)}, so save them for a better redemption.`;
+      return `Pay cash and keep your points. At ${formatCents(best!.cppCents!)} per point, this redemption is not clearly better than their usual value of ${formatCents(best!.benchmarkCents)}.`;
     default:
-      return `Wait to book. ${strainSentence(payCash)}, and ${best ? "your points don't get good value here" : "your points can't cover it"}.`;
+      return `Wait to book. ${strainSentence(payCash)}, and ${best ? 'your points do not offer good value for this trip' : 'your points are not enough to cover it'}.`;
   }
 }
 
@@ -210,7 +210,7 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
       ) * 100,
     ]),
   ) as Partial<Record<Issuer, number>>;
-  assumptions.push(`Points are judged against their ${BASIS_DESCRIPTION[basis]}.`);
+  assumptions.push(`Points are compared with their ${BASIS_DESCRIPTION[basis]}.`);
 
   // --- Chase Travel ---------------------------------------------------------
   const holdsChase = issuers.includes('chase');
@@ -344,32 +344,32 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
     chaseTravel.sentence =
       chaseTravel.breakevenPoints > 0
         ? `If Chase Travel shows this trip at or below ${formatPoints(chaseTravel.breakevenPoints)} points, book it there. Otherwise, ${describeVerdict(otherwise)}.`
-        : `Chase Travel can't beat this: ${describeVerdict(otherwise)}.`;
+        : `Chase Travel cannot match this option. The better choice is to ${describeVerdict(otherwise)}.`;
 
     if (pastedPrice === null) {
       assumptions.push(
-        `Chase Travel is assumed to charge the ${formatUSD(tripCashPrice)} cash price with no Points Boost. Boost offers rotate, so check the points price Chase Travel shows you.`,
+        `Chase Travel is assumed to charge the ${formatUSD(tripCashPrice)} cash price, without a Points Boost offer. Offers change often, so check the price Chase Travel shows.`,
       );
     }
     if (legacyApplied) {
       assumptions.push(
         chase.legacyPoints === undefined
-          ? `All ${formatPoints(chaseBalance)} of your Chase points are assumed to be earned before Oct 26, 2025, so they redeem at ${formatCents(LEGACY_CENTS)} on Chase Travel until Oct 26, 2027.`
-          : `${formatPoints(legacyPoints)} of your Chase points redeem at ${formatCents(LEGACY_CENTS)} on Chase Travel until Oct 26, 2027.`,
+          ? `All ${formatPoints(chaseBalance)} of your Chase points are assumed to have been earned before October 26, 2025, so they redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.`
+          : `${formatPoints(legacyPoints)} of your Chase points redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.`,
       );
     } else if (chaseCardType === 'reserve' && chase.reserveAppliedBeforeCutoff && today >= LEGACY_EXPIRES_ON) {
-      assumptions.push('The Sapphire Reserve 1.5¢ legacy rate ended on Oct 26, 2027.');
+      assumptions.push('The Sapphire Reserve legacy rate of 1.5¢ ended on October 26, 2027.');
     } else if (chaseCardType === 'preferred') {
-      assumptions.push("No Sapphire Preferred legacy rate is applied: Chase hasn't confirmed one.");
+      assumptions.push('No Sapphire Preferred legacy rate is applied, because Chase has not confirmed one.');
     }
   }
 
   if (award && awardTaxes === 0 && options.some((o) => o.kind === 'transfer')) {
-    assumptions.push('Award taxes and fees are assumed to be $0. Add them if the airline or hotel charges any.');
+    assumptions.push('Taxes and fees on the award are assumed to be $0. Enter them if the airline or hotel charges any.');
   }
   if (payCash.strained || decision.code === 'protectsCash') {
     assumptions.push(
-      `"Strained" is this app's rule of thumb: less than ${formatMonths(verdictConfig.strain.min_months_of_buffer)} of spending left after paying, or a trip over ${verdictConfig.strain.negative_leftover_max_share_of_cash * 100}% of your cash while you're spending more than you earn.`,
+      `Cash is treated as stretched if paying would leave less than ${formatMonths(verdictConfig.strain.min_months_of_buffer)} of your usual spending, or if the trip costs more than ${verdictConfig.strain.negative_leftover_max_share_of_cash * 100}% of your cash while your spending exceeds your income. These thresholds are this app's own rule of thumb.`,
     );
   }
 

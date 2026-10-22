@@ -10,12 +10,12 @@ Scroll to **One trip, three ways to pay**: the same $900 trip as cash, Chase Tra
 
 ## 2. The web app (90s)
 
-1. **Check a trip** → **Portfolio**: tick Sapphire Reserve, 150,000 points.
-2. **Check a trip** tab: trip price **$900**; brand **United MileagePlus**, points **60,000**, fees **$90**.
-3. Cash cushion: **$6,000** / **300** / **2,500** → verdict **Transfer points**, 1.35¢ vs 1¢.
+1. **Portfolio** (in the banner): turn on Sapphire Reserve, 150,000 points.
+2. **Check a trip** (in the banner): trip price **$900**; program **United MileagePlus**, award price **60,000**, taxes and fees **$90**.
+3. Cash position: **$6,000** / **300** / **2,500** → recommendation **Transfer points**, 1.35¢ vs 1¢.
 4. Change cash available to **$1,000** → paying cash now leaves under a month, and the reason says so. Points still hold their value, so it's still points, now to protect your cash.
 5. Set the United points to 0, set cash back to **$6,000**, paste a Chase Travel price of **60,000** → **Book in Chase Travel**. Then **95,000** → falls back to **Pay cash**: "Chase Travel shows a Boost offer? Here's the number it has to beat."
-6. Open **Estimates and assumptions**: every estimate is listed.
+6. Open **Assumptions behind this recommendation**: every estimate is listed.
 
 ## 3. WhatsApp (60s)
 

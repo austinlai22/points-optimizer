@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { migrateLegacyToolLink } from './lib/router';
 
@@ -40,6 +40,40 @@ describe('routes', () => {
     visit('/privacy');
     expect(screen.getByRole('heading', { level: 1, name: 'Privacy' })).toBeInTheDocument();
     expect(screen.getAllByText(/RESET/).length).toBeGreaterThan(0);
+  });
+
+  it('gives Portfolio its own page', () => {
+    visit('/portfolio');
+    expect(screen.getByRole('heading', { level: 1, name: 'Portfolio' })).toBeInTheDocument();
+  });
+
+  it('shows the same banner on every page', () => {
+    for (const url of ['/', '/app', '/portfolio', '/privacy']) {
+      const { unmount } = visit(url);
+      const banner = screen.getByRole('banner');
+      for (const name of ['How it works', 'FAQ', 'The numbers', 'Portfolio', 'Check a trip']) {
+        expect(within(banner).getAllByRole('link', { name }).length, `${url}: ${name}`).toBeGreaterThan(0);
+      }
+      unmount();
+    }
+  });
+
+  it('scrolls to a section on the same page without leaving it', () => {
+    visit('/');
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+    fireEvent.click(within(screen.getByRole('banner')).getByRole('link', { name: 'FAQ' }));
+    expect(window.location.pathname).toBe('/');
+    expect(window.location.hash).toBe('#faq');
+    expect(scrollTo).toHaveBeenCalled();
+    scrollTo.mockRestore();
+  });
+
+  it('goes home and to the section from another page', () => {
+    visit('/portfolio');
+    fireEvent.click(within(screen.getByRole('banner')).getByRole('link', { name: 'The numbers' }));
+    expect(window.location.pathname).toBe('/');
+    expect(window.location.hash).toBe('#numbers');
+    expect(screen.getByRole('heading', { name: 'About the numbers' })).toBeInTheDocument();
   });
 
   it('sends an unknown path home', () => {

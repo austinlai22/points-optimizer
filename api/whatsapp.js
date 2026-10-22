@@ -1352,7 +1352,7 @@ const atLeast = (value, threshold) => value >= threshold - EPSILON;
 const BASIS_DESCRIPTION = {
 	cashBack: "cash-back value",
 	guaranteed: "guaranteed travel value",
-	transfer: "potential transfer value (this app's own estimate)"
+	transfer: "potential transfer value, which is this app's own estimate"
 };
 function verdictFor(option) {
 	if (option.kind === "transfer") return "TRANSFER_POINTS";
@@ -1401,8 +1401,8 @@ function compareOptions(a, b) {
 }
 function strainSentence(runway) {
 	if (runway.strainReasons.includes("negativeBuffer")) return `Paying cash would leave you ${formatUSD(-runway.bufferAfter)} short`;
-	if (runway.strainReasons.includes("thinBuffer")) return `Paying cash would leave ${describeMonths(runway.monthsOfBuffer)} of spending money`;
-	return "Paying cash would take a big share of your cash while you're spending more than you earn";
+	if (runway.strainReasons.includes("thinBuffer")) return `Paying cash would leave ${describeMonths(runway.monthsOfBuffer)} of your usual spending`;
+	return "Paying cash would use a large share of your savings while your spending exceeds your income";
 }
 function describeOption(option) {
 	if (option.kind === "transfer") return `transfer to ${option.partner.name}`;
@@ -1414,24 +1414,24 @@ function describeVerdict(decision) {
 	return decision.verdict === "PAY_CASH" ? "pay cash" : "wait to book";
 }
 function valueClause(option) {
-	return `${formatCents(option.cppCents)} a point vs. the usual ${formatCents(option.benchmarkCents)}.`;
+	return `which returns ${formatCents(option.cppCents)} per point against a usual value of ${formatCents(option.benchmarkCents)}.`;
 }
 function buildReason(decision, payCash) {
 	const { option, best, code } = decision;
 	if (option) {
 		const cashNote = code === "protectsCash" ? ` ${strainSentence(payCash)}.` : "";
 		if (option.kind === "transfer") {
-			if (option.cppCents === null) return `Book with ${option.partner.name} using the points you already hold; no transfer needed.${cashNote}`;
-			return `Transfer ${formatPoints(option.pointsUsed)} ${ISSUER_LABELS[option.issuer]} points to ${option.partner.name}: ${valueClause(option)}${cashNote}`;
+			if (option.cppCents === null) return `Book with ${option.partner.name} using the points you already hold. No transfer is needed.${cashNote}`;
+			return `Transfer ${formatPoints(option.pointsUsed)} ${ISSUER_LABELS[option.issuer]} points to ${option.partner.name}, ${valueClause(option)}${cashNote}`;
 		}
-		if (option.kind === "chaseTravel") return `Book in Chase Travel for ${formatPoints(option.pointsUsed)} points: ${valueClause(option)}${cashNote}`;
-		return `Book through ${ISSUER_LABELS[option.issuer]}'s travel portal for ${formatPoints(option.pointsUsed)} points: ${valueClause(option)}${cashNote}`;
+		if (option.kind === "chaseTravel") return `Book in Chase Travel for ${formatPoints(option.pointsUsed)} points, ${valueClause(option)}${cashNote}`;
+		return `Book through ${ISSUER_LABELS[option.issuer]}'s travel portal for ${formatPoints(option.pointsUsed)} points, ${valueClause(option)}${cashNote}`;
 	}
 	switch (code) {
-		case "noOptions": return "Pay cash. None of your points balances cover this trip.";
-		case "belowBenchmark": return `Pay cash. Your best points option gets ${formatCents(best.cppCents)} a point, under the ${formatCents(best.benchmarkCents)} those points are usually worth.`;
-		case "marginal": return `Pay cash and keep your points. ${formatCents(best.cppCents)} a point isn't clearly better than the usual ${formatCents(best.benchmarkCents)}, so save them for a better redemption.`;
-		default: return `Wait to book. ${strainSentence(payCash)}, and ${best ? "your points don't get good value here" : "your points can't cover it"}.`;
+		case "noOptions": return "Pay cash. None of your points balances is large enough for this trip.";
+		case "belowBenchmark": return `Pay cash. Your best points option returns ${formatCents(best.cppCents)} per point, less than the ${formatCents(best.benchmarkCents)} these points are usually worth.`;
+		case "marginal": return `Pay cash and keep your points. At ${formatCents(best.cppCents)} per point, this redemption is not clearly better than their usual value of ${formatCents(best.benchmarkCents)}.`;
+		default: return `Wait to book. ${strainSentence(payCash)}, and ${best ? "your points do not offer good value for this trip" : "your points are not enough to cover it"}.`;
 	}
 }
 function localIsoDate(date) {
@@ -1454,7 +1454,7 @@ function evaluateVerdict(input) {
 	const issuers = [...new Set(ownedCards.map((c) => c.issuer))];
 	const balanceOf = (issuer) => ownedCards.filter((c) => c.issuer === issuer).reduce((sum, c) => sum + (balances[c.id] ?? 0), 0);
 	const benchmarkCents = Object.fromEntries(issuers.map((issuer) => [issuer, getRateForBasis(ownedCards.filter((c) => c.issuer === issuer), transferPartners, issuer, basis) * 100]));
-	assumptions.push(`Points are judged against their ${BASIS_DESCRIPTION[basis]}.`);
+	assumptions.push(`Points are compared with their ${BASIS_DESCRIPTION[basis]}.`);
 	const holdsChase = issuers.includes("chase");
 	const chaseBalance = holdsChase ? balanceOf("chase") : 0;
 	const chaseCardType = holdsChase ? chase.cardType ?? inferChaseCardType(ownedCards) : null;
@@ -1545,14 +1545,14 @@ function evaluateVerdict(input) {
 			},
 			sentence: ""
 		};
-		chaseTravel.sentence = chaseTravel.breakevenPoints > 0 ? `If Chase Travel shows this trip at or below ${formatPoints(chaseTravel.breakevenPoints)} points, book it there. Otherwise, ${describeVerdict(otherwise)}.` : `Chase Travel can't beat this: ${describeVerdict(otherwise)}.`;
-		if (pastedPrice === null) assumptions.push(`Chase Travel is assumed to charge the ${formatUSD(tripCashPrice)} cash price with no Points Boost. Boost offers rotate, so check the points price Chase Travel shows you.`);
-		if (legacyApplied) assumptions.push(chase.legacyPoints === void 0 ? `All ${formatPoints(chaseBalance)} of your Chase points are assumed to be earned before Oct 26, 2025, so they redeem at ${formatCents(LEGACY_CENTS)} on Chase Travel until Oct 26, 2027.` : `${formatPoints(legacyPoints)} of your Chase points redeem at ${formatCents(LEGACY_CENTS)} on Chase Travel until Oct 26, 2027.`);
-		else if (chaseCardType === "reserve" && chase.reserveAppliedBeforeCutoff && today >= LEGACY_EXPIRES_ON) assumptions.push("The Sapphire Reserve 1.5¢ legacy rate ended on Oct 26, 2027.");
-		else if (chaseCardType === "preferred") assumptions.push("No Sapphire Preferred legacy rate is applied: Chase hasn't confirmed one.");
+		chaseTravel.sentence = chaseTravel.breakevenPoints > 0 ? `If Chase Travel shows this trip at or below ${formatPoints(chaseTravel.breakevenPoints)} points, book it there. Otherwise, ${describeVerdict(otherwise)}.` : `Chase Travel cannot match this option. The better choice is to ${describeVerdict(otherwise)}.`;
+		if (pastedPrice === null) assumptions.push(`Chase Travel is assumed to charge the ${formatUSD(tripCashPrice)} cash price, without a Points Boost offer. Offers change often, so check the price Chase Travel shows.`);
+		if (legacyApplied) assumptions.push(chase.legacyPoints === void 0 ? `All ${formatPoints(chaseBalance)} of your Chase points are assumed to have been earned before October 26, 2025, so they redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.` : `${formatPoints(legacyPoints)} of your Chase points redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.`);
+		else if (chaseCardType === "reserve" && chase.reserveAppliedBeforeCutoff && today >= LEGACY_EXPIRES_ON) assumptions.push("The Sapphire Reserve legacy rate of 1.5¢ ended on October 26, 2027.");
+		else if (chaseCardType === "preferred") assumptions.push("No Sapphire Preferred legacy rate is applied, because Chase has not confirmed one.");
 	}
-	if (award && awardTaxes === 0 && options.some((o) => o.kind === "transfer")) assumptions.push("Award taxes and fees are assumed to be $0. Add them if the airline or hotel charges any.");
-	if (payCash.strained || decision.code === "protectsCash") assumptions.push(`"Strained" is this app's rule of thumb: less than ${formatMonths(verdict_config_default.strain.min_months_of_buffer)} of spending left after paying, or a trip over ${verdict_config_default.strain.negative_leftover_max_share_of_cash * 100}% of your cash while you're spending more than you earn.`);
+	if (award && awardTaxes === 0 && options.some((o) => o.kind === "transfer")) assumptions.push("Taxes and fees on the award are assumed to be $0. Enter them if the airline or hotel charges any.");
+	if (payCash.strained || decision.code === "protectsCash") assumptions.push(`Cash is treated as stretched if paying would leave less than ${formatMonths(verdict_config_default.strain.min_months_of_buffer)} of your usual spending, or if the trip costs more than ${verdict_config_default.strain.negative_leftover_max_share_of_cash * 100}% of your cash while your spending exceeds your income. These thresholds are this app's own rule of thumb.`);
 	return {
 		verdict: decision.verdict,
 		reason: buildReason(decision, payCash),
@@ -1614,40 +1614,40 @@ function verdictForProfile(profile, trip, today) {
 function formatVerdictReply(result, price, appUrl) {
 	const lines = [`*${verdictHeadline(result)}*`, result.reason];
 	if (!result.runway.payCash.strained) lines.push(`If you pay cash: ${describeRunway(result.runway.payCash)}.`);
-	if (result.chaseTravel) lines.push(result.chaseTravel.pastedPricePoints === null ? `${result.chaseTravel.sentence} Reply with the points price you see there to check it.` : result.chaseTravel.sentence);
-	lines.push(`Details: ${appUrl}/app?price=${price}`);
-	lines.push("Estimates, not financial advice. Verify prices before booking.");
+	if (result.chaseTravel) lines.push(result.chaseTravel.pastedPricePoints === null ? `${result.chaseTravel.sentence} Reply with the points price Chase Travel shows to check it.` : result.chaseTravel.sentence);
+	lines.push(`Full details: ${appUrl}/app?price=${price}`);
+	lines.push("These are estimates, not financial advice. Please confirm prices before booking.");
 	return lines.join("\n");
 }
 //#endregion
 //#region server/whatsapp/conversation.ts
 const EXAMPLE = "\"NYC to Lisbon in May, $900, worth using points?\"";
-const WELCOME = `Hi! Text me a trip and its cash price, like ${EXAMPLE}, and I'll tell you whether to pay cash or use points. Reply HELP for commands.`;
+const WELCOME = `Welcome to PointCompass. Send a trip and its cash price, for example ${EXAMPLE}, and I will recommend whether to pay cash or use points. Reply HELP for commands.`;
 const HELP = [
-	"I tell you whether to pay cash or use points for a trip, based on your points and your cash cushion.",
-	`Text a trip with its price, e.g. ${EXAMPLE}`,
-	"UPDATE: change your saved numbers",
-	"RESET: delete everything I've stored for you",
-	"HELP: this message"
+	"PointCompass recommends whether to pay cash or use points for a trip, based on your points and your cash position.",
+	`Send a trip with its price, for example ${EXAMPLE}`,
+	"UPDATE: change your saved details",
+	"RESET: delete everything stored for you",
+	"HELP: show this message"
 ].join("\n");
-const RESET_DONE = "Done. I've deleted everything I stored for you: balances, cash numbers and your last trip. Text a trip anytime to start fresh.";
+const RESET_DONE = "I have deleted everything stored for you: your balances, cash figures and last trip. Send a trip at any time to start again.";
 const text = (body) => ({
 	kind: "text",
 	body
 });
 function question(step) {
 	switch (step) {
-		case "price": return text("What's the cash price of that trip, in US dollars?");
-		case "balances": return text("Which points do you have, and roughly how many? Reply like: Chase 80k, Amex 45k\n(Chase, Capital One, Amex, Citi, Bank of America, Bilt, or NONE.)");
+		case "price": return text("What is the cash price of the trip, in US dollars?");
+		case "balances": return text("Which points do you have, and roughly how many? For example: Chase 80k, Amex 45k\n(Chase, Capital One, Amex, Citi, Bank of America or Bilt. Reply NONE if you have none.)");
 		case "chaseCard": return {
 			kind: "list",
-			body: "Which Chase card are your points on? It decides your Points Boost range.",
+			body: "Which Chase card holds your points? It determines your Points Boost range.",
 			button: "Choose card",
 			rows: CHASE_CARD_CHOICES
 		};
 		case "reserveCutoff": return {
 			kind: "buttons",
-			body: "Did you apply for your Sapphire Reserve before June 23, 2025? If so, points earned before Oct 26, 2025 get 1.5¢ in Chase Travel until Oct 2027.",
+			body: "Did you apply for your Sapphire Reserve before June 23, 2025? If so, points earned before October 26, 2025 redeem at 1.5¢ in Chase Travel until October 2027.",
 			buttons: [
 				{
 					id: "yes",
@@ -1663,9 +1663,9 @@ function question(step) {
 				}
 			]
 		};
-		case "cash": return text("How much cash could you spend on travel right now without stress?");
-		case "leftover": return text("After bills, what's usually left over each month? It can be negative, e.g. -200.");
-		case "spend": return text("And roughly how much do you spend in a typical month, all in?");
+		case "cash": return text("How much cash could you spend on travel at the moment without difficulty?");
+		case "leftover": return text("After bills, how much is usually left over each month? It may be negative, for example -200.");
+		case "spend": return text("Roughly how much do you spend in a typical month in total?");
 	}
 }
 function nextMissing(state) {
@@ -1743,7 +1743,7 @@ function advance(state, ctx, prefix, events) {
 	const trip = state.trip;
 	if (!trip?.price) return {
 		state,
-		replies: [text([...prefix, `Saved. Now text me a trip and its cash price, e.g. ${EXAMPLE}`].join("\n"))],
+		replies: [text([...prefix, `Saved. Now send a trip and its cash price, for example ${EXAMPLE}`].join("\n"))],
 		events
 	};
 	const result = verdictForProfile(state.profile, {
@@ -1786,13 +1786,13 @@ function handleMessage(prev, msg, ctx) {
 	if (command === "UPDATE") {
 		state.profile = {};
 		if (state.trip) delete state.trip.chaseTravelPoints;
-		return advance(state, ctx, ["Let's update your numbers."], events);
+		return advance(state, ctx, ["Updating your details."], events);
 	}
 	if (state.pending) {
 		const step = state.pending;
 		if (!applyAnswer(state, step, msg)) return {
 			state,
-			replies: [text("Sorry, I didn't catch that."), question(step)],
+			replies: [text("Sorry, I could not read that answer."), question(step)],
 			events
 		};
 		return advance(state, ctx, [], events);
@@ -1809,7 +1809,7 @@ function handleMessage(prev, msg, ctx) {
 			trip: void 0
 		}) === null;
 		state.trip = { price };
-		return advance(state, ctx, hadProfile ? ["Using your saved numbers. Reply UPDATE to change."] : [], events);
+		return advance(state, ctx, hadProfile ? ["Using your saved details. Reply UPDATE to change them."] : [], events);
 	}
 	const points = parsePointsPrice(msg.text);
 	if (points !== null && state.trip?.price && (state.profile.balances?.chase ?? 0) > 0) {
@@ -1859,14 +1859,14 @@ async function processMessage(deps, message) {
 	if (!inbound) {
 		await send(message.from, {
 			kind: "text",
-			body: "I can only read text for now. Reply HELP for how this works."
+			body: "I can only read text messages. Reply HELP to see how this works."
 		});
 		return;
 	}
 	if (!store) {
 		await send(message.from, {
 			kind: "text",
-			body: `PointCompass's WhatsApp pilot isn't switched on yet. Try the web app: ${deps.appUrl}/app`
+			body: `The PointCompass WhatsApp pilot is not active yet. You can use the website instead: ${deps.appUrl}/app`
 		});
 		return;
 	}

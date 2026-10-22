@@ -110,7 +110,7 @@ describe('conversation end to end', () => {
     await say('300');
     await say('2000');
     const [reply] = await say('Tokyo in March, $1,400');
-    expect(reply).toMatch(/^Using your saved numbers\. Reply UPDATE to change\./);
+    expect(reply).toMatch(/^Using your saved details\. Reply UPDATE to change them\./);
     expect(reply).toContain('price=1400');
   });
 
@@ -129,7 +129,7 @@ describe('conversation end to end', () => {
   it('re-asks a question it could not read', async () => {
     const { say } = setup();
     await say('$900 flight');
-    expect(await say('lots')).toEqual(["Sorry, I didn't catch that.", expect.stringMatching(/^Which points/)]);
+    expect(await say('lots')).toEqual(['Sorry, I could not read that answer.', expect.stringMatching(/^Which points/)]);
   });
 
   it('UPDATE asks for the numbers again', async () => {
@@ -140,7 +140,7 @@ describe('conversation end to end', () => {
     await say('0');
     await say('2000');
     expect(await say('UPDATE')).toEqual([
-      "Let's update your numbers.",
+      'Updating your details.',
       expect.stringMatching(/^Which points/),
     ]);
   });

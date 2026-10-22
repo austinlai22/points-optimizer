@@ -104,7 +104,7 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
       </div>
       {isPooled && pooledViaCard && (
         <p className="mt-1.5 text-center font-sans text-[11px] text-navy-950/45">
-          Valued via pooling into {pooledViaCard.name}
+          Valued as if combined with your {pooledViaCard.name}
         </p>
       )}
     </div>

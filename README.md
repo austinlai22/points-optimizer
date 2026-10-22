@@ -8,7 +8,7 @@ Other points tools answer "which seat can my points get?" PointCompass answers "
 
 ## What it does
 
-**The verdict** (`/app`, "Check a trip"): enter a trip's cash price, your cash cushion (cash for travel now, what's left each month, monthly spending) and optionally an award price. You get one of:
+**The recommendation** (`/app`, "Check a trip"): enter a trip's cash price, your cash position (cash for travel now, what's left each month, monthly spending) and optionally an award price. You get one of:
 
 - **Pay cash**: points are worth more elsewhere, or only match their usual value
 - **Transfer points**: a transfer partner clearly beats what the points are usually worth
@@ -20,7 +20,7 @@ Each verdict comes with a one-line reason, cents per point against the benchmark
 
 **Ranked paths**: below the verdict, every way to pay with points (each transfer partner and each portal) ranked by cost.
 
-**Portfolio**: what each card's balance is worth, from cash-back floor to guaranteed travel value, with an optional "potential transfer value" estimate.
+**Portfolio** (`/portfolio`): what each card's balance is worth, from cash-back floor to guaranteed travel value, with an optional "potential transfer value" estimate.
 
 **WhatsApp pilot**: the same verdict by text, on a Meta test number for a handful of testers. See [docs/whatsapp-setup.md](docs/whatsapp-setup.md).
 
@@ -43,7 +43,7 @@ The app's own transparent assumptions, not a claim to match The Points Guy, Nerd
 | `src/lib/verdict/` | The verdict engine: pure functions, no UI, shared by the web app and WhatsApp |
 | `src/utils/valuation.ts` | Point valuation and ranked redemption paths |
 | `src/data/` | Cards, transfer partners, Chase Boost rules, verdict thresholds |
-| `src/pages/`, `src/components/` | Landing page, `/app`, `/privacy` |
+| `src/pages/`, `src/components/` | Landing page, `/app`, `/portfolio`, `/privacy`, and the shared banner and footer |
 | `server/` | WhatsApp webhook, event counts, Plaid sandbox (TypeScript source) |
 | `api/` | The same, bundled for Vercel by `npm run build:api` (generated; committed) |
 

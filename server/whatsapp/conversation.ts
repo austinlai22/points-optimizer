@@ -69,40 +69,40 @@ export interface Context {
 
 const EXAMPLE = '"NYC to Lisbon in May, $900, worth using points?"';
 
-const WELCOME = `Hi! Text me a trip and its cash price, like ${EXAMPLE}, and I'll tell you whether to pay cash or use points. Reply HELP for commands.`;
+const WELCOME = `Welcome to PointCompass. Send a trip and its cash price, for example ${EXAMPLE}, and I will recommend whether to pay cash or use points. Reply HELP for commands.`;
 
 const HELP = [
-  "I tell you whether to pay cash or use points for a trip, based on your points and your cash cushion.",
-  `Text a trip with its price, e.g. ${EXAMPLE}`,
-  'UPDATE: change your saved numbers',
-  "RESET: delete everything I've stored for you",
-  'HELP: this message',
+  'PointCompass recommends whether to pay cash or use points for a trip, based on your points and your cash position.',
+  `Send a trip with its price, for example ${EXAMPLE}`,
+  'UPDATE: change your saved details',
+  'RESET: delete everything stored for you',
+  'HELP: show this message',
 ].join('\n');
 
 const RESET_DONE =
-  "Done. I've deleted everything I stored for you: balances, cash numbers and your last trip. Text a trip anytime to start fresh.";
+  'I have deleted everything stored for you: your balances, cash figures and last trip. Send a trip at any time to start again.';
 
 const text = (body: string): OutMessage => ({ kind: 'text', body });
 
 function question(step: Step): OutMessage {
   switch (step) {
     case 'price':
-      return text("What's the cash price of that trip, in US dollars?");
+      return text('What is the cash price of the trip, in US dollars?');
     case 'balances':
       return text(
-        'Which points do you have, and roughly how many? Reply like: Chase 80k, Amex 45k\n(Chase, Capital One, Amex, Citi, Bank of America, Bilt, or NONE.)',
+        'Which points do you have, and roughly how many? For example: Chase 80k, Amex 45k\n(Chase, Capital One, Amex, Citi, Bank of America or Bilt. Reply NONE if you have none.)',
       );
     case 'chaseCard':
       return {
         kind: 'list',
-        body: 'Which Chase card are your points on? It decides your Points Boost range.',
+        body: 'Which Chase card holds your points? It determines your Points Boost range.',
         button: 'Choose card',
         rows: CHASE_CARD_CHOICES,
       };
     case 'reserveCutoff':
       return {
         kind: 'buttons',
-        body: 'Did you apply for your Sapphire Reserve before June 23, 2025? If so, points earned before Oct 26, 2025 get 1.5¢ in Chase Travel until Oct 2027.',
+        body: 'Did you apply for your Sapphire Reserve before June 23, 2025? If so, points earned before October 26, 2025 redeem at 1.5¢ in Chase Travel until October 2027.',
         buttons: [
           { id: 'yes', title: 'Yes, before' },
           { id: 'no', title: 'No, after' },
@@ -110,11 +110,11 @@ function question(step: Step): OutMessage {
         ],
       };
     case 'cash':
-      return text('How much cash could you spend on travel right now without stress?');
+      return text('How much cash could you spend on travel at the moment without difficulty?');
     case 'leftover':
-      return text("After bills, what's usually left over each month? It can be negative, e.g. -200.");
+      return text('After bills, how much is usually left over each month? It may be negative, for example -200.');
     case 'spend':
-      return text('And roughly how much do you spend in a typical month, all in?');
+      return text('Roughly how much do you spend in a typical month in total?');
   }
 }
 
@@ -197,7 +197,7 @@ function advance(state: ConversationState, ctx: Context, prefix: string[], event
   if (!trip?.price) {
     return {
       state,
-      replies: [text([...prefix, `Saved. Now text me a trip and its cash price, e.g. ${EXAMPLE}`].join('\n'))],
+      replies: [text([...prefix, `Saved. Now send a trip and its cash price, for example ${EXAMPLE}`].join('\n'))],
       events,
     };
   }
@@ -230,13 +230,13 @@ export function handleMessage(
   if (command === 'UPDATE') {
     state.profile = {};
     if (state.trip) delete state.trip.chaseTravelPoints;
-    return advance(state, ctx, ["Let's update your numbers."], events);
+    return advance(state, ctx, ['Updating your details.'], events);
   }
 
   if (state.pending) {
     const step = state.pending;
     if (!applyAnswer(state, step, msg)) {
-      return { state, replies: [text("Sorry, I didn't catch that."), question(step)], events };
+      return { state, replies: [text('Sorry, I could not read that answer.'), question(step)], events };
     }
     return advance(state, ctx, [], events);
   }
@@ -247,7 +247,7 @@ export function handleMessage(
   if (price !== null) {
     const hadProfile = nextMissing({ ...state, trip: undefined }) === null;
     state.trip = { price };
-    return advance(state, ctx, hadProfile ? ['Using your saved numbers. Reply UPDATE to change.'] : [], events);
+    return advance(state, ctx, hadProfile ? ['Using your saved details. Reply UPDATE to change them.'] : [], events);
   }
 
   // A points price for the last trip, pasted from Chase Travel.

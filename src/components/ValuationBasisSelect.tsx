@@ -15,8 +15,8 @@ interface ValuationBasisSelectProps {
 // precision. Kept in the same floor -> ceiling order as Portfolio's range,
 // so the control reads as "pick a point on that spectrum."
 const OPTIONS: { value: ValuationBasis; label: string; sublabel: string }[] = [
-  { value: 'cashBack', label: 'Cash-back floor', sublabel: 'If you cashed out' },
-  { value: 'guaranteed', label: 'Guaranteed travel', sublabel: 'Book any trip today' },
+  { value: 'cashBack', label: 'Cash-back floor', sublabel: 'If cashed out' },
+  { value: 'guaranteed', label: 'Guaranteed travel', sublabel: 'Any trip, today' },
   // The only one of the three that isn't a published rate, hence "potential"
   // and the "our estimate" sublabel — the wording is the disclosure.
   { value: 'transfer', label: 'Potential transfer value', sublabel: 'Our estimate' },
@@ -31,11 +31,11 @@ const OPTIONS: { value: ValuationBasis; label: string; sublabel: string }[] = [
 // being informative and needs explaining rather than suppressing.
 const BASIS_NOTES: Record<ValuationBasis, string> = {
   cashBack:
-    'What you could cash out for, with no travel restriction — the most conservative benchmark.',
+    'What the points would pay out as cash, with no travel booking required. The most conservative measure.',
   guaranteed:
-    "Bookable today through your issuer's travel portal, for any trip, with no award availability needed.",
+    "What the points buy through your bank's travel portal, for any trip, without searching for award seats.",
   transfer:
-    "This app's own estimate of award upside, not a published rate. Portal bookings always look like losses here — because they are, if you can transfer instead.",
+    "This app's estimate of the extra value from transferring to airline and hotel partners. Not a published rate, so portal bookings will look like losses here.",
 };
 
 export function ValuationBasisSelect({ onDark = false }: ValuationBasisSelectProps) {

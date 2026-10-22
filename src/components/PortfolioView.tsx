@@ -4,6 +4,7 @@ import { useCardBalances } from '../context/CardBalancesContext';
 import { PortfolioCard } from './PortfolioCard';
 import { PortfolioSummary } from './PortfolioSummary';
 import { Methodology } from './Methodology';
+import { PageIntro } from './PageShell';
 import { computeCardValuation } from '../utils/valuation';
 import { FOCUS_RING, ISSUER_LABELS, ISSUER_ORDER, TAP_TARGET } from '../styles/constants';
 import type { CardConfig, TransferPartner } from '../types';
@@ -36,71 +37,76 @@ export function PortfolioView() {
   }, 0);
 
   const handleClearAll = () => {
-    if (window.confirm('Clear all entered balances? This cannot be undone.')) {
+    if (window.confirm('Clear every balance you have entered? This cannot be undone.')) {
       clearAllBalances();
     }
   };
 
   return (
-    <div>
-      <div className="mb-1.5 flex flex-wrap items-start justify-between gap-3">
-        <h2 className="font-display text-2xl font-medium tracking-tight text-navy-950">
-          Portfolio
-        </h2>
-        <button
-          type="button"
-          onClick={handleClearAll}
-          className={`rounded-lg border border-navy/20 px-3 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
-        >
-          Clear all balances
-        </button>
+    <>
+      <PageIntro
+        title="Portfolio"
+        actions={
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className={`rounded-full border border-navy/20 px-4 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
+          >
+            Clear balances
+          </button>
+        }
+      >
+        <p>
+          Turn on each card you hold and enter its points balance to see what the points are worth,
+          from their cash-back value to their guaranteed travel value. Every bar uses the same scale,
+          so cards can be compared directly. Points combine only within the same bank.
+        </p>
+      </PageIntro>
+
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <PortfolioSummary
+          ownedCards={ownedCards}
+          balances={balances}
+          transferPartners={transferPartners}
+        />
+
+        {ISSUER_ORDER.map((issuer) => {
+          // Most premium (highest annual fee) first, left to right — annual
+          // fee is this roster's own signal for card tier, so no separate
+          // "premium rank" field is needed.
+          const issuerCards = cards
+            .filter((card) => card.issuer === issuer)
+            .sort((a, b) => b.annualFee - a.annualFee);
+          if (issuerCards.length === 0) return null;
+
+          return (
+            <section key={issuer} aria-labelledby={`issuer-${issuer}`} className="mb-12 last:mb-0">
+              <h2
+                id={`issuer-${issuer}`}
+                className="mb-4 font-display text-lg font-medium text-navy-950"
+              >
+                {ISSUER_LABELS[issuer]}
+              </h2>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                {issuerCards.map((card) => (
+                  <PortfolioCard
+                    key={card.id}
+                    card={card}
+                    balance={balances[card.id] ?? 0}
+                    onBalanceChange={(value) => setBalance(card.id, value)}
+                    owned={ownership[card.id] ?? false}
+                    onOwnedChange={(value) => setOwned(card.id, value)}
+                    allCards={ownedCards}
+                    transferPartners={transferPartners}
+                    axisMax={axisMax}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+        <Methodology />
       </div>
-      <p className="mb-8 max-w-2xl text-navy-950/60">
-        Enter your current balance for each card to see what those points are worth — from the
-        cash-back floor you could take today, up to your issuer's guaranteed travel rate. Every
-        bar shares one scale, so cards are directly comparable. Points only pool within the same
-        issuer's family of cards.
-      </p>
-
-      <PortfolioSummary
-        ownedCards={ownedCards}
-        balances={balances}
-        transferPartners={transferPartners}
-      />
-
-      {ISSUER_ORDER.map((issuer) => {
-        // Most premium (highest annual fee) first, left to right — annual
-        // fee is this roster's own signal for card tier, so no separate
-        // "premium rank" field is needed.
-        const issuerCards = cards
-          .filter((card) => card.issuer === issuer)
-          .sort((a, b) => b.annualFee - a.annualFee);
-        if (issuerCards.length === 0) return null;
-
-        return (
-          <section key={issuer} className="mb-10 last:mb-0">
-            <h3 className="mb-4 font-display text-xs font-semibold uppercase tracking-wider text-navy-950/45">
-              {ISSUER_LABELS[issuer]}
-            </h3>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              {issuerCards.map((card) => (
-                <PortfolioCard
-                  key={card.id}
-                  card={card}
-                  balance={balances[card.id] ?? 0}
-                  onBalanceChange={(value) => setBalance(card.id, value)}
-                  owned={ownership[card.id] ?? false}
-                  onOwnedChange={(value) => setOwned(card.id, value)}
-                  allCards={ownedCards}
-                  transferPartners={transferPartners}
-                  axisMax={axisMax}
-                />
-              ))}
-            </div>
-          </section>
-        );
-      })}
-      <Methodology />
-    </div>
+    </>
   );
 }

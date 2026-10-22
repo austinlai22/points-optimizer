@@ -70,11 +70,11 @@ export function formatVerdictReply(result: VerdictResult, price: number, appUrl:
   if (result.chaseTravel) {
     lines.push(
       result.chaseTravel.pastedPricePoints === null
-        ? `${result.chaseTravel.sentence} Reply with the points price you see there to check it.`
+        ? `${result.chaseTravel.sentence} Reply with the points price Chase Travel shows to check it.`
         : result.chaseTravel.sentence,
     );
   }
-  lines.push(`Details: ${appUrl}/app?price=${price}`);
-  lines.push('Estimates, not financial advice. Verify prices before booking.');
+  lines.push(`Full details: ${appUrl}/app?price=${price}`);
+  lines.push('These are estimates, not financial advice. Please confirm prices before booking.');
   return lines.join('\n');
 }
