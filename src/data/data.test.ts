@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import cardsData from './cards.json';
 import transferPartnersData from './transferPartners.json';
+import boostData from './chase-points-boost.json';
+import verdictConfig from './verdict-config.json';
 import {
   computeCardValuation,
   computeRedemptionPaths,
@@ -544,5 +546,54 @@ describe('real data: valuation basis holds up across every issuer', () => {
         true,
       );
     }
+  });
+});
+
+describe('real data: chase-points-boost.json', () => {
+  // Every rule the verdict uses, plus the not-yet-encoded Preferred legacy note.
+  const rules = [
+    boostData.non_boost_rate,
+    boostData.reserve_legacy,
+    boostData.preferred_legacy,
+    ...Object.values(boostData.card_types),
+  ];
+
+  it('cites a Chase page for every rule', () => {
+    for (const rule of rules) {
+      expect(new URL(rule.source_url).hostname).toMatch(/(^|\.)chase\.com$/);
+    }
+  });
+
+  it('dates every rule, and none is stale', () => {
+    for (const rule of rules) {
+      expect(isValidIsoDate(rule.verified_on), rule.source_url).toBe(true);
+      expect(isStale(rule.verified_on), `${rule.source_url} last checked ${rule.verified_on}`).toBe(
+        false,
+      );
+    }
+  });
+
+  it('keeps the legacy dates in order', () => {
+    const { applied_before, points_earned_before, expires_on } = boostData.reserve_legacy;
+    for (const date of [applied_before, points_earned_before, expires_on]) {
+      expect(isValidIsoDate(date)).toBe(true);
+    }
+    expect(applied_before < points_earned_before).toBe(true);
+    expect(points_earned_before < expires_on).toBe(true);
+  });
+
+  it('never boosts below the 1:1 rate', () => {
+    for (const cardType of Object.values(boostData.card_types)) {
+      if (cardType.max_multiplier !== null) expect(cardType.max_multiplier).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
+describe('real data: verdict-config.json', () => {
+  it('keeps every threshold in a sensible range', () => {
+    expect(verdictConfig.clearly_beats_benchmark_multiplier).toBeGreaterThanOrEqual(1);
+    expect(verdictConfig.strain.min_months_of_buffer).toBeGreaterThanOrEqual(0);
+    expect(verdictConfig.strain.negative_leftover_max_share_of_cash).toBeGreaterThan(0);
+    expect(verdictConfig.strain.negative_leftover_max_share_of_cash).toBeLessThanOrEqual(1);
   });
 });

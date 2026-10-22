@@ -1,22 +1,4 @@
-import type { Issuer } from '../types';
-
-export const ISSUER_ORDER: Issuer[] = [
-  'chase',
-  'capitalOne',
-  'amex',
-  'citi',
-  'bankOfAmerica',
-  'bilt',
-];
-
-export const ISSUER_LABELS: Record<Issuer, string> = {
-  chase: 'Chase',
-  capitalOne: 'Capital One',
-  amex: 'Amex',
-  citi: 'Citi',
-  bankOfAmerica: 'Bank of America',
-  bilt: 'Bilt',
-};
+export { ISSUER_LABELS, ISSUER_ORDER } from '../utils/issuers';
 
 export const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50';

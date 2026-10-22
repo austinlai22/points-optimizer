@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "notes": "Heuristics, not facts: nobody publishes these, so none has a source_url. They are this app's own defaults, kept here so they can be tuned without touching the engine.",
+  "clearly_beats_benchmark_multiplier": 1.2,
+  "strain": {
+    "min_months_of_buffer": 1,
+    "negative_leftover_max_share_of_cash": 0.25
+  }
+}

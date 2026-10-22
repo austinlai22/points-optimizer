@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "notes": "Only what Chase itself states. Every rule carries the Chase page it came from and the date it was last read there. Quotes are verbatim from that page.",
+  "non_boost_rate": {
+    "cents_per_point": 1,
+    "quote": "For Chase Travel purchases not eligible for Points Boost Offers, points can be redeemed at a 1:1 rate on Chase Travel.",
+    "source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
+    "verified_on": "2026-10-21"
+  },
+  "reserve_legacy": {
+    "cents_per_point": 1.5,
+    "card_type": "reserve",
+    "applied_before": "2025-06-23",
+    "points_earned_before": "2025-10-26",
+    "expires_on": "2027-10-26",
+    "quote": "Points earned prior to October 26, 2025, by Sapphire Reserve cardmembers who applied prior to June 23, 2025, can be redeemed at 1.5x on Chase Travel until October 26, 2027.",
+    "source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
+    "verified_on": "2026-10-21"
+  },
+  "preferred_legacy": {
+    "encoded": false,
+    "todo": "Confirm on chase.com before encoding. Only third-party sources describe a Sapphire Preferred legacy rate; until Chase states it, Preferred points are treated as 1 cent outside Points Boost.",
+    "source_url": "https://www.chase.com/sapphire-cards/personal/preferred",
+    "verified_on": "2026-10-21"
+  },
+  "card_types": {
+    "reserve": {
+      "name": "Sapphire Reserve",
+      "boost_eligible": true,
+      "max_multiplier": 2,
+      "quote": "your points are worth up to 2x when you book a hotel that's part of The Edit, and up to 2x when redeemed for other top-booked hotels and flights",
+      "source_url": "https://www.chase.com/travel/guide/trips/chase-sapphire-points-boost-benefits-guide",
+      "verified_on": "2026-10-21"
+    },
+    "preferred": {
+      "name": "Sapphire Preferred",
+      "boost_eligible": true,
+      "max_multiplier": 1.5,
+      "quote": "With Points Boost offers, your points are worth up to 1.5x on top-booked hotels and flights with select airlines through Chase Travel.",
+      "source_url": "https://www.chase.com/sapphire-cards/personal/preferred",
+      "verified_on": "2026-10-21"
+    },
+    "reserveForBusiness": {
+      "name": "Sapphire Reserve for Business",
+      "boost_eligible": true,
+      "max_multiplier": 2,
+      "quote": "With Points Boost offers, cardmembers' points will be worth up to 2x on thousands of both top booked hotels and flights with select airlines and hotels through Chase Travel",
+      "source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
+      "verified_on": "2026-10-21"
+    },
+    "jpmReserve": {
+      "name": "J.P. Morgan Reserve",
+      "boost_eligible": true,
+      "max_multiplier": null,
+      "quote": "Points Boost offers are also available across the Chase Sapphire Reserve for Business, J.P. Morgan Reserve, Ink Preferred and Ink Plus cards.",
+      "source_url": "https://www.chase.com/travel/guide/trips/chase-sapphire-points-boost-benefits-guide",
+      "verified_on": "2026-10-21"
+    },
+    "inkPreferred": {
+      "name": "Ink Business Preferred",
+      "boost_eligible": true,
+      "max_multiplier": null,
+      "quote": "Points Boost offers are also available across the Chase Sapphire Reserve for Business, J.P. Morgan Reserve, Ink Preferred and Ink Plus cards.",
+      "source_url": "https://www.chase.com/travel/guide/trips/chase-sapphire-points-boost-benefits-guide",
+      "verified_on": "2026-10-21"
+    },
+    "inkPlus": {
+      "name": "Ink Plus",
+      "boost_eligible": true,
+      "max_multiplier": null,
+      "quote": "Points Boost offers are also available across the Chase Sapphire Reserve for Business, J.P. Morgan Reserve, Ink Preferred and Ink Plus cards.",
+      "source_url": "https://www.chase.com/travel/guide/trips/chase-sapphire-points-boost-benefits-guide",
+      "verified_on": "2026-10-21"
+    },
+    "other": {
+      "name": "Another Chase card",
+      "boost_eligible": false,
+      "max_multiplier": null,
+      "quote": "Not in Chase's list of Points Boost cards, so only the 1:1 Chase Travel rate applies.",
+      "source_url": "https://www.chase.com/travel/guide/trips/chase-sapphire-points-boost-benefits-guide",
+      "verified_on": "2026-10-21"
+    }
+  }
+}
