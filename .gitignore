@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Secrets: only .env.example (no values) is committed
+.env
+.env.*
+!.env.example

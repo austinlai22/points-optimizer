@@ -65,12 +65,15 @@ export function Methodology() {
           the best portal multiplier available anywhere in your held cards from the same issuer
           (see "Point pooling" below), no transferring required. Chase, Capital One, Amex, and Citi
           have each converged on that same flat 1¢/point guaranteed rate across their whole card
-          lineup, with no card-tier boost above it. As of October 2025 Chase specifically replaced
-          its old flat 1.25×/1.5× Sapphire portal rates with a selective, non-guaranteed "Points
-          Boost" promotion (up to 1.75¢–2¢, but only for specific hotels/airlines Chase picks) —
-          and Amex/Citi similarly offer selective premium redemptions above 1¢ for specific
-          bookings. None of that selective, promotional upside is modeled here; only each card's
-          flat guaranteed rate is. Bank of America Premium Rewards Elite is the one real exception
+          lineup, with no card-tier boost above it. Chase replaced its old flat 1.25×/1.5× Sapphire
+          portal rates with "Points Boost": rotating offers on selected hotels and flights worth up
+          to 2× on Sapphire Reserve and 1.5× on Sapphire Preferred. Reserve cardmembers who
+          applied before June 23, 2025 also keep 1.5× on points earned before Oct 26, 2025, until
+          Oct 26, 2027. Portfolio and the ranked paths use only the flat guaranteed rate, because
+          a Boost isn't guaranteed for any given trip. The verdict handles Chase separately: it
+          shows the Boost range, applies the legacy rate where it holds, and gives a breakeven
+          price you can check against what Chase Travel actually shows. Amex and Citi offer
+          selective premium redemptions above 1¢ too, which aren't modeled. Bank of America Premium Rewards Elite is the one real exception
           to "every card is flat 1¢": redeeming points for airfare through Bank of America's Travel
           Center gets a genuine, guaranteed 20% discount, worth 1.25¢/point — modeled here as that
           card's own higher portal multiplier, since it's the one guaranteed (not selective or
@@ -102,7 +105,22 @@ export function Methodology() {
           realistic value — there's no further upside to model because none exists.
         </p>
         <p>
-          <span className="font-medium text-navy-950/70">Trip Optimizer cost:</span> each
+          <span className="font-medium text-navy-950/70">The verdict:</span> for each way of
+          paying with points, it works out cents per point ((cash price − award taxes) ÷ points)
+          and compares that with what those points are usually worth, meaning the rate you picked
+          in "Value points at". It also checks your cash: paying counts as <em>strained</em> if it
+          would leave less than a month of your usual spending, or take more than a quarter of
+          your cash while you're spending more than you earn. Those two thresholds are this app's
+          rules of thumb, not published figures. Then, in order: if no points option holds its
+          value, pay cash, or wait if cash is strained. If cash is strained and points hold their
+          value, use points. Otherwise points have to clearly beat their usual value (by 20%) to
+          be worth spending, or the answer is pay cash and keep them. The Chase Travel breakeven
+          is the highest points price at which Chase Travel would become the verdict:{' '}
+          cash price × 100 ÷ the cents per point it has to beat, rounded down. Because it uses the
+          same bar as the verdict, the two can't disagree.
+        </p>
+        <p>
+          <span className="font-medium text-navy-950/70">Cost of each points option:</span> each
           redemption path prices the points it uses at whichever rate you've picked in "Value
           points at" — the same per-point figure Portfolio shows for that issuer — not the trip's
           cash price and not any one card's own weaker rate. Lower cost is a better deal; "Poor
@@ -161,7 +179,7 @@ export function Methodology() {
           <em>Value points at</em> selector lets you choose, and the three options are exactly the
           three figures above: the cash-back floor, the guaranteed travel rate (the default), and
           the potential transfer value. Whichever you pick drives every dollar figure in both views, so
-          Portfolio and Trip Optimizer can't contradict each other. Worth knowing what it does and
+          Portfolio and the trip check can't contradict each other. Worth knowing what it does and
           doesn't change: because cost is points × rate, raising the basis scales every path's
           cost together, so <em>the ranking barely moves — the cheapest path stays the cheapest</em>.
           What changes is the verdict: at the transfer basis a portal redemption costs{' '}
@@ -228,8 +246,8 @@ export function Methodology() {
           Emirates, or Wyndham Rewards) happen to accept transfers from more than one of them —
           each issuer still transfers there at its own ratio, from its own separate pool of
           points. If you only hold one card in a program, its own rate applies since there's no
-          better card in that family to pool into. That's why some cards' figures, and some Trip
-          Optimizer paths, are marked "via pooling" or "requires transfer-in."
+          better card in that family to pool into. That's why some cards' figures, and some ranked
+          paths, are marked "via pooling" or "requires transfer-in."
         </p>
         <p>
           <span className="font-medium text-navy-950/70">Card-specific transfer ratios:</span>{' '}

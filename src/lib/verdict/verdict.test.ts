@@ -275,6 +275,14 @@ describe('cash runway', () => {
     expect(runway.strained).toBe(false);
   });
 
+  it('says "less than a week" rather than "about 0 months"', () => {
+    const result = run({
+      cash: { available: 1_050, monthlyLeftover: 100, monthlySpend: 2_000 },
+      award: { partnerId: 'hyatt', pointsRequired: 25_000 },
+    });
+    expect(result.reason).toMatch(/leave less than a week of spending money\.$/);
+  });
+
   it('reports months of buffer left after paying', () => {
     const runway = computeRunway({ available: 5_000, monthlyLeftover: 0, monthlySpend: 2_000 }, 1_000);
     expect(runway.bufferAfter).toBe(4_000);

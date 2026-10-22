@@ -45,3 +45,12 @@ jobs:
       # so a type error fails here even though vitest would not see it.
       - name: Build
         run: npm run build
+
+      # api/*.js are bundles of server/, committed because Vercel deploys them
+      # as-is (see scripts/build-api.mjs for why). Rebuild them and fail if the
+      # result differs from what's committed: a server change pushed without
+      # its bundle would otherwise deploy the old code.
+      - name: API bundles match their source
+        run: |
+          npm run build:api
+          git diff --exit-code -- api/

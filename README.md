@@ -2,42 +2,71 @@
 
 **[pointcompass.vercel.app](https://pointcompass.vercel.app)**
 
-A free, client-only tool that values your Chase, Capital One, American Express, Citi, Bank of America and Bilt points/miles, and helps you figure out which card to redeem through for a specific trip.
+Points or cash? Know before you book. PointCompass tells you whether to pay cash, use points, or wait on a trip, based on your points *and* your cash cushion. It covers Chase, Capital One, American Express, Citi, Bank of America and Bilt.
 
-Nothing is sent to a server — all balances and inputs stay in your browser (`localStorage`).
+Other points tools answer "which seat can my points get?" PointCompass answers "should I spend points on this trip at all, given my money right now?" It's a decision layer, not an award search engine: it never fetches fares or award space, it works from the prices you enter.
 
 ## What it does
 
-**Portfolio** — Enter the balance on each card you hold and see three figures per card:
-- **Cash-back floor** — the guaranteed, unconditional value if you cashed out today
-- **Realistic value** — the guaranteed travel-portal redemption rate
-- **Potential transfer value** — this app's own estimate of award upside, available via the "Value points at" selector rather than shown by default, since no issuer publishes it
+**The verdict** (`/app`, "Check a trip"): enter a trip's cash price, your cash cushion (cash for travel now, what's left each month, monthly spending) and optionally an award price. You get one of:
 
-Balances pool automatically across cards in the same issuer's family (e.g. a no-transfer Chase Freedom balance inherits a held Sapphire Reserve's transfer access), the same way a rational cardholder would actually consolidate points before redeeming.
+- **Pay cash**: points are worth more elsewhere, or only match their usual value
+- **Transfer points**: a transfer partner clearly beats what the points are usually worth
+- **Book in Chase Travel**: Chase Travel wins, at or below a breakeven price you can check
+- **Book through a travel portal**: another issuer's portal wins (e.g. when cash is tight)
+- **Wait to book**: paying cash would strain you and no points option holds its value
 
-**Trip Optimizer** — Enter a trip's cash price and the hotel/airline brand you'd redeem through, and see every redemption path (each card's own portal, plus any transfer partner) ranked by cost — the opportunity cost of spending those points instead of your best guaranteed alternative. Lower cost is a better deal. The current scenario is reflected in the URL, so you can copy the link to share or bookmark it.
+Each verdict comes with a one-line reason, cents per point against the benchmark, what paying cash leaves in your cushion, and every assumption behind it. For Chase, it shows your Points Boost range and the **breakeven**: the most points a Chase Travel price can be and still be your best move. Paste the price Chase shows you and it checks it exactly.
+
+**Ranked paths**: below the verdict, every way to pay with points (each transfer partner and each portal) ranked by cost.
+
+**Portfolio**: what each card's balance is worth, from cash-back floor to guaranteed travel value, with an optional "potential transfer value" estimate.
+
+**WhatsApp pilot**: the same verdict by text, on a Meta test number for a handful of testers. See [docs/whatsapp-setup.md](docs/whatsapp-setup.md).
+
+## Privacy
+
+On the web, everything you type stays in your browser (`localStorage`); share links carry the trip, never balances or cash figures. The site counts a few anonymous events (which verdict was shown, a random per-browser id, nothing you typed) to measure the pilot, and skips that under Do Not Track. The WhatsApp pilot stores the minimum needed to remember your answers, keyed to a hashed phone number, and `RESET` deletes it. No bank logins, ever. Full details: [/privacy](https://pointcompass.vercel.app/privacy).
 
 ## Valuation model
 
-This app's own transparent, reasoned assumptions — not a claim to match The Points Guy, NerdWallet, or any other published valuation guide. Full breakdown (with live numbers) is in the "Methodology & assumptions" disclosure at the bottom of each page in the app. Transfer ratios and card terms carry per-datum verification dates, shown in that disclosure and enforced by a test that fails once anything ages past six months — issuers change these without notice. Confirm current terms directly with each issuer before making redemption decisions.
+The app's own transparent assumptions, not a claim to match The Points Guy, NerdWallet or any other published guide. The full breakdown, with live numbers, is in "Methodology & assumptions" at the bottom of the app.
+
+- Chase Points Boost and the Sapphire Reserve legacy rate live in [`src/data/chase-points-boost.json`](src/data/chase-points-boost.json), only as Chase states them: each rule carries its chase.com link, Chase's exact wording and the date it was checked.
+- Verdict thresholds (the 1.2× "clearly beats" bar, what counts as strained cash) are heuristics in [`src/data/verdict-config.json`](src/data/verdict-config.json), not code.
+- Transfer ratios and card terms carry verification dates. A test fails once any of them, or any Chase rule, ages past six months.
+
+## Code layout
+
+| Path | What |
+|---|---|
+| `src/lib/verdict/` | The verdict engine: pure functions, no UI, shared by the web app and WhatsApp |
+| `src/utils/valuation.ts` | Point valuation and ranked redemption paths |
+| `src/data/` | Cards, transfer partners, Chase Boost rules, verdict thresholds |
+| `src/pages/`, `src/components/` | Landing page, `/app`, `/privacy` |
+| `server/` | WhatsApp webhook, event counts, Plaid sandbox (TypeScript source) |
+| `api/` | The same, bundled for Vercel by `npm run build:api` (generated; committed) |
 
 ## Tech stack
 
-Vite + React 19 + TypeScript + Tailwind CSS v4 (CSS-first config, no `tailwind.config.js`). No backend, no database, no auth.
+Vite + React 19 + TypeScript + Tailwind CSS v4, routed with a small pushState router. Three Vercel functions in `api/`, and Upstash Redis (free tier) for WhatsApp state and event counts. Plaid is sandbox-only, behind `ENABLE_PLAID_SANDBOX`.
 
 ## Running locally
 
 ```bash
 npm install
-npm run dev      # start the dev server
-npm test         # run the vitest suite
-npm run build    # type-check and produce a production build
+npm run dev        # start the dev server (the web app needs no env vars)
+npm test           # run the vitest suite
+npm run build      # type-check and produce a production build
+npm run build:api  # rebundle server/ into api/ after changing server code
 ```
+
+Environment variables for the functions are listed in [`.env.example`](.env.example); put real values in Vercel, never in the repo.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 ## Disclaimer
 
-PointCompass is an independent estimation tool and is not affiliated with, endorsed by, or sponsored by Chase, Capital One, American Express, Citi, Bank of America, Bilt, or any airline or hotel program referenced in the app. Figures are illustrative estimates based on this app's own assumptions — not financial advice.
+PointCompass is an independent estimation tool and is not affiliated with, endorsed by, or sponsored by Chase, Capital One, American Express, Citi, Bank of America, Bilt, or any airline or hotel program referenced in the app. Figures are estimates based on this app's own assumptions, not financial advice. Verify prices and current terms before booking.

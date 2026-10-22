@@ -16,7 +16,20 @@ import {
 import { RedemptionPathCard } from './RedemptionPathCard';
 import { ValuationBasisSelect } from './ValuationBasisSelect';
 import { Methodology } from './Methodology';
-import { formatUSD, parseNonNegativeNumber } from '../utils/format';
+import { VerdictCard } from './VerdictCard';
+import { CashCushionInputs } from './CashCushionInputs';
+import { ChaseTravelInputs } from './ChaseTravelInputs';
+import {
+  EMPTY_CASH_INPUTS,
+  EMPTY_CHASE_INPUTS,
+  sanitizeCashInputs,
+  sanitizeChaseInputs,
+} from '../utils/verdictInputs';
+import { evaluateVerdict, inferChaseCardType } from '../lib/verdict';
+import type { VerdictResult } from '../lib/verdict/types';
+import { track } from '../utils/analytics';
+import { usePersistentState } from '../utils/usePersistentState';
+import { formatUSD, parseFiniteNumber, parseNonNegativeNumber } from '../utils/format';
 import { DEFAULT_VALUATION_BASIS } from '../types';
 import type { CardConfig, Issuer, PartnerType, RedemptionPath, TransferPartner } from '../types';
 
@@ -30,6 +43,10 @@ const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
 const PARTNER_TYPE_ORDER: PartnerType[] = ['hotel', 'airline'];
 
 const TRIP_STORAGE_KEY = 'cco:tripOptimizer';
+// Cash and Chase card details belong to this browser, never the URL, so a
+// shared trip link can't carry someone's finances along with it.
+const CASH_STORAGE_KEY = 'cco:cash';
+const CHASE_STORAGE_KEY = 'cco:chase';
 
 interface TripInputs {
   tripCashPrice: number;
@@ -37,6 +54,8 @@ interface TripInputs {
   pointsRequired: number;
   partnerPointsHeld: number;
   awardCashFees: number;
+  // A points price the user saw in Chase Travel for this trip.
+  chaseTravelPoints: number;
 }
 
 const DEFAULT_TRIP_INPUTS: TripInputs = {
@@ -45,6 +64,7 @@ const DEFAULT_TRIP_INPUTS: TripInputs = {
   pointsRequired: 0,
   partnerPointsHeld: 0,
   awardCashFees: 0,
+  chaseTravelPoints: 0,
 };
 
 function sanitizeStoredNumber(value: unknown): number {
@@ -65,6 +85,7 @@ function loadInitialTripInputs(): TripInputs {
       pointsRequired: parseNonNegativeNumber(params.get('points') ?? ''),
       partnerPointsHeld: parseNonNegativeNumber(params.get('held') ?? ''),
       awardCashFees: parseNonNegativeNumber(params.get('fees') ?? ''),
+      chaseTravelPoints: parseNonNegativeNumber(params.get('ct') ?? ''),
     };
   }
   try {
@@ -77,6 +98,7 @@ function loadInitialTripInputs(): TripInputs {
       pointsRequired: sanitizeStoredNumber(parsed.pointsRequired),
       partnerPointsHeld: sanitizeStoredNumber(parsed.partnerPointsHeld),
       awardCashFees: sanitizeStoredNumber(parsed.awardCashFees),
+      chaseTravelPoints: sanitizeStoredNumber(parsed.chaseTravelPoints),
     };
   } catch {
     return DEFAULT_TRIP_INPUTS;
@@ -164,7 +186,12 @@ function ChevronDownIcon() {
   );
 }
 
-export function TripOptimizerView() {
+interface TripOptimizerViewProps {
+  // Switches to Portfolio, for someone who hasn't marked any cards yet.
+  onOpenPortfolio?: () => void;
+}
+
+export function TripOptimizerView({ onOpenPortfolio }: TripOptimizerViewProps = {}) {
   const { balances, ownership, basis } = useCardBalances();
   const initialTripInputs = useMemo(loadInitialTripInputs, []);
   const [tripCashPrice, setTripCashPrice] = useState(initialTripInputs.tripCashPrice);
@@ -175,7 +202,10 @@ export function TripOptimizerView() {
   const [pointsRequired, setPointsRequired] = useState(initialTripInputs.pointsRequired);
   const [partnerPointsHeld, setPartnerPointsHeld] = useState(initialTripInputs.partnerPointsHeld);
   const [awardCashFees, setAwardCashFees] = useState(initialTripInputs.awardCashFees);
+  const [chaseTravelPoints, setChaseTravelPoints] = useState(initialTripInputs.chaseTravelPoints);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [cashInputs, setCashInputs] = usePersistentState(CASH_STORAGE_KEY, EMPTY_CASH_INPUTS, sanitizeCashInputs);
+  const [chaseInputs, setChaseInputs] = usePersistentState(CHASE_STORAGE_KEY, EMPTY_CHASE_INPUTS, sanitizeChaseInputs);
 
   const ownedCards = useMemo(() => cards.filter((card) => ownership[card.id]), [ownership]);
   const ownedTransferEligibleIssuers = useMemo(
@@ -228,6 +258,67 @@ export function TripOptimizerView() {
     ],
   );
 
+  const ownsChase = ownedCards.some((card) => card.issuer === 'chase');
+  const inferredChaseCardType = useMemo(() => inferChaseCardType(ownedCards), [ownedCards]);
+
+  const cash = {
+    available: parseFiniteNumber(cashInputs.available),
+    monthlyLeftover: parseFiniteNumber(cashInputs.leftover),
+    monthlySpend: parseFiniteNumber(cashInputs.spend),
+  };
+  const cashComplete = cash.available !== null && cash.monthlyLeftover !== null && cash.monthlySpend !== null;
+
+  // The same engine the WhatsApp bot uses, fed the same inputs as the ranked
+  // paths below, so the verdict and the list can't disagree.
+  const verdict: VerdictResult | null = useMemo(() => {
+    if (!(tripCashPrice > 0) || !cashComplete) return null;
+    const legacyPoints = parseFiniteNumber(chaseInputs.legacyPoints);
+    try {
+      return evaluateVerdict({
+        tripCashPrice,
+        awardTaxes: awardCashFees,
+        ownedCards,
+        balances,
+        transferPartners,
+        award:
+          selectedPartnerId && pointsRequired > 0
+            ? { partnerId: selectedPartnerId, pointsRequired, partnerPointsHeld }
+            : undefined,
+        basis,
+        chase: {
+          cardType: chaseInputs.cardType || inferredChaseCardType,
+          reserveAppliedBeforeCutoff: chaseInputs.appliedBeforeCutoff ?? undefined,
+          legacyPoints: legacyPoints !== null && legacyPoints >= 0 ? legacyPoints : undefined,
+          travelPricePoints: ownsChase && chaseTravelPoints > 0 ? chaseTravelPoints : undefined,
+        },
+        cash: {
+          available: cash.available!,
+          monthlyLeftover: cash.monthlyLeftover!,
+          monthlySpend: Math.max(cash.monthlySpend!, 0),
+        },
+      });
+    } catch {
+      return null;
+    }
+  }, [
+    tripCashPrice, cashComplete, cash.available, cash.monthlyLeftover, cash.monthlySpend,
+    awardCashFees, ownedCards, balances, selectedPartnerId, pointsRequired, partnerPointsHeld,
+    basis, chaseInputs, inferredChaseCardType, ownsChase, chaseTravelPoints,
+  ]);
+
+  // Pilot counts: a verdict counts once it has stayed put for a moment, so
+  // typing "1", "12", "120" into a field isn't three verdicts.
+  const verdictKey = verdict ? verdict.verdict : null;
+  const pastedUsed = verdict?.chaseTravel?.pastedPricePoints != null;
+  useEffect(() => {
+    if (!verdictKey) return;
+    const timer = setTimeout(() => {
+      track({ event: 'verdict_shown', verdict: verdictKey });
+      if (pastedUsed) track({ event: 'pasted_price_used' });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [verdictKey, pastedUsed]);
+
   const ranks = useMemo(() => computeDenseRanks(paths.map((p) => p.cost)), [paths]);
   const countByRank = useMemo(
     () =>
@@ -273,6 +364,7 @@ export function TripOptimizerView() {
           pointsRequired,
           partnerPointsHeld,
           awardCashFees,
+          chaseTravelPoints,
         }),
       );
     } catch {
@@ -285,6 +377,7 @@ export function TripOptimizerView() {
     if (pointsRequired > 0) params.set('points', String(pointsRequired));
     if (partnerPointsHeld > 0) params.set('held', String(partnerPointsHeld));
     if (awardCashFees > 0) params.set('fees', String(awardCashFees));
+    if (chaseTravelPoints > 0) params.set('ct', String(chaseTravelPoints));
     // Basis lives in shared context (Portfolio uses it too) but is
     // serialized here alongside the other trip inputs, so one copied link
     // reproduces the whole scenario. Omitted at the default, matching how
@@ -292,7 +385,7 @@ export function TripOptimizerView() {
     if (basis !== DEFAULT_VALUATION_BASIS) params.set('basis', basis);
     const query = params.toString();
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
-  }, [tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, basis]);
+  }, [tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints, basis]);
 
   const handleCopyLink = async () => {
     try {
@@ -308,13 +401,31 @@ export function TripOptimizerView() {
   return (
     <div>
       <h2 className="mb-1.5 font-display text-2xl font-medium tracking-tight text-navy-950">
-        Trip Optimizer
+        Check a trip
       </h2>
       <p className="mb-8 max-w-2xl text-navy-950/60">
-        Choose the hotel or flight brand you'd redeem through, then enter the trip's cash price
-        and what the award costs, to see every redemption path ranked by cost — the lowest cost
-        is the best deal.
+        Enter the trip's cash price and your cash cushion to get a verdict: pay cash, use points,
+        or wait. Add an award price from a hotel or airline to weigh transferring too. Every way
+        to pay with points is ranked below the verdict.
       </p>
+
+      {ownedCards.length === 0 && (
+        <div className="mb-8 rounded-2xl border border-amber/30 bg-amber/5 px-5 py-4">
+          <p className="text-sm text-navy-950/70">
+            Mark the cards you hold, and their balances, in Portfolio first. The verdict can only
+            weigh points it knows about.
+          </p>
+          {onOpenPortfolio && (
+            <button
+              type="button"
+              onClick={onOpenPortfolio}
+              className={`mt-2 rounded-lg text-sm font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}
+            >
+              Go to Portfolio
+            </button>
+          )}
+        </div>
+      )}
 
       <div className={`${CARD_SURFACE} mb-8 p-6`}>
         {/* Brand leads, because it's what determines whether the award
@@ -508,6 +619,38 @@ export function TripOptimizerView() {
         </div>
       </div>
 
+      <div className={`${CARD_SURFACE} mb-8 p-6`}>
+        <h3 className="mb-1 font-display text-lg font-medium text-navy-950">Your cash cushion</h3>
+        <p className="mb-5 max-w-2xl text-sm text-navy-950/55">
+          Points are only half the question. These decide whether paying cash would strain you.
+        </p>
+        <CashCushionInputs values={cashInputs} onChange={setCashInputs} />
+
+        {ownsChase && (
+          <div className="mt-7 border-t border-navy/10 pt-6">
+            <h3 className="mb-4 font-display text-lg font-medium text-navy-950">Chase Travel</h3>
+            <ChaseTravelInputs
+              values={chaseInputs}
+              inferredCardType={inferredChaseCardType}
+              onChange={setChaseInputs}
+              pastedPoints={chaseTravelPoints}
+              onPastedPointsChange={setChaseTravelPoints}
+            />
+          </div>
+        )}
+      </div>
+
+      {verdict ? (
+        <VerdictCard result={verdict} />
+      ) : (
+        tripCashPrice > 0 && (
+          <p className="mb-8 rounded-2xl border border-dashed border-navy/20 px-5 py-4 text-sm text-navy-950/55">
+            Fill in your cash cushion above to get a verdict. The ranked options below already
+            account for your points.
+          </p>
+        )
+      )}
+
       {paths.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-navy/20 px-6 py-14 text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-navy/10 text-navy">
@@ -520,6 +663,9 @@ export function TripOptimizerView() {
         </div>
       ) : (
         <>
+          <h3 className="mb-2 font-display text-lg font-medium text-navy-950">
+            Every way to pay with points
+          </h3>
           <TakeawayLine
             topPath={paths[0]}
             tiedCount={countByRank[1] ?? 1}

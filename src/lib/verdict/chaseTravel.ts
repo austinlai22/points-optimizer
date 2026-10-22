@@ -16,6 +16,14 @@ export function getChaseCardType(cardType: ChaseCardType): BoostCardType {
   return CARD_TYPES[cardType];
 }
 
+// Every card type Chase names, in the data file's order, for pickers.
+export function listChaseCardTypes(): { id: ChaseCardType; name: string }[] {
+  return (Object.entries(CARD_TYPES) as [ChaseCardType, BoostCardType][]).map(([id, t]) => ({
+    id,
+    name: t.name,
+  }));
+}
+
 // The Chase card that decides Boost and legacy terms, when the user hasn't
 // said. Only the two Sapphires are in cards.json, so anything else held is
 // "other" until the input asks.

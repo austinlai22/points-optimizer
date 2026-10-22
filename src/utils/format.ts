@@ -35,3 +35,11 @@ export function parseNonNegativeNumber(value: string): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
+
+// For inputs that may legitimately be negative, like monthly leftover after
+// bills. Empty or unreadable input is null ("not entered"), not zero.
+export function parseFiniteNumber(value: string): number | null {
+  if (value.trim() === '' || value.trim() === '-') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}

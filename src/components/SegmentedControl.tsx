@@ -44,7 +44,7 @@ function CompassIcon() {
 
 const OPTIONS = [
   { value: 'portfolio' as const, label: 'Portfolio', Icon: WalletIcon },
-  { value: 'tripOptimizer' as const, label: 'Trip Optimizer', Icon: CompassIcon },
+  { value: 'tripOptimizer' as const, label: 'Check a trip', Icon: CompassIcon },
 ];
 
 export function SegmentedControl({ value, onChange }: SegmentedControlProps) {

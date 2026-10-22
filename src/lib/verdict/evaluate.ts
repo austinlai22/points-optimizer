@@ -13,6 +13,7 @@ import {
   isLegacyActive,
   priceChaseTravel,
 } from './chaseTravel';
+import { describeMonths, formatCents, formatMonths } from './labels';
 import { computeRunway } from './runway';
 import type {
   ChaseTravelResult,
@@ -100,22 +101,13 @@ function compareOptions(a: PointsOption, b: PointsOption): number {
   return a.cashFees - b.cashFees;
 }
 
-function formatCents(cents: number): string {
-  return `${Number(cents.toFixed(2))}¢`;
-}
-
-function formatMonths(months: number): string {
-  const rounded = Math.max(0, Number(months.toFixed(1)));
-  return `${rounded} ${rounded === 1 ? 'month' : 'months'}`;
-}
-
 // Why paying cash is strained, as a sentence. Names the first rule that fired.
 function strainSentence(runway: RunwayResult): string {
   if (runway.strainReasons.includes('negativeBuffer')) {
     return `Paying cash would leave you ${formatUSD(-runway.bufferAfter)} short`;
   }
   if (runway.strainReasons.includes('thinBuffer')) {
-    return `Paying cash would leave about ${formatMonths(runway.monthsOfBuffer)} of spending money`;
+    return `Paying cash would leave ${describeMonths(runway.monthsOfBuffer)} of spending money`;
   }
   return "Paying cash would take a big share of your cash while you're spending more than you earn";
 }
