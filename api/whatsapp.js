@@ -365,7 +365,7 @@ var cards_default = [
 	},
 	{
 		"id": "amexgreen",
-		"name": "American Express Green Card",
+		"name": "American Express Classic Green Card",
 		"issuer": "amex",
 		"annualFee": 150,
 		"portalMultiplier": 1,
