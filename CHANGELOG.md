@@ -22,4 +22,6 @@ _None yet. Format:_
 - **WhatsApp pilot**: Meta Cloud API webhook with signature checks, a one-question-at-a-time conversation, saved answers, and `UPDATE` / `RESET` / `HELP`.
 - **Pilot measurement**: anonymous counts of verdicts shown, pasted prices used and WhatsApp conversations started.
 - **Plaid sandbox** (off by default): demo balances, stateless, sandbox host only.
+- **Sources for every fact**: each card links to its issuer's page and each transfer ratio to where it was checked (Capital One's own list; recent public guides for Chase, Amex, Citi and Bilt, whose lists need a login). All 18 annual fees re-confirmed on Oct 22, 2026.
+- Fixed: Citi → Aeromexico removed (Citi ended it on Jan 25, 2026, and the app was still offering it). Citi → Japan Airlines added at 1:1 (launched Sep 20, 2026).
 - Changed: a thin cash cushion with weak points value now says "wait to book" instead of "pay cash", since paying would strain the cushion that the strain rule exists to protect.

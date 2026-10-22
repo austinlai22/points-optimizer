@@ -549,6 +549,32 @@ describe('real data: valuation basis holds up across every issuer', () => {
   });
 });
 
+describe('real data: every fact has a source', () => {
+  it('links every card to its issuer page', () => {
+    for (const card of cards) {
+      expect(card.sourceUrl, card.id).toMatch(/^https:\/\//);
+    }
+  });
+
+  it('links every issuer ratio to where it was checked, and nothing else', () => {
+    for (const partner of transferPartners) {
+      const ratioIssuers = Object.keys(partner.ratiosByIssuer).sort();
+      const sourcedIssuers = Object.keys(partner.sourceUrls ?? {}).sort();
+      expect(sourcedIssuers, partner.id).toEqual(ratioIssuers);
+      for (const url of Object.values(partner.sourceUrls ?? {})) {
+        expect(url, partner.id).toMatch(/^https:\/\//);
+      }
+    }
+  });
+
+  it("reflects Citi's 2026 roster changes", () => {
+    const byId = (id: string) => transferPartners.find((p) => p.id === id)!;
+    // Citi ended Aeromexico transfers on Jan 25, 2026 and added JAL on Sep 20, 2026.
+    expect(byId('aeromexico').ratiosByIssuer.citi).toBeUndefined();
+    expect(byId('jal').ratiosByIssuer.citi).toBe(1);
+  });
+});
+
 describe('real data: chase-points-boost.json', () => {
   // Every rule the verdict uses, plus the not-yet-encoded Preferred legacy note.
   const rules = [

@@ -5,7 +5,8 @@
     "issuer": "chase",
     "annualFee": 795,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve"
   },
   {
     "id": "csp",
@@ -16,7 +17,8 @@
     "transferEligible": true,
     "partnerRatioOverrides": {
       "hyatt": 0.75
-    }
+    },
+    "sourceUrl": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
   },
   {
     "id": "freedom",
@@ -24,7 +26,8 @@
     "issuer": "chase",
     "annualFee": 0,
     "portalMultiplier": 1.0,
-    "transferEligible": false
+    "transferEligible": false,
+    "sourceUrl": "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited"
   },
   {
     "id": "ventureone",
@@ -32,7 +35,8 @@
     "issuer": "capitalOne",
     "annualFee": 0,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.capitalone.com/credit-cards/ventureone/"
   },
   {
     "id": "venture",
@@ -40,7 +44,8 @@
     "issuer": "capitalOne",
     "annualFee": 95,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.capitalone.com/credit-cards/venture/"
   },
   {
     "id": "venturex",
@@ -48,7 +53,8 @@
     "issuer": "capitalOne",
     "annualFee": 395,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.capitalone.com/credit-cards/venture-x/"
   },
   {
     "id": "amexgreen",
@@ -56,7 +62,8 @@
     "issuer": "amex",
     "annualFee": 150,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.americanexpress.com/us/credit-cards/card/green/"
   },
   {
     "id": "amexgold",
@@ -64,7 +71,8 @@
     "issuer": "amex",
     "annualFee": 325,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.americanexpress.com/us/credit-cards/card/gold-card/"
   },
   {
     "id": "amexplatinum",
@@ -72,7 +80,8 @@
     "issuer": "amex",
     "annualFee": 895,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.americanexpress.com/us/credit-cards/card/platinum/"
   },
   {
     "id": "citistrata",
@@ -83,7 +92,8 @@
     "transferEligible": true,
     "partnerRatioOverrides": {
       "*": 0.7
-    }
+    },
+    "sourceUrl": "https://www.citi.com/credit-cards/citi-strata-credit-card"
   },
   {
     "id": "citistratapremier",
@@ -91,7 +101,8 @@
     "issuer": "citi",
     "annualFee": 95,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
   },
   {
     "id": "citistrataelite",
@@ -99,7 +110,8 @@
     "issuer": "citi",
     "annualFee": 595,
     "portalMultiplier": 1.0,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.citi.com/credit-cards/citi-strata-elite-credit-card"
   },
   {
     "id": "boatravelrewards",
@@ -108,7 +120,8 @@
     "annualFee": 0,
     "portalMultiplier": 1.0,
     "transferEligible": false,
-    "cashBackRateOverride": 0.006
+    "cashBackRateOverride": 0.006,
+    "sourceUrl": "https://www.bankofamerica.com/credit-cards/products/travel-rewards-credit-card/"
   },
   {
     "id": "boapremiumrewards",
@@ -116,7 +129,8 @@
     "issuer": "bankOfAmerica",
     "annualFee": 95,
     "portalMultiplier": 1.0,
-    "transferEligible": false
+    "transferEligible": false,
+    "sourceUrl": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
   },
   {
     "id": "boapremiumrewardselite",
@@ -124,7 +138,8 @@
     "issuer": "bankOfAmerica",
     "annualFee": 550,
     "portalMultiplier": 1.25,
-    "transferEligible": false
+    "transferEligible": false,
+    "sourceUrl": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-elite-credit-card/"
   },
   {
     "id": "biltblue",
@@ -132,7 +147,8 @@
     "issuer": "bilt",
     "annualFee": 0,
     "portalMultiplier": 1.25,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.bilt.com/card"
   },
   {
     "id": "biltobsidian",
@@ -140,7 +156,8 @@
     "issuer": "bilt",
     "annualFee": 95,
     "portalMultiplier": 1.25,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.bilt.com/card"
   },
   {
     "id": "biltpalladium",
@@ -148,6 +165,7 @@
     "issuer": "bilt",
     "annualFee": 495,
     "portalMultiplier": 1.25,
-    "transferEligible": true
+    "transferEligible": true,
+    "sourceUrl": "https://www.bilt.com/card"
   }
 ]

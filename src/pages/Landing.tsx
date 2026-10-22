@@ -247,8 +247,10 @@ export function Landing() {
               wording, and the date it was checked (last: {formatVerifiedOn(boostData.non_boost_rate.verified_on)}).
             </li>
             <li>
-              <span className="font-medium text-navy-950/80">Transfer ratios</span> were checked
-              against each issuer's published list, oldest check {ratiosCheckedOn ? formatVerifiedOn(ratiosCheckedOn) : 'unrecorded'};{' '}
+              <span className="font-medium text-navy-950/80">Transfer ratios</span> were last
+              checked {ratiosCheckedOn ? formatVerifiedOn(ratiosCheckedOn) : 'at an unrecorded date'},
+              each with its source: Capital One's own list, and recent public guides for issuers
+              that only show theirs to signed-in cardholders;{' '}
               <span className="font-medium text-navy-950/80">card terms</span> in{' '}
               {formatVerifiedOn(CARD_TERMS_VERIFIED_ON)}. The test suite fails if any of it goes
               six months unchecked.

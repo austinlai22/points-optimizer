@@ -265,14 +265,18 @@ export function Methodology() {
         </p>
         <p>
           <span className="font-medium text-navy-950/70">How current this is:</span> transfer
-          ratios were last checked against each issuer's published list in{' '}
-          {ratiosVerifiedOn ? formatVerifiedOn(ratiosVerifiedOn) : 'an unrecorded month'}, and card
-          terms — annual fees, portal rates, cash-back rates — in{' '}
-          {formatVerifiedOn(CARD_TERMS_VERIFIED_ON)}. Both dates are read from the data itself
+          ratios were last checked in{' '}
+          {ratiosVerifiedOn ? formatVerifiedOn(ratiosVerifiedOn) : 'an unrecorded month'}: against
+          Capital One's own published list, and for Chase, Amex, Citi and Bilt, which show their
+          lists only to signed-in cardholders, against a recent public guide. Each ratio's source
+          is recorded in the data. Card terms (annual fees, portal rates, cash-back rates) were
+          last fully checked in {formatVerifiedOn(CARD_TERMS_VERIFIED_ON)}, each card linked to its
+          issuer's page. Both dates are read from the data itself
           rather than typed here, so this line cannot drift from what the app is actually using,
           and the test suite fails outright once anything passes{' '}
           {MAX_VERIFICATION_AGE_MONTHS} months. Worth knowing why that matters: issuers change
-          these without notice — Amex cut its Cathay Pacific ratio from 1:1 to 5:4 in March 2026
+          these without notice — Citi dropped Aeromexico in January 2026 and added Japan Airlines that
+          September, Amex cut its Cathay Pacific ratio from 1:1 to 5:4 in March 2026
           and dropped Etihad entirely that June — and when those were checked, three well-known
           published guides were already out of date, one still listing a program that folded in
           2019. Treat every figure here as a snapshot.

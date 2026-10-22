@@ -38,6 +38,9 @@ export interface CardConfig {
   // siblings (1 cent/point, the issuer default) — a real per-card exception,
   // not a per-issuer one. Omit for a card that matches its issuer's default.
   cashBackRateOverride?: number;
+  // The issuer's own page for this card, where its fee and terms can be
+  // checked. Required of every real card (data.test.ts).
+  sourceUrl?: string;
 }
 
 export type PartnerType = 'hotel' | 'airline';
@@ -50,6 +53,11 @@ export interface TransferPartner {
   // more than one issuer, often at different ratios each — this is a map
   // of every issuer that can reach this partner, not a single owner.
   ratiosByIssuer: Partial<Record<Issuer, number>>;
+  // Where each issuer's ratio was checked, keyed like ratiosByIssuer. Capital
+  // One publishes its list openly; Chase, Amex, Citi and Bilt show theirs only
+  // to signed-in cardholders, so those point to a recent public guide that
+  // was checked against this data.
+  sourceUrls?: Partial<Record<Issuer, string>>;
   // ISO date these ratios were last checked against a published source.
   // Optional on the type so synthetic test fixtures needn't carry one, but
   // required of every real partner — data.test.ts enforces that, and fails
