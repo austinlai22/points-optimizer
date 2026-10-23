@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "notes": "Limits for opt-in Chase Travel price reports. Rules of thumb chosen for this app, not published figures: the cents-per-point band rejects typos (a missing zero) rather than judging prices. Retention was agreed with Austin on 2026-10-23.",
+  "retention_months": 24,
+  "implied_cpp_band": { "min": 0.3, "max": 5 },
+  "cash_price_usd": { "min": 20, "max": 50000 },
+  "chase_points_price": { "min": 1000, "max": 5000000 },
+  "travel_month_window": { "months_back": 12, "months_ahead": 18 },
+  "rate_limit": { "reports_per_hour": 10, "window_seconds": 3600 }
+}

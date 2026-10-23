@@ -18,13 +18,15 @@ Other points tools answer "which seat can my points get?" PointCompass answers "
 
 Each verdict comes with a one-line reason, cents per point against the benchmark, what paying cash leaves in your cushion, and every assumption behind it. For Chase, it shows your Points Boost range and the **breakeven**: the most points a Chase Travel price can be and still be your best move. Paste the price Chase shows you and it checks it exactly.
 
+**Chase Travel price check**: after a recommendation, enter the points price Chase Travel shows and the recommendation re-checks it. Sharing that price is optional and anonymous (see Privacy).
+
 **Ranked paths**: below the verdict, every way to pay with points (each transfer partner and each portal) ranked by cost.
 
 **Portfolio** (`/portfolio`): what each card's balance is worth, from cash-back floor to guaranteed travel value, with an optional "potential transfer value" estimate.
 
 ## Privacy
 
-On the web, everything you type stays in your browser (`localStorage`); share links carry the trip, never balances or cash figures. The site counts a few anonymous events (which verdict was shown, a random per-browser id, nothing you typed) to measure the pilot, and skips that under Do Not Track. No bank logins, ever. Full details: [/privacy](https://pointcompass.vercel.app/privacy).
+On the web, everything you type stays in your browser (`localStorage`); share links carry the trip, never balances or cash figures. Sharing a Chase Travel price is opt-in and stores only the fields listed on the privacy page, for 24 months. Usage is counted anonymously (no inputs), skipped under Do Not Track, and can be switched off on the privacy page. No bank logins, ever. Full details: [/privacy](https://pointcompass.vercel.app/privacy).
 
 ## Valuation model
 
@@ -42,7 +44,7 @@ The app's own transparent assumptions, not a claim to match The Points Guy, Nerd
 | `src/utils/valuation.ts` | Point valuation and ranked redemption paths |
 | `src/data/` | Cards, transfer partners, Chase Boost rules, verdict thresholds |
 | `src/pages/`, `src/components/` | Landing page, `/app`, `/portfolio`, `/privacy`, and the shared banner and footer |
-| `server/` | Event counts and the Plaid sandbox (TypeScript source) |
+| `server/` | Usage counts, price reports and the Plaid sandbox (TypeScript source) |
 | `api/` | The same, bundled for Vercel by `npm run build:api` (generated; committed) |
 
 ## Tech stack
@@ -57,7 +59,11 @@ npm run dev        # start the dev server (the web app needs no env vars)
 npm test           # run the vitest suite
 npm run build      # type-check and produce a production build
 npm run build:api  # rebundle server/ into api/ after changing server code
+npm run stats           # weekly usage totals (needs the database keys in .env.local)
+npm run export-reports  # all shared Chase Travel prices as CSV
 ```
+
+Add `/?internal=1` to the site address once in your own browser so your visits aren't counted.
 
 Environment variables for the functions are listed in [`.env.example`](.env.example); put real values in Vercel, never in the repo.
 

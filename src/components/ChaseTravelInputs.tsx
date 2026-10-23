@@ -1,7 +1,6 @@
 import { listChaseCardTypes } from '../lib/verdict';
 import type { ChaseCardType } from '../lib/verdict/types';
 import { FIELD, FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
-import { parseNonNegativeNumber } from '../utils/format';
 import type { ChaseInputValues } from '../utils/verdictInputs';
 
 const CARD_TYPES = listChaseCardTypes();
@@ -10,8 +9,6 @@ interface ChaseTravelInputsProps {
   values: ChaseInputValues;
   inferredCardType: ChaseCardType;
   onChange: (values: ChaseInputValues) => void;
-  pastedPoints: number;
-  onPastedPointsChange: (points: number) => void;
 }
 
 function ChevronDownIcon() {
@@ -26,8 +23,6 @@ export function ChaseTravelInputs({
   values,
   inferredCardType,
   onChange,
-  pastedPoints,
-  onPastedPointsChange,
 }: ChaseTravelInputsProps) {
   const cardType = values.cardType || inferredCardType;
   const choice = (yes: boolean) =>
@@ -38,7 +33,7 @@ export function ChaseTravelInputs({
     }`;
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1">
+    <div className="space-y-5">
       <div className="space-y-5">
         <div>
           <label htmlFor="chase-card-type" className={`mb-1.5 block ${LABEL}`}>
@@ -102,26 +97,6 @@ export function ChaseTravelInputs({
         )}
       </div>
 
-      <div>
-        <label htmlFor="chase-travel-points" className={`mb-1.5 block ${LABEL}`}>
-          Chase Travel price you found{' '}
-          <span className="normal-case text-navy-950/40">(points, optional)</span>
-        </label>
-        <input
-          id="chase-travel-points"
-          type="number"
-          min={0}
-          inputMode="numeric"
-          value={pastedPoints || ''}
-          onChange={(event) => onPastedPointsChange(parseNonNegativeNumber(event.target.value))}
-          placeholder="0"
-          className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
-        />
-        <p className="mt-1.5 text-xs text-navy-950/50">
-          Points Boost offers change often and are only visible inside Chase Travel. Enter the points
-          price it shows for this trip to check it exactly.
-        </p>
-      </div>
     </div>
   );
 }

@@ -88,3 +88,22 @@ describe('routes', () => {
     expect(window.location.pathname).toBe('/');
   });
 });
+
+describe('usage counting controls', () => {
+  it('lets a visitor turn counting off from the privacy page', () => {
+    visit('/privacy');
+    const toggle = screen.getByRole('switch', { name: /count my visits anonymously/i });
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(toggle);
+    expect(localStorage.getItem('cco:analyticsOptOut')).toBe('1');
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('marks a browser internal from /?internal=1 and tidies the address', async () => {
+    const { initAnalytics, isInternal } = await import('./utils/analytics');
+    window.history.replaceState(null, '', '/?internal=1');
+    initAnalytics();
+    expect(isInternal()).toBe(true);
+    expect(window.location.search).toBe('');
+  });
+});

@@ -20,6 +20,8 @@ import { PageIntro } from './PageShell';
 import { linkHandler, scrollToSection } from '../lib/router';
 import { useOnScreen } from '../utils/useInView';
 import { VerdictCard } from './VerdictCard';
+import { PriceCheck } from './PriceCheck';
+import type { BoostAnswer } from '../lib/reports/validate';
 import { CashCushionInputs } from './CashCushionInputs';
 import { ChaseTravelInputs } from './ChaseTravelInputs';
 import {
@@ -227,6 +229,9 @@ export function TripOptimizerView() {
   const [partnerPointsHeld, setPartnerPointsHeld] = useState(initialTripInputs.partnerPointsHeld);
   const [awardCashFees, setAwardCashFees] = useState(initialTripInputs.awardCashFees);
   const [chaseTravelPoints, setChaseTravelPoints] = useState(initialTripInputs.chaseTravelPoints);
+  // Whether Chase Travel showed a Points Boost offer: only used for a shared
+  // price report, so it lives here and nowhere persistent.
+  const [boostShown, setBoostShown] = useState<BoostAnswer | null>(null);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
   const [verdictRef, verdictOnScreen] = useOnScreen<HTMLDivElement>();
   const [cashInputs, setCashInputs] = usePersistentState(CASH_STORAGE_KEY, EMPTY_CASH_INPUTS, sanitizeCashInputs);
@@ -338,8 +343,8 @@ export function TripOptimizerView() {
   useEffect(() => {
     if (!verdictKey) return;
     const timer = setTimeout(() => {
-      track({ event: 'verdict_shown', verdict: verdictKey });
-      if (pastedUsed) track({ event: 'pasted_price_used' });
+      track({ event: 'trip_check', verdict: verdictKey });
+      if (pastedUsed) track({ event: 'price_check' });
     }, 2000);
     return () => clearTimeout(timer);
   }, [verdictKey, pastedUsed]);
@@ -626,8 +631,6 @@ export function TripOptimizerView() {
                   values={chaseInputs}
                   inferredCardType={inferredChaseCardType}
                   onChange={setChaseInputs}
-                  pastedPoints={chaseTravelPoints}
-                  onPastedPointsChange={setChaseTravelPoints}
                 />
               </section>
             )}
@@ -641,6 +644,16 @@ export function TripOptimizerView() {
             {verdict ? (
               <div id="recommendation" ref={verdictRef} className="scroll-mt-20">
                 <VerdictCard result={verdict} />
+                {verdict.chaseTravel && (
+                  <PriceCheck
+                    verdict={verdict}
+                    tripCashPrice={tripCashPrice}
+                    points={chaseTravelPoints}
+                    onPointsChange={setChaseTravelPoints}
+                    boost={boostShown}
+                    onBoostChange={setBoostShown}
+                  />
+                )}
               </div>
             ) : (
               <div className="mb-8 rounded-3xl border border-dashed border-navy/20 bg-white px-6 py-12 text-center">

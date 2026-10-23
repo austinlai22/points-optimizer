@@ -7,31 +7,32 @@ const VERDICTS = [
 	"BOOK_TRAVEL_PORTAL",
 	"WAIT_OR_RECONSIDER"
 ];
-const EVENTS_KEY = "stats:events";
-function fieldFor(event, channel) {
-	return event.name === "verdict_shown" ? `${event.name}:${channel}:${event.verdict}` : `${event.name}:${channel}`;
+const DAY = 86400;
+const COUNTS_TTL = 400 * DAY;
+const ID_DAYS_TTL = 120 * DAY;
+function utcDate(now) {
+	return now.toISOString().slice(0, 10);
 }
-async function recordEvent(store, event, channel, userId, now = /* @__PURE__ */ new Date()) {
-	const field = fieldFor(event, channel);
-	const month = now.toISOString().slice(0, 7);
-	await Promise.all([
-		store.hincrby(EVENTS_KEY, field, 1),
-		store.hincrby(`${EVENTS_KEY}:${month}`, field, 1),
-		store.pfadd(`stats:users:${channel}`, userId)
-	]);
+function fieldFor(event) {
+	if (event.name === "trip_check") return `trip_check:${event.verdict}`;
+	if (event.name === "agent_call") return `agent_call:${event.tool}`;
+	return event.name;
 }
-async function readStats(store, now = /* @__PURE__ */ new Date()) {
-	const month = now.toISOString().slice(0, 7);
-	const [allTime, thisMonth, web] = await Promise.all([
-		store.hgetall(EVENTS_KEY),
-		store.hgetall(`${EVENTS_KEY}:${month}`),
-		store.pfcount("stats:users:web")
-	]);
-	return {
-		allTime,
-		[month]: thisMonth,
-		uniqueUsers: { web }
-	};
+async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date()) {
+	const day = utcDate(now);
+	const countsKey = `stats:day:${day}`;
+	await store.hincrby(countsKey, fieldFor(event), 1);
+	await store.expire(countsKey, COUNTS_TTL);
+	if (event.name !== "trip_check" || !anonId) return;
+	const activeKey = `stats:active:${day}`;
+	const daysKey = `stats:iddays:${anonId}`;
+	await Promise.all([store.pfadd(activeKey, anonId), store.sadd(daysKey, day)]);
+	await Promise.all([store.expire(activeKey, COUNTS_TTL), store.expire(daysKey, ID_DAYS_TTL)]);
+	if (await store.scard(daysKey) >= 2) {
+		const returningKey = `stats:returning:${day}`;
+		await store.pfadd(returningKey, anonId);
+		await store.expire(returningKey, COUNTS_TTL);
+	}
 }
 //#endregion
 //#region server/event/handler.ts
@@ -39,27 +40,25 @@ const ANON_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function parseEvent(body) {
 	if (typeof body !== "object" || body === null) return null;
 	const { event, verdict, id } = body;
-	if (typeof id !== "string" || !ANON_ID.test(id)) return null;
-	if (event === "pasted_price_used") return {
-		event: { name: event },
-		id
-	};
-	if (event === "verdict_shown" && VERDICTS.includes(verdict)) return {
-		event: {
-			name: event,
-			verdict
-		},
-		id
+	if (event === "trip_check") {
+		if (typeof id !== "string" || !ANON_ID.test(id)) return null;
+		if (!VERDICTS.includes(verdict)) return null;
+		return {
+			event: {
+				name: "trip_check",
+				verdict
+			},
+			id
+		};
+	}
+	if (event === "price_check") return {
+		event: { name: "price_check" },
+		id: null
 	};
 	return null;
 }
 function createEventHandler(deps) {
 	return { async fetch(request) {
-		if (request.method === "GET") {
-			const auth = request.headers.get("authorization");
-			if (!deps.store || deps.statsToken.length < 16 || auth !== `Bearer ${deps.statsToken}`) return new Response("Not found", { status: 404 });
-			return Response.json(await readStats(deps.store));
-		}
 		if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
 		const raw = await request.text();
 		if (raw.length > 1024) return new Response("Too large", { status: 413 });
@@ -70,7 +69,7 @@ function createEventHandler(deps) {
 			parsed = null;
 		}
 		if (!parsed) return new Response("Bad request", { status: 400 });
-		if (deps.store) await recordEvent(deps.store, parsed.event, "web", parsed.id);
+		if (deps.store) await recordEvent(deps.store, parsed.event, parsed.id);
 		return new Response(null, { status: 204 });
 	} };
 }
@@ -92,6 +91,7 @@ function createUpstashStore(url, token) {
 	}
 	return {
 		get: (key) => run(["GET", key]),
+		mget: (keys) => keys.length ? run(["MGET", ...keys]) : Promise.resolve([]),
 		async set(key, value, { ttlSeconds, nx } = {}) {
 			const command = [
 				"SET",
@@ -104,6 +104,22 @@ function createUpstashStore(url, token) {
 		},
 		async del(key) {
 			await run(["DEL", key]);
+		},
+		async expire(key, ttlSeconds) {
+			await run([
+				"EXPIRE",
+				key,
+				ttlSeconds
+			]);
+		},
+		async incr(key, ttlSeconds) {
+			const value = await run(["INCR", key]);
+			if (value === 1) await run([
+				"EXPIRE",
+				key,
+				ttlSeconds
+			]);
+			return value;
 		},
 		async hincrby(key, field, by) {
 			await run([
@@ -119,6 +135,14 @@ function createUpstashStore(url, token) {
 			for (let i = 0; i < flat.length; i += 2) out[flat[i]] = Number(flat[i + 1]);
 			return out;
 		},
+		async sadd(key, member) {
+			await run([
+				"SADD",
+				key,
+				member
+			]);
+		},
+		scard: (key) => run(["SCARD", key]),
 		async pfadd(key, member) {
 			await run([
 				"PFADD",
@@ -126,7 +150,24 @@ function createUpstashStore(url, token) {
 				member
 			]);
 		},
-		pfcount: (key) => run(["PFCOUNT", key])
+		pfcount: (...keys) => run(["PFCOUNT", ...keys]),
+		async keys(pattern) {
+			const found = [];
+			let cursor = "0";
+			do {
+				const [next, batch] = await run([
+					"SCAN",
+					cursor,
+					"MATCH",
+					pattern,
+					"COUNT",
+					500
+				]);
+				found.push(...batch);
+				cursor = next;
+			} while (cursor !== "0");
+			return found;
+		}
 	};
 }
 function storeFromEnv(env) {
@@ -136,9 +177,6 @@ function storeFromEnv(env) {
 }
 //#endregion
 //#region server/entries/event.ts
-var event_default = createEventHandler({
-	store: storeFromEnv(process.env),
-	statsToken: process.env.STATS_TOKEN ?? ""
-});
+var event_default = createEventHandler({ store: storeFromEnv(process.env) });
 //#endregion
 export { event_default as default };

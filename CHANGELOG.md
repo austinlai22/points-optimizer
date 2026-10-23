@@ -13,6 +13,11 @@ _None yet. Format:_
 - Why: <how the change follows from the observation>
 ```
 
+## 3.0.0 (in progress)
+
+- **Chase Travel price check** after each recommendation, with the Points Boost question, and **opt-in anonymous price reports** (only the fields on the privacy page; kept 24 months; not published).
+- **Usage tracking**: page views via Vercel Web Analytics; trip checks, active and returning users, price checks and reports counted in Upstash. Your own browser is excluded via `/?internal=1`; visitors can opt out on the privacy page. Read with `npm run stats`; no public stats page.
+
 ## 2.1.0 (October 2026)
 
 - Removed: the WhatsApp version, which never launched. The landing page said a pilot was running, which wasn't true. The code is kept on the `parked/whatsapp` branch.
