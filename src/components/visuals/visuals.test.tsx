@@ -66,3 +66,19 @@ describe('bars fill when scrolled to', () => {
     window.IntersectionObserver = original;
   });
 });
+
+describe('LogoMark', () => {
+  it('gives every instance its own orbit mask, so two logos on a page never clash', async () => {
+    const { LogoMark } = await import('../LogoMark');
+    const { container } = render(
+      <>
+        <LogoMark />
+        <LogoMark tone="mono" />
+      </>,
+    );
+    const ids = [...container.querySelectorAll('mask')].map((m) => m.id);
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    for (const id of ids) expect(container.querySelector(`[mask="url(#${id})"]`)).not.toBeNull();
+  });
+});

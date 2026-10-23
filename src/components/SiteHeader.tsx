@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { linkHandler } from '../lib/router';
 import { TAP_TARGET } from '../styles/constants';
+import { LogoMark } from './LogoMark';
 
 export type PageName = 'home' | 'portfolio' | 'check' | 'privacy';
 
@@ -13,16 +14,6 @@ const SECTION_LINKS = [
   { href: '/#faq', label: 'FAQ' },
   { href: '/#numbers', label: 'The numbers' },
 ];
-
-export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <circle cx="16" cy="16" r="15" fill="currentColor" opacity="0.14" />
-      <circle cx="16" cy="16" r="10.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
-      <path d="M19.8 12.2 17.4 17.4 12.2 19.8 14.6 14.6Z" fill="currentColor" />
-    </svg>
-  );
-}
 
 function MenuIcon({ open }: { open: boolean }) {
   return (
@@ -64,7 +55,7 @@ export function SiteHeader({ current }: { current: PageName }) {
           aria-current={current === 'home' ? 'page' : undefined}
           className={`flex items-center gap-2.5 rounded-lg text-slate-50 ${RING_ON_DARK}`}
         >
-          <LogoMark />
+          <LogoMark className="h-9 w-9" />
           <span className="font-display text-lg font-semibold tracking-tight">PointCompass</span>
         </a>
 

@@ -1,5 +1,5 @@
 import { linkHandler } from '../lib/router';
-import { LogoMark } from './SiteHeader';
+import { LogoMark } from './LogoMark';
 
 const RING_ON_DARK =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-50 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950';
@@ -36,7 +36,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <p className="flex items-center gap-2.5">
-              <LogoMark className="h-7 w-7" />
+              <LogoMark className="h-8 w-8" />
               <span className="font-display text-base font-semibold">PointCompass</span>
             </p>
             <p className="mt-3 max-w-xs text-sm text-slate-50/55">

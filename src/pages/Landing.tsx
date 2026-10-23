@@ -12,7 +12,7 @@ import { CardArt } from '../components/visuals/CardArt';
 import { BreakevenScale, RunwayMeter, ValueBars } from '../components/visuals/Charts';
 import { PhoneFrame } from '../components/visuals/PhoneFrame';
 import { Reveal } from '../components/visuals/Reveal';
-import { LogoMark } from '../components/SiteHeader';
+import { LogoMark } from '../components/LogoMark';
 import type { CardConfig, TransferPartner } from '../types';
 
 const cards = cardsData as CardConfig[];
@@ -489,7 +489,7 @@ export function Landing() {
               Frequently asked questions
             </h2>
             <div className="mt-8 hidden text-navy/15 lg:block" aria-hidden="true">
-              <LogoMark className="h-40 w-40" />
+              <LogoMark tone="mono" className="h-44 w-44" />
             </div>
           </div>
           <div className="divide-y divide-navy/10 overflow-hidden rounded-3xl border border-navy/10 bg-slate-50">
