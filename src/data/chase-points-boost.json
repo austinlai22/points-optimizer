@@ -3,9 +3,18 @@
   "notes": "Only what Chase itself states. Every rule carries the Chase page it came from and the date it was last read there. Quotes are verbatim from that page.",
   "non_boost_rate": {
     "cents_per_point": 1,
-    "quote": "For Chase Travel purchases not eligible for Points Boost Offers, points can be redeemed at a 1:1 rate on Chase Travel.",
-    "source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
-    "verified_on": "2026-10-21"
+    "stated_for": "Sapphire Reserve",
+    "stated_for_card_types": ["reserve"],
+    "quote": "Points earned with your card are worth $0.01 each when redeemed through Chase Travel, as outlined in your Ultimate Rewards Agreement.",
+    "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve",
+    "verified_on": "2026-10-23",
+    "also_stated": {
+      "quote": "For Chase Travel purchases not eligible for Points Boost Offers, points can be redeemed at a 1:1 rate on Chase Travel.",
+      "context": "From the Sapphire Reserve section of the press release.",
+      "source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
+      "verified_on": "2026-10-21"
+    },
+    "other_cards": "Chase states this rate only for the Sapphire Reserve. No Chase page found gives a value outside Points Boost for its other cards (checked 2026-10-23: both Sapphire Preferred product pages, the Sapphire terms page, and Chase's Ultimate Rewards guide). PointCompass applies the same 1 cent to them as its own assumption."
   },
   "reserve_legacy": {
     "cents_per_point": 1.5,

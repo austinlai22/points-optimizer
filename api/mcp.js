@@ -26187,9 +26187,18 @@ var transferPartners_default = [
 //#region src/data/chase-points-boost.json
 var non_boost_rate = {
 	"cents_per_point": 1,
-	"quote": "For Chase Travel purchases not eligible for Points Boost Offers, points can be redeemed at a 1:1 rate on Chase Travel.",
-	"source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
-	"verified_on": "2026-10-21"
+	"stated_for": "Sapphire Reserve",
+	"stated_for_card_types": ["reserve"],
+	"quote": "Points earned with your card are worth $0.01 each when redeemed through Chase Travel, as outlined in your Ultimate Rewards Agreement.",
+	"source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve",
+	"verified_on": "2026-10-23",
+	"also_stated": {
+		"quote": "For Chase Travel purchases not eligible for Points Boost Offers, points can be redeemed at a 1:1 rate on Chase Travel.",
+		"context": "From the Sapphire Reserve section of the press release.",
+		"source_url": "https://media.chase.com/news/the-most-rewarding-cards-are-here",
+		"verified_on": "2026-10-21"
+	},
+	"other_cards": "Chase states this rate only for the Sapphire Reserve. No Chase page found gives a value outside Points Boost for its other cards (checked 2026-10-23: both Sapphire Preferred product pages, the Sapphire terms page, and Chase's Ultimate Rewards guide). PointCompass applies the same 1 cent to them as its own assumption."
 };
 var reserve_legacy = {
 	"cents_per_point": 1.5,
@@ -26469,6 +26478,9 @@ function isLegacyActive(cardType, appliedBeforeCutoff, today) {
 }
 const LEGACY_CENTS = LEGACY.cents_per_point;
 const LEGACY_EXPIRES_ON = LEGACY.expires_on;
+function nonBoostRateStatedFor(cardType) {
+	return non_boost_rate.stated_for_card_types.includes(cardType);
+}
 function priceChaseTravel(cashPrice, legacyPoints) {
 	const legacyDollars = Math.min(legacyPoints * (LEGACY_CENTS / 100), cashPrice);
 	const legacyPointsUsed = legacyDollars / (LEGACY_CENTS / 100);
@@ -26728,6 +26740,7 @@ function evaluateVerdict(input) {
 		};
 		chaseTravel.sentence = chaseTravel.breakevenPoints > 0 ? `If Chase Travel shows this trip at or below ${formatPoints(chaseTravel.breakevenPoints)} points, book it there. Otherwise, ${describeVerdict(otherwise)}.` : `Chase Travel cannot match this option. The better choice is to ${describeVerdict(otherwise)}.`;
 		if (pastedPrice === null) assumptions.push(`Chase Travel is assumed to charge the ${formatUSD(tripCashPrice)} cash price, without a Points Boost offer. Offers change often, so check the price Chase Travel shows.`);
+		if (!nonBoostRateStatedFor(chaseCardType)) assumptions.push(`Chase states the ${formatCents(NON_BOOST_CENTS)} value outside Points Boost for the Sapphire Reserve only. It publishes no figure for the ${cardType.name}, so PointCompass assumes the same.`);
 		if (legacyApplied) assumptions.push(chase.legacyPoints === void 0 ? `All ${formatPoints(chaseBalance)} of your Chase points are assumed to have been earned before October 26, 2025, so they redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.` : `${formatPoints(legacyPoints)} of your Chase points redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.`);
 		else if (chaseCardType === "reserve" && chase.reserveAppliedBeforeCutoff && today >= LEGACY_EXPIRES_ON) assumptions.push("The Sapphire Reserve legacy rate of 1.5¢ ended on October 26, 2027.");
 		else if (chaseCardType === "preferred") assumptions.push("No Sapphire Preferred legacy rate is applied, because Chase has not confirmed one.");
@@ -26860,6 +26873,25 @@ function chaseTravelBreakeven(cashPriceUsd, targetCentsPerPoint) {
 		}
 	};
 }
+function standardRateBasis(cardType) {
+	const rate = non_boost_rate;
+	return {
+		rate_basis: nonBoostRateStatedFor(cardType) ? "stated by Chase" : "assumed by PointCompass",
+		stated_by_chase_for: rate.stated_for,
+		source_url: rate.source_url,
+		verified_on: rate.verified_on
+	};
+}
+function standardRate(cardType) {
+	const rate = non_boost_rate;
+	const stated = nonBoostRateStatedFor(cardType);
+	return {
+		cents_per_point: rate.cents_per_point,
+		...standardRateBasis(cardType),
+		chase_says_about_the_sapphire_reserve: rate.quote,
+		...stated ? {} : { note: rate.other_cards }
+	};
+}
 function pointsBoostRules(cardType) {
 	const card = card_types[cardType];
 	const legacy = reserve_legacy;
@@ -26872,12 +26904,7 @@ function pointsBoostRules(cardType) {
 			source_url: card.source_url,
 			verified_on: card.verified_on
 		},
-		standard_rate: {
-			cents_per_point: non_boost_rate.cents_per_point,
-			chase_says: non_boost_rate.quote,
-			source_url: non_boost_rate.source_url,
-			verified_on: non_boost_rate.verified_on
-		},
+		standard_rate: standardRate(cardType),
 		legacy_rate: cardType === "reserve" ? {
 			cents_per_point: legacy.cents_per_point,
 			applies_to: `Points earned before ${legacy.points_earned_before} by cardmembers who applied before ${legacy.applied_before}.`,
@@ -26903,7 +26930,7 @@ function findProgram(query) {
 	}
 	return match;
 }
-function describeOptionForAgent(option) {
+function describeOptionForAgent(option, chaseCardType) {
 	const base = {
 		kind: option.kind,
 		bank: ISSUER_LABELS[option.issuer],
@@ -26926,8 +26953,7 @@ function describeOptionForAgent(option) {
 	}
 	if (option.kind === "chaseTravel") return {
 		...base,
-		source_url: non_boost_rate.source_url,
-		verified_on: non_boost_rate.verified_on
+		...standardRateBasis(chaseCardType)
 	};
 	return {
 		...base,
@@ -26975,7 +27001,7 @@ function recommendPayment(input, today) {
 		recommendation: result.verdict,
 		headline: verdictHeadline(result),
 		reason: result.reason,
-		options: result.options.map(describeOptionForAgent),
+		options: result.options.map((o) => describeOptionForAgent(o, result.chaseTravel?.cardType ?? "other")),
 		cash_after_paying: input.cash_position ? describeRunway(result.runway.payCash) : null,
 		chase_travel: result.chaseTravel ? {
 			card: result.chaseTravel.cardTypeName,
@@ -26986,8 +27012,7 @@ function recommendPayment(input, today) {
 			},
 			breakeven_points: result.chaseTravel.breakevenPoints,
 			advice: result.chaseTravel.sentence,
-			source_url: non_boost_rate.source_url,
-			verified_on: non_boost_rate.verified_on
+			...standardRateBasis(result.chaseTravel.cardType)
 		} : null,
 		assumptions: [...assumptions, ...result.assumptions],
 		rules_of_thumb: {

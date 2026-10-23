@@ -86,6 +86,15 @@ describe('Chase Points Boost and the Reserve legacy rate', () => {
     expect(result.maxCents).toBeNull();
   });
 
+  it("attributes the 1¢ non-Boost rate to the Reserve, and calls it an assumption for other cards", () => {
+    const reserve = run({ chase: { cardType: 'reserve' } });
+    expect(reserve.assumptions.join(' ')).not.toMatch(/Sapphire Reserve only/);
+    const preferred = run({ ownedCards: [card('csp')], balances: { csp: 200_000 } });
+    expect(preferred.assumptions.join(' ')).toMatch(
+      /states the 1¢ value outside Points Boost for the Sapphire Reserve only\. It publishes no figure for the Sapphire Preferred, so PointCompass assumes the same\./,
+    );
+  });
+
   it('gives Sapphire Reserve for Business the 2x Chase states for it', () => {
     expect(run({ chase: { cardType: 'reserveForBusiness' } }).chaseTravel!.maxCents).toBe(2);
   });

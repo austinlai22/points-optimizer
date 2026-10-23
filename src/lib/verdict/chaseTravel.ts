@@ -51,6 +51,14 @@ export const LEGACY_CENTS = LEGACY.cents_per_point;
 export const LEGACY_EXPIRES_ON = LEGACY.expires_on;
 export { NON_BOOST_CENTS };
 
+// Chase states its 1-cent rate outside Points Boost only for the Sapphire
+// Reserve. For every other card PointCompass applies the same rate as its own
+// assumption, and says so, rather than citing the Reserve's terms for a card
+// they don't cover.
+export function nonBoostRateStatedFor(cardType: ChaseCardType): boolean {
+  return (boostData.non_boost_rate.stated_for_card_types as string[]).includes(cardType);
+}
+
 // Points Chase Travel charges for a trip outside any Boost offer. Chase
 // applies "the best offer available" to legacy points, so they go first at
 // 1.5 cents and anything the trip still needs comes from the rest at 1 cent.

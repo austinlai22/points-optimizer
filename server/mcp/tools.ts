@@ -2,7 +2,7 @@ import cardsData from '../../src/data/cards.json';
 import transferPartnersData from '../../src/data/transferPartners.json';
 import boostData from '../../src/data/chase-points-boost.json';
 import verdictConfig from '../../src/data/verdict-config.json';
-import { breakevenPoints, describeRunway, evaluateVerdict, listChaseCardTypes, verdictHeadline } from '../../src/lib/verdict';
+import { breakevenPoints, describeRunway, evaluateVerdict, listChaseCardTypes, nonBoostRateStatedFor, verdictHeadline } from '../../src/lib/verdict';
 import { cardsForBankBalances } from '../../src/lib/verdict/byBank';
 import type { ChaseCardType, PointsOption } from '../../src/lib/verdict/types';
 import { CARD_TERMS_VERIFIED_ON } from '../../src/utils/freshness';
@@ -113,6 +113,30 @@ export function chaseTravelBreakeven(cashPriceUsd: number, targetCentsPerPoint: 
 
 // --- points_boost_rules -----------------------------------------------------
 
+// Where the 1-cent rate outside Points Boost comes from for this card: Chase's
+// own statement for the Sapphire Reserve, PointCompass's assumption for every
+// other card. Always attributed to the card Chase actually said it about.
+function standardRateBasis(cardType: ChaseCardType) {
+  const rate = boostData.non_boost_rate;
+  return {
+    rate_basis: nonBoostRateStatedFor(cardType) ? ('stated by Chase' as const) : ('assumed by PointCompass' as const),
+    stated_by_chase_for: rate.stated_for,
+    source_url: rate.source_url,
+    verified_on: rate.verified_on,
+  };
+}
+
+function standardRate(cardType: ChaseCardType) {
+  const rate = boostData.non_boost_rate;
+  const stated = nonBoostRateStatedFor(cardType);
+  return {
+    cents_per_point: rate.cents_per_point,
+    ...standardRateBasis(cardType),
+    chase_says_about_the_sapphire_reserve: rate.quote,
+    ...(stated ? {} : { note: rate.other_cards }),
+  };
+}
+
 export function pointsBoostRules(cardType: ChaseCardType) {
   const card = (boostData.card_types as Record<string, { name: string; boost_eligible: boolean; max_multiplier: number | null; quote: string; source_url: string; verified_on: string }>)[cardType];
   const legacy = boostData.reserve_legacy;
@@ -125,12 +149,7 @@ export function pointsBoostRules(cardType: ChaseCardType) {
       source_url: card.source_url,
       verified_on: card.verified_on,
     },
-    standard_rate: {
-      cents_per_point: boostData.non_boost_rate.cents_per_point,
-      chase_says: boostData.non_boost_rate.quote,
-      source_url: boostData.non_boost_rate.source_url,
-      verified_on: boostData.non_boost_rate.verified_on,
-    },
+    standard_rate: standardRate(cardType),
     legacy_rate:
       cardType === 'reserve'
         ? {
@@ -184,7 +203,7 @@ export function findProgram(query: string): TransferPartner {
   return match;
 }
 
-function describeOptionForAgent(option: PointsOption) {
+function describeOptionForAgent(option: PointsOption, chaseCardType: ChaseCardType) {
   const base = {
     kind: option.kind,
     bank: ISSUER_LABELS[option.issuer],
@@ -206,7 +225,7 @@ function describeOptionForAgent(option: PointsOption) {
     };
   }
   if (option.kind === 'chaseTravel') {
-    return { ...base, source_url: boostData.non_boost_rate.source_url, verified_on: boostData.non_boost_rate.verified_on };
+    return { ...base, ...standardRateBasis(chaseCardType) };
   }
   return { ...base, card: option.card?.name ?? null, source_url: option.card?.sourceUrl ?? null, verified_on: CARD_TERMS_VERIFIED_ON };
 }
@@ -260,7 +279,7 @@ export function recommendPayment(input: RecommendInput, today?: string) {
     recommendation: result.verdict,
     headline: verdictHeadline(result),
     reason: result.reason,
-    options: result.options.map(describeOptionForAgent),
+    options: result.options.map((o) => describeOptionForAgent(o, result.chaseTravel?.cardType ?? 'other')),
     cash_after_paying: input.cash_position ? describeRunway(result.runway.payCash) : null,
     chase_travel: result.chaseTravel
       ? {
@@ -272,8 +291,7 @@ export function recommendPayment(input: RecommendInput, today?: string) {
           },
           breakeven_points: result.chaseTravel.breakevenPoints,
           advice: result.chaseTravel.sentence,
-          source_url: boostData.non_boost_rate.source_url,
-          verified_on: boostData.non_boost_rate.verified_on,
+          ...standardRateBasis(result.chaseTravel.cardType),
         }
       : null,
     assumptions: [...assumptions, ...result.assumptions],

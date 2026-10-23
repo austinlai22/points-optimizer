@@ -6,6 +6,7 @@ export {
   inferChaseCardType,
   isLegacyActive,
   listChaseCardTypes,
+  nonBoostRateStatedFor,
   priceChaseTravel,
 } from './chaseTravel';
 export { computeRunway } from './runway';

@@ -103,7 +103,9 @@ export function Methodology() {
             Rewards Elite takes 20% off airfare, which is worth {rate(0.0125)}.
           </p>
           <p>
-            Chase is treated separately in the recommendation. Points Boost offers can raise the
+            Chase is treated separately in the recommendation. Chase states that Sapphire Reserve points
+            are worth 1¢ each in Chase Travel outside Points Boost; it publishes no such figure for its
+            other cards, so PointCompass assumes the same 1¢ for them. Points Boost offers can raise the
             value to as much as 2× on the Sapphire Reserve and 1.5× on the Sapphire Preferred.
             Reserve cardmembers who applied before June 23, 2025 also receive 1.5× on points earned
             before October 26, 2025, until October 26, 2027. Because no Boost offer is guaranteed

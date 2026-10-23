@@ -11,6 +11,7 @@ import {
   getChaseCardType,
   inferChaseCardType,
   isLegacyActive,
+  nonBoostRateStatedFor,
   priceChaseTravel,
 } from './chaseTravel';
 import { describeMonths, formatCents, formatMonths } from './labels';
@@ -349,6 +350,11 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
     if (pastedPrice === null) {
       assumptions.push(
         `Chase Travel is assumed to charge the ${formatUSD(tripCashPrice)} cash price, without a Points Boost offer. Offers change often, so check the price Chase Travel shows.`,
+      );
+    }
+    if (!nonBoostRateStatedFor(chaseCardType)) {
+      assumptions.push(
+        `Chase states the ${formatCents(NON_BOOST_CENTS)} value outside Points Boost for the Sapphire Reserve only. It publishes no figure for the ${cardType.name}, so PointCompass assumes the same.`,
       );
     }
     if (legacyApplied) {

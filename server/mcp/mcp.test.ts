@@ -76,6 +76,12 @@ describe('agent tools match the web app', () => {
     expect(pointsBoostRules('reserve').legacy_rate).toMatchObject({ cents_per_point: 1.5, ends_on: '2027-10-26' });
     expect(pointsBoostRules('inkPlus').points_boost.max_multiplier).toBe('not stated by Chase');
     expect(pointsBoostRules('preferred').legacy_rate?.cents_per_point).toBeNull();
+    // The 1¢ rate is Chase's statement about the Reserve, never quoted as if
+    // it were about another card.
+    expect(pointsBoostRules('reserve').standard_rate).toMatchObject({ rate_basis: 'stated by Chase', stated_by_chase_for: 'Sapphire Reserve' });
+    expect(pointsBoostRules('preferred').standard_rate).toMatchObject({ rate_basis: 'assumed by PointCompass', stated_by_chase_for: 'Sapphire Reserve' });
+    expect(pointsBoostRules('preferred').standard_rate).not.toHaveProperty('chase_says');
+    expect(pointsBoostRules('preferred').standard_rate.note).toMatch(/Sapphire Preferred product pages/);
     for (const type of ['reserve', 'preferred', 'inkPlus', 'other'] as const) {
       expect(factsWithoutSource(pointsBoostRules(type)), type).toEqual([]);
     }

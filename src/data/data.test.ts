@@ -599,6 +599,13 @@ describe('real data: chase-points-boost.json', () => {
     }
   });
 
+  it('names which cards Chase states the non-Boost rate for, with its own sources', () => {
+    const rate = boostData.non_boost_rate;
+    expect(rate.stated_for_card_types.every((t) => t in boostData.card_types)).toBe(true);
+    expect(new URL(rate.also_stated.source_url).hostname).toMatch(/(^|\.)chase\.com$/);
+    expect(isValidIsoDate(rate.also_stated.verified_on)).toBe(true);
+  });
+
   it('keeps the legacy dates in order', () => {
     const { applied_before, points_earned_before, expires_on } = boostData.reserve_legacy;
     for (const date of [applied_before, points_earned_before, expires_on]) {
