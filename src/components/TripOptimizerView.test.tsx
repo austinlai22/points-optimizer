@@ -25,6 +25,14 @@ function type(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
 
+// Taps the year, then the month, in the travel month picker.
+function pickMonth(yyyyMm: string) {
+  const picker = within(screen.getByRole('group', { name: /travel month/i }));
+  fireEvent.click(picker.getByRole('button', { name: yyyyMm.slice(0, 4) }));
+  const name = new Date(`${yyyyMm}-15`).toLocaleString('en-US', { month: 'long' });
+  fireEvent.click(picker.getByRole('button', { name: `${name} ${yyyyMm.slice(0, 4)}` }));
+}
+
 function verdictCard() {
   return within(document.getElementById('verdict-heading')!.closest('section')!);
 }
@@ -123,7 +131,7 @@ describe('Chase Travel price check and sharing', () => {
     type(/^from$/i, 'jfk');
     type(/^to$/i, 'lis');
     const month = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7);
-    type(/travel month/i, month);
+    pickMonth(month);
     fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -153,7 +161,7 @@ describe('Chase Travel price check and sharing', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
     type(/^from$/i, 'JFK');
     type(/^to$/i, 'LIS');
-    type(/travel month/i, new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7));
+    pickMonth(new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7));
     expect(screen.getByRole('button', { name: 'Share price' })).toBeDisabled();
   });
 
@@ -176,7 +184,7 @@ describe('Chase Travel price check and sharing', () => {
 
     type(/^from$/i, 'SFO');
     type(/^to$/i, 'LGA');
-    type(/travel month/i, nextMonth());
+    pickMonth(nextMonth());
     fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
     expect(sentBodies(fetchSpy)[0]).toMatchObject({ airline: 'WN', fare: 'choice_preferred', cabin: null });
     await screen.findByText(/shared anonymously/);
@@ -222,7 +230,7 @@ describe('Chase Travel price check and sharing', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
     type(/^from$/i, 'SFO');
     type(/^to$/i, 'LGA');
-    type(/travel month/i, nextMonth());
+    pickMonth(nextMonth());
     type(/^airline \(optional\)/i, 'DL');
     fireEvent.click(screen.getByRole('button', { name: 'Main Basic' }));
     fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
@@ -247,5 +255,22 @@ describe('Chase Travel price check and sharing', () => {
     // The recommendation above still uses the trip's own price.
     expect(screen.getByLabelText(/chase travel price in points/i)).toHaveValue(45000);
     fetchSpy.mockRestore();
+  });
+
+  it('offers this month through 18 months ahead, one tap each', () => {
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    const picker = within(screen.getByRole('group', { name: /travel month/i }));
+    const now = new Date();
+    const thisMonth = now.toLocaleString('en-US', { month: 'long' });
+    expect(picker.getByRole('button', { name: `${thisMonth} ${now.getFullYear()}` })).toBeEnabled();
+    if (now.getMonth() > 0) {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15).toLocaleString('en-US', { month: 'long' });
+      expect(picker.getByRole('button', { name: `${lastMonth} ${now.getFullYear()}` })).toBeDisabled();
+    }
+    pickMonth(nextMonth());
+    const picked = new Date(`${nextMonth()}-15`).toLocaleString('en-US', { month: 'long' });
+    expect(picker.getByRole('button', { name: `${picked} ${nextMonth().slice(0, 4)}` })).toHaveAttribute('aria-pressed', 'true');
   });
 });

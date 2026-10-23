@@ -17,6 +17,8 @@ import { CARD_SURFACE, FIELD, FOCUS_RING, LABEL, TAP_TARGET } from '../styles/co
 import type { TransferPartner } from '../types';
 import { formatPoints, parseNonNegativeNumber } from '../utils/format';
 import { AirportField } from './AirportField';
+import { MonthPicker } from './MonthPicker';
+import reportConfig from '../data/report-config.json';
 
 const BOOST_LABELS: Record<BoostAnswer, string> = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
 const CABIN_LABELS: Record<Cabin, string> = {
@@ -345,12 +347,10 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 {isFlight && <AirportField id="report-origin" label="From" value={origin} onChange={setOrigin} />}
                 <AirportField id="report-destination" label={isFlight ? 'To' : 'City'} value={destination} onChange={setDestination} />
-                <div>
-                  <label htmlFor="report-month" className={`mb-1.5 block ${LABEL}`}>
-                    Travel month
-                  </label>
-                  <input id="report-month" type="month" value={travelMonth} min={thisMonth()} onChange={(e) => setTravelMonth(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`} />
-                </div>
+              </div>
+
+              <div className="max-w-sm">
+                <MonthPicker label="Travel month" value={travelMonth} onChange={setTravelMonth} from={thisMonth()} monthsAhead={reportConfig.travel_month_window.months_ahead} />
               </div>
 
               {reportBoost === null && (
