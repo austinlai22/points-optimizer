@@ -101,6 +101,15 @@ export function Privacy() {
           </div>
         </Block>
 
+        <Block title="AI assistants (agent tool)">
+          <p>
+            If you add PointCompass to an AI assistant, the assistant sends it trip prices and
+            balances to work out a recommendation. Nothing it sends is stored: each request is
+            answered and forgotten. Only a count of how often each tool is used is kept, with no
+            identifier.
+          </p>
+        </Block>
+
         <Block title="Demo bank (Plaid test environment)">
           <p>
             Where it is enabled, "Use a demo bank" fetches invented balances from Plaid's test

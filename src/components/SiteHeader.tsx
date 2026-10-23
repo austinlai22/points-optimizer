@@ -3,7 +3,7 @@ import { linkHandler } from '../lib/router';
 import { TAP_TARGET } from '../styles/constants';
 import { LogoMark } from './LogoMark';
 
-export type PageName = 'home' | 'portfolio' | 'check' | 'privacy';
+export type PageName = 'home' | 'portfolio' | 'check' | 'privacy' | 'agents';
 
 // Focus ring that stays visible on the navy banner.
 const RING_ON_DARK =

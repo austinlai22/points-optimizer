@@ -10,6 +10,7 @@ const COLUMNS: { title: string; links: { href: string; label: string; external?:
     links: [
       { href: '/app', label: 'Check a trip' },
       { href: '/portfolio', label: 'Portfolio' },
+      { href: '/agents', label: 'For AI assistants' },
     ],
   },
   {

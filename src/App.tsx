@@ -7,12 +7,14 @@ import { TripOptimizerView } from './components/TripOptimizerView';
 import { navigate, scrollToSection, usePath } from './lib/router';
 import { Landing } from './pages/Landing';
 import { Privacy } from './pages/Privacy';
+import { Agents } from './pages/Agents';
 
 const PAGES: Record<string, { name: PageName; title: string }> = {
   '/': { name: 'home', title: 'PointCompass: points or cash? Know before you book.' },
   '/app': { name: 'check', title: 'Check a trip · PointCompass' },
   '/portfolio': { name: 'portfolio', title: 'Portfolio · PointCompass' },
   '/privacy': { name: 'privacy', title: 'Privacy · PointCompass' },
+  '/agents': { name: 'agents', title: 'For AI assistants · PointCompass' },
 };
 
 function App() {
@@ -43,6 +45,8 @@ function App() {
           <PortfolioView />
         ) : path === '/privacy' ? (
           <Privacy />
+        ) : path === '/agents' ? (
+          <Agents />
         ) : (
           <Landing />
         )}

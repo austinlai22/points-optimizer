@@ -49,6 +49,13 @@ describe('routes', () => {
     }
   });
 
+  it('explains the agent tool at /agents, with the connector address', () => {
+    visit('/agents');
+    expect(screen.getByRole('heading', { level: 1, name: 'PointCompass for AI assistants' })).toBeInTheDocument();
+    expect(screen.getByText('https://pointcompass.vercel.app/api/mcp')).toBeInTheDocument();
+    expect(screen.getByText(/does not look up live fares/)).toBeInTheDocument();
+  });
+
   it('gives Portfolio its own page', () => {
     visit('/portfolio');
     expect(screen.getByRole('heading', { level: 1, name: 'Portfolio' })).toBeInTheDocument();
