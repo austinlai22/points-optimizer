@@ -13,6 +13,10 @@ _None yet. Format:_
 - Why: <how the change follows from the observation>
 ```
 
+## 2.1.0 (October 2026)
+
+- Removed: the WhatsApp version, which never launched. The landing page said a pilot was running, which wasn't true. The code is kept on the `parked/whatsapp` branch.
+
 ## 2.0.0 (October 2026): "Should I spend points on this trip?"
 
 - **Verdict engine** (`src/lib/verdict/`): pay cash / transfer points / book in Chase Travel / book through a portal / wait to book, weighing points against what they're usually worth and the user's cash cushion. Shared by the web app and WhatsApp.

@@ -1,6 +1,6 @@
 # Demo script: Phocuswright, Nov 17, 2026
 
-About 4 minutes. Before you start: one phone on the WhatsApp verified-recipient list, sent `RESET` beforehand so the bot asks its questions fresh. A browser on https://pointcompass.vercel.app, with site data cleared.
+About 3 minutes. Before you start: a browser on https://pointcompass.vercel.app, with site data cleared.
 
 ## 1. The problem (30s), landing page
 
@@ -17,18 +17,11 @@ Scroll to **One trip, three ways to pay**: the same $900 trip as cash, Chase Tra
 5. Set the United points to 0, set cash back to **$6,000**, paste a Chase Travel price of **60,000** → **Book in Chase Travel**. Then **95,000** → falls back to **Pay cash**: "Chase Travel shows a Boost offer? Here's the number it has to beat."
 6. Open **Assumptions behind this recommendation**: every estimate is listed.
 
-## 3. WhatsApp (60s)
-
-Text: `NYC to Lisbon in May, $900, worth using points?`
-
-Answer: `Chase 150k` → Sapphire Reserve → No, after → `6000` → `300` → `2500`. The verdict arrives with the breakeven and a link. Then text `Chase Travel 60k` → it re-checks with the pasted price.
-
-## 4. Trust (30s)
+## 3. Trust (30s)
 
 - Chase rules come only from chase.com, each with its quote and date; tests fail if any goes six months unchecked.
-- No bank logins. The web keeps everything in the browser; WhatsApp stores the minimum, keyed to a scrambled number, and `RESET` deletes it. Show it: text `RESET`.
+- No bank logins, and everything you type stays in the browser.
 
 ## If something breaks
 
-- **WhatsApp silent:** the token may have expired (only if the temporary one was used; see docs/whatsapp-setup.md step 3). Carry on with the web demo.
-- **No Wi-Fi:** `npm run dev` locally; everything except WhatsApp works offline.
+- **No Wi-Fi:** `npm run dev` locally; the app works offline.

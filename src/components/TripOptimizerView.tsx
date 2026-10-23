@@ -293,7 +293,7 @@ export function TripOptimizerView() {
   };
   const cashComplete = cash.available !== null && cash.monthlyLeftover !== null && cash.monthlySpend !== null;
 
-  // The same engine the WhatsApp bot uses, fed the same inputs as the ranked
+  // The shared verdict engine, fed the same inputs as the ranked
   // paths below, so the verdict and the list can't disagree.
   const verdict: VerdictResult | null = useMemo(() => {
     if (!(tripCashPrice > 0) || !cashComplete) return null;

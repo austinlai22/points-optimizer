@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { PageIntro } from '../components/PageShell';
-import { FOCUS_RING } from '../styles/constants';
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -30,9 +29,8 @@ export function Privacy() {
         }
       >
         <p>
-          The website keeps what you enter in your own browser. The WhatsApp pilot needs to
-          remember your answers, so it stores as little as possible, and RESET deletes it. You will
-          never be asked for bank logins.
+          PointCompass keeps what you enter in your own browser. It counts a few anonymous events
+          to learn whether it is useful, and you will never be asked for bank logins.
         </p>
       </PageIntro>
 
@@ -59,30 +57,6 @@ export function Privacy() {
           </p>
         </Block>
 
-        <Block title="On WhatsApp (pilot)">
-          <p>
-            Messages pass through Meta's WhatsApp Business platform and are covered by{' '}
-            <a
-              href="https://www.whatsapp.com/legal/privacy-policy"
-              className={`rounded font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}
-            >
-              WhatsApp's privacy policy
-            </a>
-            .
-          </p>
-          <p>
-            So that you are not asked the same questions each time, PointCompass stores your points
-            balance for each bank, your Chase card type (and whether you opened a Sapphire Reserve
-            before June 23, 2025), your three cash figures, and the price of your last trip. It does
-            not store your trip description or your phone number. Records are filed under a
-            one-way scrambled version of the number.
-          </p>
-          <p>
-            Stored details are deleted automatically 90 days after your last message. Send{' '}
-            <strong>RESET</strong> at any time to delete them immediately.
-          </p>
-        </Block>
-
         <Block title="Demo bank (Plaid test environment)">
           <p>
             Where it is enabled, "Use a demo bank" fetches invented balances from Plaid's test
@@ -93,8 +67,7 @@ export function Privacy() {
         <Block title="Hosting">
           <p>
             The website runs on Vercel, which keeps standard request logs, such as IP address and
-            time, for a limited period. Stored WhatsApp details and usage counts are kept in an
-            Upstash Redis database.
+            time, for a limited period. Usage counts are kept in an Upstash Redis database.
           </p>
         </Block>
 

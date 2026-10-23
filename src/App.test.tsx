@@ -36,10 +36,17 @@ describe('routes', () => {
     expect(screen.getByRole('heading', { name: 'Check a trip' })).toBeInTheDocument();
   });
 
-  it('shows the privacy page, including how to delete WhatsApp data', () => {
+  it('shows the privacy page', () => {
     visit('/privacy');
     expect(screen.getByRole('heading', { level: 1, name: 'Privacy' })).toBeInTheDocument();
-    expect(screen.getAllByText(/RESET/).length).toBeGreaterThan(0);
+  });
+
+  it('mentions WhatsApp nowhere, since there is no WhatsApp version', () => {
+    for (const url of ['/', '/app', '/portfolio', '/privacy']) {
+      const { container, unmount } = visit(url);
+      expect(container.textContent, url).not.toMatch(/whatsapp/i);
+      unmount();
+    }
   });
 
   it('gives Portfolio its own page', () => {

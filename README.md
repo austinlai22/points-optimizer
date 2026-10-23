@@ -22,11 +22,9 @@ Each verdict comes with a one-line reason, cents per point against the benchmark
 
 **Portfolio** (`/portfolio`): what each card's balance is worth, from cash-back floor to guaranteed travel value, with an optional "potential transfer value" estimate.
 
-**WhatsApp pilot**: the same verdict by text, on a Meta test number for a handful of testers. See [docs/whatsapp-setup.md](docs/whatsapp-setup.md).
-
 ## Privacy
 
-On the web, everything you type stays in your browser (`localStorage`); share links carry the trip, never balances or cash figures. The site counts a few anonymous events (which verdict was shown, a random per-browser id, nothing you typed) to measure the pilot, and skips that under Do Not Track. The WhatsApp pilot stores the minimum needed to remember your answers, keyed to a hashed phone number, and `RESET` deletes it. No bank logins, ever. Full details: [/privacy](https://pointcompass.vercel.app/privacy).
+On the web, everything you type stays in your browser (`localStorage`); share links carry the trip, never balances or cash figures. The site counts a few anonymous events (which verdict was shown, a random per-browser id, nothing you typed) to measure the pilot, and skips that under Do Not Track. No bank logins, ever. Full details: [/privacy](https://pointcompass.vercel.app/privacy).
 
 ## Valuation model
 
@@ -40,16 +38,16 @@ The app's own transparent assumptions, not a claim to match The Points Guy, Nerd
 
 | Path | What |
 |---|---|
-| `src/lib/verdict/` | The verdict engine: pure functions, no UI, shared by the web app and WhatsApp |
+| `src/lib/verdict/` | The verdict engine: pure functions, no UI, shared by the web app and the server |
 | `src/utils/valuation.ts` | Point valuation and ranked redemption paths |
 | `src/data/` | Cards, transfer partners, Chase Boost rules, verdict thresholds |
 | `src/pages/`, `src/components/` | Landing page, `/app`, `/portfolio`, `/privacy`, and the shared banner and footer |
-| `server/` | WhatsApp webhook, event counts, Plaid sandbox (TypeScript source) |
+| `server/` | Event counts and the Plaid sandbox (TypeScript source) |
 | `api/` | The same, bundled for Vercel by `npm run build:api` (generated; committed) |
 
 ## Tech stack
 
-Vite + React 19 + TypeScript + Tailwind CSS v4, routed with a small pushState router. Three Vercel functions in `api/`, and Upstash Redis (free tier) for WhatsApp state and event counts. Plaid is sandbox-only, behind `ENABLE_PLAID_SANDBOX`.
+Vite + React 19 + TypeScript + Tailwind CSS v4, routed with a small pushState router. Vercel functions in `api/`, and Upstash Redis (free tier) for anonymous event counts. Plaid is sandbox-only, behind `ENABLE_PLAID_SANDBOX`.
 
 ## Running locally
 

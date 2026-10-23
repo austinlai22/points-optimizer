@@ -50,10 +50,6 @@ const exampleBars = [
   { label: 'Transfer to United', cents: exampleTransfer.cppCents, highlight: example.verdict === 'TRANSFER_POINTS' },
 ];
 
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined;
-const WHATSAPP_HREF = WHATSAPP_NUMBER
-  ? `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent('NYC to Lisbon in May, $900, worth using points?')}`
-  : null;
 
 const ratiosCheckedOn = oldestVerifiedOn(
   transferPartners.map((p) => p.verifiedOn).filter((d): d is string => Boolean(d)),
@@ -174,9 +170,8 @@ const FAQ: { q: string; a: ReactNode }[] = [
     q: 'What information do you keep?',
     a: (
       <>
-        On the website, nothing you enter leaves your browser. The WhatsApp pilot needs to remember
-        your answers between messages, so it stores them under a scrambled version of your number
-        until you send RESET. The{' '}
+        Nothing you enter leaves your browser: your cards, balances and cash figures stay on your
+        device. The{' '}
         <a href="/privacy" onClick={linkHandler('/privacy')} className={`rounded font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}>
           privacy page
         </a>{' '}
@@ -252,21 +247,10 @@ export function Landing() {
             <a href="/app" onClick={linkHandler('/app')} className={PRIMARY_BUTTON}>
               Check a trip
             </a>
-            {WHATSAPP_HREF ? (
-              <a href={WHATSAPP_HREF} className={SECONDARY_BUTTON}>
-                Use it on WhatsApp
-              </a>
-            ) : (
-              <a href="/#how" onClick={linkHandler('/#how')} className={SECONDARY_BUTTON}>
-                See how it works
-              </a>
-            )}
+            <a href="/#how" onClick={linkHandler('/#how')} className={SECONDARY_BUTTON}>
+              See how it works
+            </a>
           </div>
-          <p className="mt-4 text-sm text-navy-950/45">
-            {WHATSAPP_HREF
-              ? 'The WhatsApp version is a pilot with a small number of testers.'
-              : 'A WhatsApp version is in a small invite-only pilot.'}
-          </p>
 
           {/* A product shot: the app's own output on a phone, with two cards. */}
           <figure aria-label="Example recommendation on the PointCompass app" className="relative mx-auto mt-16 flex max-w-4xl justify-center">

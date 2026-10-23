@@ -6,12 +6,11 @@ import type { Store } from './store';
 // a HyperLogLog, which estimates how many distinct ids it has seen without
 // keeping any of them.
 
-export type Channel = 'web' | 'whatsapp';
+export type Channel = 'web';
 
 export type PilotEvent =
   | { name: 'verdict_shown'; verdict: Verdict }
-  | { name: 'pasted_price_used' }
-  | { name: 'whatsapp_conversation_started' };
+  | { name: 'pasted_price_used' };
 
 export const VERDICTS: Verdict[] = [
   'PAY_CASH',
@@ -47,11 +46,10 @@ export async function recordEvent(
 
 export async function readStats(store: Store, now: Date = new Date()) {
   const month = now.toISOString().slice(0, 7);
-  const [allTime, thisMonth, web, whatsapp] = await Promise.all([
+  const [allTime, thisMonth, web] = await Promise.all([
     store.hgetall(EVENTS_KEY),
     store.hgetall(`${EVENTS_KEY}:${month}`),
     store.pfcount('stats:users:web'),
-    store.pfcount('stats:users:whatsapp'),
   ]);
-  return { allTime, [month]: thisMonth, uniqueUsers: { web, whatsapp } };
+  return { allTime, [month]: thisMonth, uniqueUsers: { web } };
 }

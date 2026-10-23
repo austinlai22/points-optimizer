@@ -2,7 +2,7 @@ import { formatUSD } from '../../utils/format';
 import { ISSUER_LABELS } from '../../utils/issuers';
 import type { RunwayResult, VerdictResult } from './types';
 
-// Wording shared by every channel, so the web result and the WhatsApp reply
+// Wording shared by every channel, so the web result and the agent tool
 // can't describe the same verdict two different ways.
 
 export function formatCents(cents: number): string {

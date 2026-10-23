@@ -1,4 +1,4 @@
-// The one place server state lives: WhatsApp conversations and anonymous
+// The one place server state lives: anonymous
 // event counts. An interface so tests run against memory and production runs
 // against Upstash Redis (free tier, added to the Vercel project from the
 // Marketplace), without either knowing which it has.

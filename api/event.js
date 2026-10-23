@@ -22,19 +22,15 @@ async function recordEvent(store, event, channel, userId, now = /* @__PURE__ */ 
 }
 async function readStats(store, now = /* @__PURE__ */ new Date()) {
 	const month = now.toISOString().slice(0, 7);
-	const [allTime, thisMonth, web, whatsapp] = await Promise.all([
+	const [allTime, thisMonth, web] = await Promise.all([
 		store.hgetall(EVENTS_KEY),
 		store.hgetall(`${EVENTS_KEY}:${month}`),
-		store.pfcount("stats:users:web"),
-		store.pfcount("stats:users:whatsapp")
+		store.pfcount("stats:users:web")
 	]);
 	return {
 		allTime,
 		[month]: thisMonth,
-		uniqueUsers: {
-			web,
-			whatsapp
-		}
+		uniqueUsers: { web }
 	};
 }
 //#endregion

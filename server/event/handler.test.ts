@@ -23,7 +23,7 @@ describe('event counting', () => {
       'verdict_shown:web:TRANSFER_POINTS': 1,
       'pasted_price_used:web': 1,
     });
-    expect(stats.uniqueUsers).toEqual({ web: 1, whatsapp: 0 });
+    expect(stats.uniqueUsers).toEqual({ web: 1 });
   });
 
   it('refuses anything outside the measured events', async () => {

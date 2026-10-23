@@ -1,7 +1,7 @@
 import type { Issuer } from '../types';
 
 // Plain data, kept out of styles/ so non-UI code (the verdict engine, and the
-// WhatsApp function that will share it) can name issuers without pulling in
+// agent tool that shares it) can name issuers without pulling in
 // Tailwind class strings. styles/constants re-exports both.
 export const ISSUER_ORDER: Issuer[] = [
   'chase',
