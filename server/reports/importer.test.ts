@@ -22,6 +22,8 @@ describe('bulk import of your own price entries', () => {
       destination: 'LIS',
       travel_month: '2027-05',
       cabin: 'premium_economy',
+      airline: null,
+      hotel_chain: null,
       cash_price_usd: 1900,
       chase_points_price: 95000,
       boost_shown: 'yes',
@@ -29,6 +31,27 @@ describe('bulk import of your own price entries', () => {
       implied_cpp: 2,
       source: 'admin',
     });
+  });
+
+  it('turns airline names into codes, and accepts codes', () => {
+    const header = `${HEADER},airline`;
+    const rows = parseCsv([header, '2026-10-20,reserve,flight,SFO,LGA,2027-01,basic,452,45141,no,Southwest', '2026-10-20,reserve,flight,SFO,LGA,2027-01,economy,387,38640,no,dl', '2026-10-20,reserve,flight,SFO,LGA,2027-01,economy,387,38640,no,Delta Air Lines', '2026-10-20,reserve,flight,SFO,LGA,2027-01,economy,387,38640,no,Not An Airline'].join('\n'));
+    const checks = checkRows(rows, TODAY);
+    expect(checks.map((c) => c.report?.airline ?? null)).toEqual(['WN', 'DL', 'DL', null]);
+    expect(checks[3].errors.join()).toMatch(/airline PointCompass tracks/);
+  });
+
+  it('turns hotel chain names into program ids', () => {
+    const header = `${HEADER},hotel_chain`;
+    const rows = parseCsv([header, ',reserve,hotel,,PAR,2026-12,,1200,60000,no,Hyatt', ',reserve,hotel,,PAR,2026-12,,1200,60000,no,World of Hyatt', ',reserve,hotel,,PAR,2026-12,,1200,60000,no,Independent', ',reserve,hotel,,PAR,2026-12,,1200,60000,no,Motel 6'].join('\n'));
+    const checks = checkRows(rows, TODAY);
+    expect(checks.map((c) => c.report?.hotel_chain ?? null)).toEqual(['hyatt', 'hyatt', 'independent', null]);
+    expect(checks[3].errors.join()).toMatch(/hotel program PointCompass tracks/);
+  });
+
+  it('accepts a file written before the airline column existed', () => {
+    const [row] = checkRows(csv('2026-10-20,reserve,flight,JFK,LIS,2027-05,,900,60000,yes'), TODAY);
+    expect(row.report?.airline).toBeNull();
   });
 
   it('accepts basic economy, written several ways', () => {

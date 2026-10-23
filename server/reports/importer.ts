@@ -1,5 +1,6 @@
 import { validateReport, type PriceReport } from '../../src/lib/reports/validate';
 import type { Store } from '../store';
+import { toAirlineCode, toHotelChainId } from '../../src/lib/reports/brands';
 import { retentionEnd, saveReport } from './save';
 
 // Bulk import of Austin's own Chase Travel price entries from a CSV. Every row
@@ -14,6 +15,8 @@ export const IMPORT_COLUMNS = [
   'destination',
   'travel_month',
   'cabin',
+  'airline',
+  'hotel_chain',
   'cash_price_usd',
   'chase_points_price',
   'boost_shown',
@@ -54,6 +57,8 @@ export function checkRows(rows: Record<string, string>[], today: string): RowChe
       destination: blankToNull(row.destination)?.toUpperCase(),
       travel_month: blankToNull(row.travel_month),
       cabin: normalizeCabin(row.cabin),
+      airline: blankToNull(row.airline) === null ? null : toAirlineCode(row.airline),
+      hotel_chain: blankToNull(row.hotel_chain) === null ? null : toHotelChainId(row.hotel_chain),
       cash_price_usd: asNumber(row.cash_price_usd),
       chase_points_price: asNumber(row.chase_points_price),
       boost_shown: blankToNull(row.boost_shown)?.toLowerCase(),

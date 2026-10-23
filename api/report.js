@@ -119,6 +119,696 @@ function listChaseCardTypes() {
 LEGACY.cents_per_point;
 LEGACY.expires_on;
 //#endregion
+//#region src/lib/reports/brands.ts
+const transferPartners = [
+	{
+		"id": "accor",
+		"name": "Accor Live Limitless (ALL)",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"capitalOne": .5,
+			"citi": .5,
+			"bilt": .667
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "choice",
+		"name": "Choice Privileges",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1.5
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "hilton",
+		"name": "Hilton Honors",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"amex": 2,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "ihg",
+		"name": "IHG One Rewards",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "leadinghotels",
+		"name": "Leading Hotels of the World (Leaders Club)",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"amex": .25,
+			"citi": .2
+		},
+		"sourceUrls": {
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "marriott",
+		"name": "Marriott Bonvoy",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"amex": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "iprefer",
+		"name": "Preferred Hotels & Resorts (I Prefer)",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"capitalOne": 2,
+			"citi": 2,
+			"bilt": 2
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "hyatt",
+		"name": "World of Hyatt",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "wyndham",
+		"name": "Wyndham Rewards",
+		"type": "hotel",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "ana",
+		"name": "ANA Mileage Club",
+		"type": "airline",
+		"ratiosByIssuer": { "amex": 1 },
+		"sourceUrls": { "amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners" },
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "aerlingus",
+		"name": "Aer Lingus AerClub",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"amex": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "aeromexico",
+		"name": "Aeromexico Rewards",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"amex": 1.6
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "aeroplan",
+		"name": "Air Canada Aeroplan",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": 1,
+			"amex": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "flyingblue",
+		"name": "Air France-KLM Flying Blue",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "aa",
+		"name": "American Airlines AAdvantage",
+		"type": "airline",
+		"ratiosByIssuer": { "citi": 1 },
+		"sourceUrls": { "citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/" },
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "atmos",
+		"name": "Atmos Rewards (Alaska & Hawaiian)",
+		"type": "airline",
+		"ratiosByIssuer": { "bilt": 1 },
+		"sourceUrls": { "bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/" },
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "avianca",
+		"name": "Avianca LifeMiles",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "britishairways",
+		"name": "British Airways Avios",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": 1,
+			"amex": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "cathay",
+		"name": "Cathay Pacific Asia Miles",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"amex": .8,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "delta",
+		"name": "Delta SkyMiles",
+		"type": "airline",
+		"ratiosByIssuer": { "amex": 1 },
+		"sourceUrls": { "amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners" },
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "eva",
+		"name": "EVA Air Infinity MileageLands",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": .75,
+			"citi": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "emirates",
+		"name": "Emirates Skywards",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": .75,
+			"amex": .8,
+			"citi": .8,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "etihad",
+		"name": "Etihad Guest",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "finnair",
+		"name": "Finnair Plus",
+		"type": "airline",
+		"ratiosByIssuer": { "capitalOne": 1 },
+		"sourceUrls": { "capitalOne": "https://www.capitalone.com/credit-cards/travel-partners" },
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "iberia",
+		"name": "Iberia Plus",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"amex": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "jal",
+		"name": "Japan Airlines Mileage Bank",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": .75,
+			"bilt": 1,
+			"citi": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "jetblue",
+		"name": "JetBlue TrueBlue",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": .6,
+			"amex": .8,
+			"citi": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "qantas",
+		"name": "Qantas Frequent Flyer",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "qatar",
+		"name": "Qatar Airways Privilege Club",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "singapore",
+		"name": "Singapore Airlines KrisFlyer",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "southwest",
+		"name": "Southwest Rapid Rewards",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "tap",
+		"name": "TAP Air Portugal Miles&Go",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "thai",
+		"name": "Thai Airways Royal Orchid Plus",
+		"type": "airline",
+		"ratiosByIssuer": { "citi": 1 },
+		"sourceUrls": { "citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/" },
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "turkish",
+		"name": "Turkish Airlines Miles&Smiles",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "united",
+		"name": "United MileagePlus",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	},
+	{
+		"id": "virginatlantic",
+		"name": "Virgin Atlantic Flying Club (Virgin Points)",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"chase": 1,
+			"capitalOne": 1,
+			"amex": 1,
+			"citi": 1,
+			"bilt": 1
+		},
+		"sourceUrls": {
+			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
+		},
+		"verifiedOn": "2026-10-22"
+	}
+];
+const AIRLINES_BY_PROGRAM = {
+	ana: [{
+		code: "NH",
+		name: "ANA"
+	}],
+	aerlingus: [{
+		code: "EI",
+		name: "Aer Lingus"
+	}],
+	aeromexico: [{
+		code: "AM",
+		name: "Aeromexico"
+	}],
+	aeroplan: [{
+		code: "AC",
+		name: "Air Canada"
+	}],
+	flyingblue: [{
+		code: "AF",
+		name: "Air France"
+	}, {
+		code: "KL",
+		name: "KLM"
+	}],
+	aa: [{
+		code: "AA",
+		name: "American Airlines"
+	}],
+	atmos: [{
+		code: "AS",
+		name: "Alaska Airlines"
+	}, {
+		code: "HA",
+		name: "Hawaiian Airlines"
+	}],
+	avianca: [{
+		code: "AV",
+		name: "Avianca"
+	}],
+	britishairways: [{
+		code: "BA",
+		name: "British Airways"
+	}],
+	cathay: [{
+		code: "CX",
+		name: "Cathay Pacific"
+	}],
+	delta: [{
+		code: "DL",
+		name: "Delta Air Lines"
+	}],
+	eva: [{
+		code: "BR",
+		name: "EVA Air"
+	}],
+	emirates: [{
+		code: "EK",
+		name: "Emirates"
+	}],
+	etihad: [{
+		code: "EY",
+		name: "Etihad Airways"
+	}],
+	finnair: [{
+		code: "AY",
+		name: "Finnair"
+	}],
+	iberia: [{
+		code: "IB",
+		name: "Iberia"
+	}],
+	jal: [{
+		code: "JL",
+		name: "Japan Airlines"
+	}],
+	jetblue: [{
+		code: "B6",
+		name: "JetBlue"
+	}],
+	qantas: [{
+		code: "QF",
+		name: "Qantas"
+	}],
+	qatar: [{
+		code: "QR",
+		name: "Qatar Airways"
+	}],
+	singapore: [{
+		code: "SQ",
+		name: "Singapore Airlines"
+	}],
+	southwest: [{
+		code: "WN",
+		name: "Southwest Airlines"
+	}],
+	tap: [{
+		code: "TP",
+		name: "TAP Air Portugal"
+	}],
+	thai: [{
+		code: "TG",
+		name: "Thai Airways"
+	}],
+	turkish: [{
+		code: "TK",
+		name: "Turkish Airlines"
+	}],
+	united: [{
+		code: "UA",
+		name: "United Airlines"
+	}],
+	virginatlantic: [{
+		code: "VS",
+		name: "Virgin Atlantic"
+	}]
+};
+const TRACKED_AIRLINES = transferPartners.filter((p) => p.type === "airline").flatMap((p) => AIRLINES_BY_PROGRAM[p.id] ?? []).sort((a, b) => a.name.localeCompare(b.name));
+const AIRLINE_CODES = new Set(TRACKED_AIRLINES.map((a) => a.code));
+function isTrackedAirline(code) {
+	return typeof code === "string" && AIRLINE_CODES.has(code);
+}
+const SHORT_HOTEL_NAMES = {
+	accor: "Accor",
+	choice: "Choice Hotels",
+	hilton: "Hilton",
+	ihg: "IHG",
+	leadinghotels: "Leading Hotels of the World",
+	marriott: "Marriott",
+	iprefer: "Preferred Hotels & Resorts",
+	hyatt: "Hyatt",
+	wyndham: "Wyndham"
+};
+const HOTEL_CHAINS = [
+	...transferPartners.filter((p) => p.type === "hotel").map((p) => ({
+		id: p.id,
+		name: SHORT_HOTEL_NAMES[p.id] ?? p.name
+	})).sort((a, b) => a.name.localeCompare(b.name)),
+	{
+		id: "independent",
+		name: "Independent hotel"
+	},
+	{
+		id: "other",
+		name: "Another chain"
+	}
+];
+const HOTEL_IDS = new Set(HOTEL_CHAINS.map((h) => h.id));
+function isTrackedHotelChain(id) {
+	return typeof id === "string" && HOTEL_IDS.has(id);
+}
+//#endregion
 //#region src/lib/reports/validate.ts
 const CARD_TYPES = listChaseCardTypes().map((t) => t.id);
 const BOOKING_TYPES = ["flight", "hotel"];
@@ -161,6 +851,8 @@ function validateReport(raw, today) {
 		"destination",
 		"travel_month",
 		"cabin",
+		"airline",
+		"hotel_chain",
 		"cash_price_usd",
 		"chase_points_price",
 		"boost_shown"
@@ -182,6 +874,12 @@ function validateReport(raw, today) {
 	if (isFlight) {
 		if (r.cabin !== null && r.cabin !== void 0 && !CABINS.includes(r.cabin)) errors.push("Unknown cabin.");
 	} else if (r.cabin !== null && r.cabin !== void 0) errors.push("Hotels have no cabin.");
+	const hasAirline = r.airline !== null && r.airline !== void 0 && r.airline !== "";
+	if (hasAirline && !isFlight) errors.push("Hotels have no airline.");
+	else if (hasAirline && !isTrackedAirline(r.airline)) errors.push("Airline must be the 2-letter code of an airline PointCompass tracks, e.g. WN for Southwest, or left blank.");
+	const hasHotelChain = r.hotel_chain !== null && r.hotel_chain !== void 0 && r.hotel_chain !== "";
+	if (hasHotelChain && isFlight) errors.push("Flights have no hotel chain.");
+	else if (hasHotelChain && !isTrackedHotelChain(r.hotel_chain)) errors.push("Hotel chain must be a hotel program PointCompass tracks, independent, other, or left blank.");
 	if (!inRange(r.cash_price_usd, cash_price_usd)) errors.push("Cash price is outside the allowed range.");
 	if (!inRange(r.chase_points_price, chase_points_price) || !Number.isInteger(r.chase_points_price)) errors.push("Points price must be a whole number within the allowed range.");
 	if (!BOOST_ANSWERS.includes(r.boost_shown)) errors.push("Points Boost answer must be yes, no or unsure.");
@@ -206,6 +904,8 @@ function validateReport(raw, today) {
 			destination: r.destination,
 			travel_month: r.travel_month,
 			cabin: isFlight ? r.cabin ?? null : null,
+			airline: isFlight && hasAirline ? r.airline : null,
+			hotel_chain: !isFlight && hasHotelChain ? r.hotel_chain : null,
 			cash_price_usd: r.cash_price_usd,
 			chase_points_price: r.chase_points_price,
 			boost_shown: r.boost_shown,

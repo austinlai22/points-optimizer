@@ -1,1 +1,1 @@
-submitted_on,card_type,booking_type,origin,destination,travel_month,cabin,cash_price_usd,chase_points_price,boost_shown
+submitted_on,card_type,booking_type,origin,destination,travel_month,cabin,airline,hotel_chain,cash_price_usd,chase_points_price,boost_shown

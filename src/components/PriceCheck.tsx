@@ -11,6 +11,7 @@ import {
   type Cabin,
 } from '../lib/reports/validate';
 import { linkHandler } from '../lib/router';
+import { HOTEL_CHAINS, TRACKED_AIRLINES } from '../lib/reports/brands';
 import { CARD_SURFACE, FIELD, FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
 import { formatPoints, parseNonNegativeNumber } from '../utils/format';
 
@@ -55,6 +56,8 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
   const [destination, setDestination] = useState('');
   const [travelMonth, setTravelMonth] = useState('');
   const [cabin, setCabin] = useState<Cabin | ''>('');
+  const [airline, setAirline] = useState('');
+  const [hotelChain, setHotelChain] = useState('');
   const [status, setStatus] = useState<{ kind: 'idle' | 'sending' | 'sent' | 'error'; message?: string }>({ kind: 'idle' });
 
   const report = {
@@ -64,6 +67,8 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
     destination,
     travel_month: travelMonth,
     cabin: bookingType === 'flight' && cabin ? cabin : null,
+    airline: bookingType === 'flight' && airline ? airline : null,
+    hotel_chain: bookingType === 'hotel' && hotelChain ? hotelChain : null,
     cash_price_usd: tripCashPrice,
     chase_points_price: points,
     boost_shown: boost ?? 'unsure',
@@ -207,6 +212,35 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                   </label>
                   <input id="report-month" type="month" value={travelMonth} min={thisMonth()} onChange={(e) => setTravelMonth(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`} />
                 </div>
+                {bookingType === 'flight' ? (
+                  <div>
+                    <label htmlFor="report-airline" className={`mb-1.5 block ${LABEL}`}>
+                      Airline <span className="normal-case text-navy-950/40">(optional)</span>
+                    </label>
+                    <select id="report-airline" value={airline} onChange={(e) => setAirline(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
+                      <option value="">Not specified or not listed</option>
+                      {TRACKED_AIRLINES.map((a) => (
+                        <option key={a.code} value={a.code}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="report-hotel-chain" className={`mb-1.5 block ${LABEL}`}>
+                      Hotel chain <span className="normal-case text-navy-950/40">(optional)</span>
+                    </label>
+                    <select id="report-hotel-chain" value={hotelChain} onChange={(e) => setHotelChain(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
+                      <option value="">Not specified</option>
+                      {HOTEL_CHAINS.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {bookingType === 'flight' && (
                   <div>
                     <label htmlFor="report-cabin" className={`mb-1.5 block ${LABEL}`}>

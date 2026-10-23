@@ -29,8 +29,14 @@ The database keys must be in `.env.local` in the project folder (see the comment
 | `destination` | 3-letter airport or city code | `LIS` |
 | `travel_month` | YYYY-MM, within 12 months before and 18 months after `submitted_on` | `2027-05` |
 | `cabin` | Flights only, optional: `basic_economy` (or `basic`), `economy`, `premium_economy`, `business` or `first` | `economy` |
+| `airline` | Flights only, optional: an airline PointCompass tracks, as its name or 2-letter code. Leave blank for any other airline. | `Southwest` or `WN` |
+| `hotel_chain` | Hotels only, optional: `accor`, `choice`, `hilton`, `hyatt`, `ihg`, `leadinghotels`, `marriott`, `iprefer`, `wyndham` (names like `World of Hyatt` work too), `independent` or `other` | `hyatt` |
 | `cash_price_usd` | The cash price you compared against | `900` |
 | `chase_points_price` | The Chase Travel price in points | `60000` |
 | `boost_shown` | Whether Chase Travel showed a Points Boost offer: `yes`, `no` or `unsure` | `yes` |
 
 A row works out to between 0.3¢ and 5¢ per point or it's refused. Outside that range is almost always a typo.
+
+The airline and hotel chain columns can be left out entirely; files made before they existed still import.
+
+Tracked airlines: Aer Lingus, Aeromexico, Air Canada, Air France, Alaska, American, ANA, Avianca, British Airways, Cathay Pacific, Delta, Emirates, Etihad, EVA Air, Finnair, Hawaiian, Iberia, Japan Airlines, JetBlue, KLM, Qantas, Qatar, Singapore, Southwest, TAP Air Portugal, Thai, Turkish, United and Virgin Atlantic.

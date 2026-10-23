@@ -136,6 +136,8 @@ describe('Chase Travel price check and sharing', () => {
       destination: 'LIS',
       travel_month: month,
       cabin: null,
+      airline: null,
+      hotel_chain: null,
       cash_price_usd: 900,
       chase_points_price: 45000,
       boost_shown: 'yes',

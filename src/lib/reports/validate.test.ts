@@ -36,6 +36,22 @@ describe('validateReport', () => {
     expect(impliedCpp(1000, 83333)).toBe(1.2);
   });
 
+  it('accepts a tracked airline on flights only', () => {
+    expect(validateReport({ ...FLIGHT, airline: 'WN' }, TODAY)).toMatchObject({ ok: true, report: { airline: 'WN' } });
+    expect(validateReport(FLIGHT, TODAY)).toMatchObject({ ok: true, report: { airline: null, hotel_chain: null } });
+    expect(validateReport({ ...FLIGHT, airline: 'Southwest' }, TODAY)).toMatchObject({ ok: false });
+    // Spirit: a real airline, but no program PointCompass tracks.
+    expect(validateReport({ ...FLIGHT, airline: 'NK' }, TODAY)).toMatchObject({ ok: false });
+    expect(validateReport({ ...HOTEL, airline: 'DL' }, TODAY)).toMatchObject({ ok: false });
+  });
+
+  it('accepts a tracked hotel chain on hotels only', () => {
+    expect(validateReport({ ...HOTEL, hotel_chain: 'hyatt' }, TODAY)).toMatchObject({ ok: true, report: { hotel_chain: 'hyatt', airline: null } });
+    expect(validateReport({ ...HOTEL, hotel_chain: 'independent' }, TODAY).ok).toBe(true);
+    expect(validateReport({ ...HOTEL, hotel_chain: 'Hyatt Regency' }, TODAY)).toMatchObject({ ok: false });
+    expect(validateReport({ ...FLIGHT, hotel_chain: 'hyatt' }, TODAY)).toMatchObject({ ok: false });
+  });
+
   it('accepts basic economy as a cabin', () => {
     expect(validateReport({ ...FLIGHT, cabin: 'basic_economy' }, TODAY).ok).toBe(true);
   });

@@ -40,7 +40,7 @@ describe('price reports', () => {
     const { store, send } = setup();
     expect((await send(VALID)).status).toBe(201);
     const [report] = storedReports(store);
-    expect(report).toEqual({ ...VALID, submitted_on: '2026-10-23', implied_cpp: 1.5, source: 'visitor' });
+    expect(report).toEqual({ ...VALID, airline: null, hotel_chain: null, submitted_on: '2026-10-23', implied_cpp: 1.5, source: 'visitor' });
   });
 
   it('stores nothing about the sender', async () => {

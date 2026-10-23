@@ -1,5 +1,6 @@
 import reportConfig from '../../data/report-config.json';
 import { listChaseCardTypes } from '../verdict/chaseTravel';
+import { isTrackedAirline, isTrackedHotelChain } from './brands';
 import type { ChaseCardType } from '../verdict/types';
 
 // An opt-in Chase Travel price report: what Chase Travel charged in points for
@@ -25,6 +26,13 @@ export interface PriceReportInput {
   destination: string;
   travel_month: string;
   cabin: Cabin | null;
+  // Flights only, optional: the airline's 2-letter IATA code, e.g. "WN",
+  // limited to airlines behind the programs PointCompass tracks. Chase limits
+  // Boost to "select airlines", so this shows where offers appear.
+  airline: string | null;
+  // Hotels only, optional: a tracked hotel program's id, e.g. "hyatt", or
+  // "independent" or "other".
+  hotel_chain: string | null;
   cash_price_usd: number;
   chase_points_price: number;
   boost_shown: BoostAnswer;
@@ -78,7 +86,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
   // client can't slip extra data in.
   const allowed = new Set([
     'card_type', 'booking_type', 'origin', 'destination', 'travel_month',
-    'cabin', 'cash_price_usd', 'chase_points_price', 'boost_shown',
+    'cabin', 'airline', 'hotel_chain', 'cash_price_usd', 'chase_points_price', 'boost_shown',
   ]);
   for (const key of Object.keys(r)) if (!allowed.has(key)) errors.push(`Unknown field: ${key}.`);
 
@@ -109,6 +117,18 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
     errors.push('Hotels have no cabin.');
   }
 
+  const hasAirline = r.airline !== null && r.airline !== undefined && r.airline !== '';
+  if (hasAirline && !isFlight) errors.push('Hotels have no airline.');
+  else if (hasAirline && !isTrackedAirline(r.airline)) {
+    errors.push('Airline must be the 2-letter code of an airline PointCompass tracks, e.g. WN for Southwest, or left blank.');
+  }
+
+  const hasHotelChain = r.hotel_chain !== null && r.hotel_chain !== undefined && r.hotel_chain !== '';
+  if (hasHotelChain && isFlight) errors.push('Flights have no hotel chain.');
+  else if (hasHotelChain && !isTrackedHotelChain(r.hotel_chain)) {
+    errors.push('Hotel chain must be a hotel program PointCompass tracks, independent, other, or left blank.');
+  }
+
   if (!inRange(r.cash_price_usd, reportConfig.cash_price_usd)) errors.push('Cash price is outside the allowed range.');
   if (!inRange(r.chase_points_price, reportConfig.chase_points_price) || !Number.isInteger(r.chase_points_price)) {
     errors.push('Points price must be a whole number within the allowed range.');
@@ -136,6 +156,8 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
       destination: r.destination as string,
       travel_month: r.travel_month as string,
       cabin: isFlight ? ((r.cabin as Cabin | undefined) ?? null) : null,
+      airline: isFlight && hasAirline ? (r.airline as string) : null,
+      hotel_chain: !isFlight && hasHotelChain ? (r.hotel_chain as string) : null,
       cash_price_usd: r.cash_price_usd as number,
       chase_points_price: r.chase_points_price as number,
       boost_shown: r.boost_shown as BoostAnswer,
