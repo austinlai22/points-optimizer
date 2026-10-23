@@ -75,6 +75,7 @@ export function Privacy() {
             It never contains your balances, cash figures, spending, IP address, browser details,
             or anything that links one report to another or to you. Reports are deleted
             automatically after {reportConfig.retention_months} months, and none are published.
+            PointCompass also adds prices it has checked itself, marked separately from shared ones.
           </p>
         </Block>
 

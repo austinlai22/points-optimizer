@@ -30,10 +30,15 @@ export interface PriceReportInput {
   boost_shown: BoostAnswer;
 }
 
-// What is stored: the input plus two values the server works out.
+// Who entered a report: a visitor through the website, or Austin through the
+// bulk import. Set by the server or the import script, never by the sender.
+export type ReportSource = 'visitor' | 'admin';
+
+// What is stored: the input plus the values the server works out.
 export interface PriceReport extends PriceReportInput {
   submitted_on: string;
   implied_cpp: number;
+  source: ReportSource;
 }
 
 export type ValidationResult =
@@ -136,6 +141,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
       boost_shown: r.boost_shown as BoostAnswer,
       submitted_on: today,
       implied_cpp: implied,
+      source: 'visitor',
     },
   };
 }

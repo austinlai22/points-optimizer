@@ -17,6 +17,7 @@ _None yet. Format:_
 
 - **Chase Travel price check** after each recommendation, with the Points Boost question, and **opt-in anonymous price reports** (only the fields on the privacy page; kept 24 months; not published).
 - **Agent tool**: `/api/mcp`, a read-only remote MCP server with five tools on the same engine and data, for Claude custom connectors and other MCP clients. Explained at `/agents`.
+- **Bulk import** of your own Chase Travel price entries (`npm run import-reports`), checked with the website's rules and marked `source = admin`; every report now records whether a visitor or an admin entered it.
 - **Experiment kit** in `experiment/`: 15 objective questions with engine-computed answers, a results template, run and scoring rules, and a summary script.
 - **Usage tracking**: page views via Vercel Web Analytics; trip checks, active and returning users, price checks and reports counted in Upstash. Your own browser is excluded via `/?internal=1`; visitors can opt out on the privacy page. Read with `npm run stats`; no public stats page.
 

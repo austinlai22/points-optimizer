@@ -64,6 +64,7 @@ npm run build      # type-check and produce a production build
 npm run build:api  # rebundle server/ into api/ after changing server code
 npm run stats           # weekly usage totals (needs the database keys in .env.local)
 npm run export-reports  # all shared Chase Travel prices as CSV
+npm run import-reports -- price-reports/my-prices.csv   # add your own price entries (see price-reports/README.md)
 npm run experiment:generate   # build the experiment's answer key (kept out of git)
 ```
 

@@ -83,6 +83,7 @@ export const REPORT_COLUMNS: (keyof PriceReport)[] = [
   'chase_points_price',
   'boost_shown',
   'implied_cpp',
+  'source',
 ];
 
 // Every stored report, oldest first.
@@ -91,6 +92,7 @@ export async function allReports(store: Store): Promise<PriceReport[]> {
   const values = await store.mget(keys);
   return values
     .filter((v): v is string => v !== null)
-    .map((v) => JSON.parse(v) as PriceReport)
+    // Reports stored before the source field existed all came from visitors.
+    .map((v) => ({ source: 'visitor', ...JSON.parse(v) }) as PriceReport)
     .sort((a, b) => a.submitted_on.localeCompare(b.submitted_on));
 }

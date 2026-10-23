@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import reportConfig from '../../src/data/report-config.json';
 import { validateReport } from '../../src/lib/reports/validate';
 import { recordEvent, utcDate } from '../analytics';
 import { allow } from '../ratelimit';
+import { saveReport } from './save';
 import type { Store } from '../store';
 
 // POST /api/report: one opt-in Chase Travel price report. Stored exactly as
@@ -16,8 +16,6 @@ export interface ReportDeps {
   secret: string;
   now?: () => Date;
 }
-
-const RETENTION_SECONDS = Math.round(reportConfig.retention_months * 30.44 * 24 * 60 * 60);
 
 const json = (status: number, body: unknown) => Response.json(body, { status });
 
@@ -56,9 +54,7 @@ export function createReportHandler(deps: ReportDeps) {
         return json(400, { error: 'Report is not valid.', details: result.errors });
       }
 
-      await deps.store.set(`report:${randomUUID()}`, JSON.stringify(result.report), {
-        ttlSeconds: RETENTION_SECONDS,
-      });
+      await saveReport(deps.store, result.report, now);
       await recordEvent(deps.store, { name: 'price_report' }, null, now);
       return json(201, { ok: true });
     },

@@ -34,3 +34,7 @@ dist-ssr
 experiment/questions.csv
 experiment/results*.csv
 !experiment/results-template.csv
+
+# Your own price entries for npm run import-reports stay local.
+price-reports/*.csv
+!price-reports/template.csv

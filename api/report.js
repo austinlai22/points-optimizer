@@ -200,7 +200,8 @@ function validateReport(raw, today) {
 			chase_points_price: r.chase_points_price,
 			boost_shown: r.boost_shown,
 			submitted_on: today,
-			implied_cpp: implied
+			implied_cpp: implied,
+			source: "visitor"
 		}
 	};
 }
@@ -246,8 +247,21 @@ async function allow(store, scope, request, { limit, windowSeconds, secret, now 
 	return await store.incr(rateLimitKey(scope, clientAddress(request), secret, now), windowSeconds) <= limit;
 }
 //#endregion
+//#region server/reports/save.ts
+const DAY_MS = 864e5;
+function retentionEnd(submittedOn) {
+	const end = /* @__PURE__ */ new Date(`${submittedOn}T00:00:00Z`);
+	end.setUTCMonth(end.getUTCMonth() + retention_months);
+	return end;
+}
+async function saveReport(store, report, now = /* @__PURE__ */ new Date()) {
+	const ttlSeconds = Math.floor((retentionEnd(report.submitted_on).getTime() - now.getTime()) / 1e3);
+	if (ttlSeconds < DAY_MS / 1e3) return false;
+	await store.set(`report:${randomUUID()}`, JSON.stringify(report), { ttlSeconds });
+	return true;
+}
+//#endregion
 //#region server/reports/handler.ts
-const RETENTION_SECONDS = Math.round(retention_months * 30.44 * 24 * 60 * 60);
 const json = (status, body) => Response.json(body, { status });
 function createReportHandler(deps) {
 	return { async fetch(request) {
@@ -280,7 +294,7 @@ function createReportHandler(deps) {
 				details: result.errors
 			});
 		}
-		await deps.store.set(`report:${randomUUID()}`, JSON.stringify(result.report), { ttlSeconds: RETENTION_SECONDS });
+		await saveReport(deps.store, result.report, now);
 		await recordEvent(deps.store, { name: "price_report" }, null, now);
 		return json(201, { ok: true });
 	} };
