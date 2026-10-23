@@ -31,6 +31,13 @@ describe('bulk import of your own price entries', () => {
     });
   });
 
+  it('accepts basic economy, written several ways', () => {
+    for (const written of ['basic', 'Basic Economy', 'basic_economy', 'basic-economy']) {
+      const [row] = checkRows(csv(`2026-10-20,reserve,flight,JFK,LIS,2027-05,${written},900,60000,no`), TODAY);
+      expect(row.report?.cabin, written).toBe('basic_economy');
+    }
+  });
+
   it('treats a blank date as today and a hotel row without origin or cabin as valid', () => {
     const [row] = checkRows(csv(',preferred,hotel,,PAR,2026-12,,1200,60000,no'), TODAY);
     expect(row.report).toMatchObject({ submitted_on: TODAY, origin: null, cabin: null, implied_cpp: 2 });

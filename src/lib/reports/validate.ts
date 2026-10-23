@@ -8,7 +8,7 @@ import type { ChaseCardType } from '../verdict/types';
 
 export const CARD_TYPES = listChaseCardTypes().map((t) => t.id);
 export const BOOKING_TYPES = ['flight', 'hotel'] as const;
-export const CABINS = ['economy', 'premium_economy', 'business', 'first'] as const;
+export const CABINS = ['basic_economy', 'economy', 'premium_economy', 'business', 'first'] as const;
 export const BOOST_ANSWERS = ['yes', 'no', 'unsure'] as const;
 
 export type BookingType = (typeof BOOKING_TYPES)[number];

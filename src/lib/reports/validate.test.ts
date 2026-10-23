@@ -36,6 +36,10 @@ describe('validateReport', () => {
     expect(impliedCpp(1000, 83333)).toBe(1.2);
   });
 
+  it('accepts basic economy as a cabin', () => {
+    expect(validateReport({ ...FLIGHT, cabin: 'basic_economy' }, TODAY).ok).toBe(true);
+  });
+
   it('accepts all seven Chase card types', () => {
     for (const card_type of ['reserve', 'preferred', 'reserveForBusiness', 'jpmReserve', 'inkPreferred', 'inkPlus', 'other']) {
       expect(validateReport({ ...FLIGHT, card_type }, TODAY).ok, card_type).toBe(true);

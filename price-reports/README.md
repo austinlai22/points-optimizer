@@ -28,7 +28,7 @@ The database keys must be in `.env.local` in the project folder (see the comment
 | `origin` | Flights only: 3-letter airport or city code. Blank for hotels. | `JFK` |
 | `destination` | 3-letter airport or city code | `LIS` |
 | `travel_month` | YYYY-MM, within 12 months before and 18 months after `submitted_on` | `2027-05` |
-| `cabin` | Flights only, optional: `economy`, `premium_economy`, `business` or `first` | `economy` |
+| `cabin` | Flights only, optional: `basic_economy` (or `basic`), `economy`, `premium_economy`, `business` or `first` | `economy` |
 | `cash_price_usd` | The cash price you compared against | `900` |
 | `chase_points_price` | The Chase Travel price in points | `60000` |
 | `boost_shown` | Whether Chase Travel showed a Points Boost offer: `yes`, `no` or `unsure` | `yes` |

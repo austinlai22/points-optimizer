@@ -28,6 +28,11 @@ export interface RowCheck {
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const blankToNull = (v: string | undefined) => (v === undefined || v.trim() === '' ? null : v.trim());
+// "Basic Economy", "basic" and "basic_economy" all mean the same cabin.
+function normalizeCabin(value: string | undefined): string | null {
+  const cabin = blankToNull(value)?.toLowerCase().replace(/[\s-]+/g, '_') ?? null;
+  return cabin === 'basic' ? 'basic_economy' : cabin;
+}
 const asNumber = (v: string | undefined) => (blankToNull(v) === null ? undefined : Number(v!.replace(/[$,\s]/g, '')));
 
 export function checkRows(rows: Record<string, string>[], today: string): RowCheck[] {
@@ -48,7 +53,7 @@ export function checkRows(rows: Record<string, string>[], today: string): RowChe
       origin: blankToNull(row.origin)?.toUpperCase() ?? null,
       destination: blankToNull(row.destination)?.toUpperCase(),
       travel_month: blankToNull(row.travel_month),
-      cabin: blankToNull(row.cabin)?.toLowerCase().replace(/\s+/g, '_') ?? null,
+      cabin: normalizeCabin(row.cabin),
       cash_price_usd: asNumber(row.cash_price_usd),
       chase_points_price: asNumber(row.chase_points_price),
       boost_shown: blankToNull(row.boost_shown)?.toLowerCase(),

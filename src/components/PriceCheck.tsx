@@ -16,6 +16,7 @@ import { formatPoints, parseNonNegativeNumber } from '../utils/format';
 
 const BOOST_LABELS: Record<BoostAnswer, string> = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
 const CABIN_LABELS: Record<Cabin, string> = {
+  basic_economy: 'Basic economy',
   economy: 'Economy',
   premium_economy: 'Premium economy',
   business: 'Business',

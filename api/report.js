@@ -123,6 +123,7 @@ LEGACY.expires_on;
 const CARD_TYPES = listChaseCardTypes().map((t) => t.id);
 const BOOKING_TYPES = ["flight", "hotel"];
 const CABINS = [
+	"basic_economy",
 	"economy",
 	"premium_economy",
 	"business",
