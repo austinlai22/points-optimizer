@@ -646,6 +646,8 @@ export function TripOptimizerView() {
                 <VerdictCard result={verdict} />
                 {verdict.chaseTravel && (
                   <PriceCheck
+                    key={selectedPartner?.id ?? 'none'}
+                    program={selectedPartner}
                     verdict={verdict}
                     tripCashPrice={tripCashPrice}
                     points={chaseTravelPoints}

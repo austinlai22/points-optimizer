@@ -11,9 +11,12 @@ import {
   type Cabin,
 } from '../lib/reports/validate';
 import { linkHandler } from '../lib/router';
-import { HOTEL_CHAINS, TRACKED_AIRLINES } from '../lib/reports/brands';
+import { AIRLINES_BY_PROGRAM, HOTEL_CHAINS, TRACKED_AIRLINES, isTrackedHotelChain } from '../lib/reports/brands';
+import { faresFor, findFare } from '../lib/reports/fares';
 import { CARD_SURFACE, FIELD, FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
+import type { TransferPartner } from '../types';
 import { formatPoints, parseNonNegativeNumber } from '../utils/format';
+import { AirportField } from './AirportField';
 
 const BOOST_LABELS: Record<BoostAnswer, string> = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
 const CABIN_LABELS: Record<Cabin, string> = {
@@ -31,6 +34,9 @@ interface PriceCheckProps {
   onPointsChange: (points: number) => void;
   boost: BoostAnswer | null;
   onBoostChange: (answer: BoostAnswer) => void;
+  // The program picked in step 1, used to fill in flight or hotel and the
+  // airline or chain. Re-mount (key) when it changes.
+  program?: TransferPartner | null;
 }
 
 function pill(active: boolean) {
@@ -39,46 +45,69 @@ function pill(active: boolean) {
   }`;
 }
 
-const toCode = (value: string) => value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-
 function thisMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function startingChoices(program: TransferPartner | null | undefined) {
+  if (program?.type === 'hotel') {
+    return { bookingType: 'hotel' as BookingType, airline: '', hotelChain: isTrackedHotelChain(program.id) ? program.id : '' };
+  }
+  // A program covering two airlines (Flying Blue, Atmos) leaves the choice open.
+  const airlines = program ? (AIRLINES_BY_PROGRAM[program.id] ?? []) : [];
+  return { bookingType: 'flight' as BookingType, airline: airlines.length === 1 ? airlines[0].code : '', hotelChain: '' };
+}
+
+// A second price for the same trip: its own fare, cash price, points price and
+// Boost answer, without changing the recommendation above.
+interface AnotherFare {
+  cash: number;
+  points: number;
+  boost: BoostAnswer | null;
+}
+
 // After a recommendation: check the points price Chase Travel actually shows,
 // and, only if the person ticks the box, share it anonymously.
-export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boost, onBoostChange }: PriceCheckProps) {
+export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boost, onBoostChange, program }: PriceCheckProps) {
   const chase = verdict.chaseTravel!;
+  const start = startingChoices(program);
   const [sharing, setSharing] = useState(false);
-  const [bookingType, setBookingType] = useState<BookingType>('flight');
+  const [bookingType, setBookingType] = useState<BookingType>(start.bookingType);
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [travelMonth, setTravelMonth] = useState('');
+  const [airline, setAirline] = useState(start.airline);
+  const [fare, setFare] = useState('');
   const [cabin, setCabin] = useState<Cabin | ''>('');
-  const [airline, setAirline] = useState('');
-  const [hotelChain, setHotelChain] = useState('');
+  const [hotelChain, setHotelChain] = useState(start.hotelChain);
+  const [another, setAnother] = useState<AnotherFare | null>(null);
   const [status, setStatus] = useState<{ kind: 'idle' | 'sending' | 'sent' | 'error'; message?: string }>({ kind: 'idle' });
 
+  const isFlight = bookingType === 'flight';
+  const fares = isFlight ? faresFor(airline) : [];
+  const reportBoost = another ? another.boost : boost;
   const report = {
     card_type: chase.cardType,
     booking_type: bookingType,
-    origin: bookingType === 'flight' ? origin : null,
+    origin: isFlight ? origin : null,
     destination,
     travel_month: travelMonth,
-    cabin: bookingType === 'flight' && cabin ? cabin : null,
-    airline: bookingType === 'flight' && airline ? airline : null,
-    hotel_chain: bookingType === 'hotel' && hotelChain ? hotelChain : null,
-    cash_price_usd: tripCashPrice,
-    chase_points_price: points,
-    boost_shown: boost ?? 'unsure',
+    // With a fare chosen, the cabin follows from it.
+    cabin: isFlight && !fare && cabin ? cabin : null,
+    airline: isFlight && airline ? airline : null,
+    fare: isFlight && fare ? fare : null,
+    hotel_chain: !isFlight && hotelChain ? hotelChain : null,
+    cash_price_usd: another ? another.cash : tripCashPrice,
+    chase_points_price: another ? another.points : points,
+    boost_shown: reportBoost ?? 'unsure',
   };
   // The same check the server runs, so most mistakes show before sending.
   const check = validateReport(report, new Date().toISOString().slice(0, 10));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!check.ok || boost === null) return;
+    if (!check.ok || reportBoost === null) return;
     setStatus({ kind: 'sending' });
     try {
       const response = await fetch('/api/report', {
@@ -97,6 +126,36 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
       setStatus({ kind: 'error', message: 'The price could not be shared. Please try again later.' });
     }
   };
+
+  // Keeps the trip (route, month, airline or chain) and asks only for the
+  // next fare's details.
+  const shareAnother = () => {
+    setAnother({ cash: 0, points: 0, boost: null });
+    setFare('');
+    setCabin('');
+    setStatus({ kind: 'idle' });
+    setSharing(true);
+  };
+
+  const numberField = (id: string, label: string, value: number, onChange: (n: number) => void, prefix?: string) => (
+    <div>
+      <label htmlFor={id} className={`mb-1.5 block ${LABEL}`}>
+        {label}
+      </label>
+      <div className="relative">
+        {prefix && <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-navy-950/45">{prefix}</span>}
+        <input
+          id={id}
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={value || ''}
+          onChange={(e) => onChange(parseNonNegativeNumber(e.target.value))}
+          className={`${FIELD} bg-white ${prefix ? 'pl-7' : ''} ${TAP_TARGET} ${FOCUS_RING}`}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <section aria-labelledby="price-check-heading" className={`${CARD_SURFACE} mb-10 p-6`}>
@@ -118,7 +177,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
             value={points || ''}
             onChange={(event) => {
               onPointsChange(parseNonNegativeNumber(event.target.value));
-              setStatus({ kind: 'idle' });
+              if (!another) setStatus({ kind: 'idle' });
             }}
             placeholder={formatPoints(Math.round(chase.nonBoostPoints))}
             className={`${FIELD} bg-white ${TAP_TARGET} ${FOCUS_RING}`}
@@ -151,10 +210,15 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
       {points > 0 && (
         <div className="mt-6 border-t border-navy/10 pt-5">
           {status.kind === 'sent' ? (
-            <p className="text-sm font-medium text-teal" role="status">
-              Thank you. Your price has been shared anonymously.
-            </p>
-          ) : (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              <p className="text-sm font-medium text-teal" role="status">
+                Thank you. Your price has been shared anonymously.
+              </p>
+              <button type="button" onClick={shareAnother} className={`rounded-full border border-navy/20 bg-white px-4 text-sm font-medium text-navy hover:border-navy/40 ${TAP_TARGET} ${FOCUS_RING}`}>
+                Share another fare for this trip
+              </button>
+            </div>
+          ) : another ? null : (
             <label className="flex cursor-pointer items-start gap-3 text-sm text-navy-950/75">
               <input
                 type="checkbox"
@@ -174,10 +238,35 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
 
           {sharing && (
             <form onSubmit={submit} className="mt-5 space-y-5 rounded-2xl border border-navy/10 bg-white p-5" noValidate>
-              <p className="text-sm text-navy-950/60">
-                A few details make the price useful to others. Only these fields, the card type and
-                the two prices are shared.
-              </p>
+              {another ? (
+                <>
+                  <p className="text-sm text-navy-950/60">
+                    Another fare for the same trip. Enter what Chase Travel shows for it.
+                  </p>
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    {numberField('another-cash', 'Cash price', another.cash, (cash) => setAnother({ ...another, cash }), '$')}
+                    {numberField('another-points', 'Price in points', another.points, (p) => setAnother({ ...another, points: p }))}
+                  </div>
+                  <div>
+                    <p id="another-boost-label" className={`mb-1.5 ${LABEL}`}>
+                      Points Boost offer shown?
+                    </p>
+                    <div role="group" aria-labelledby="another-boost-label" className="flex flex-wrap gap-2">
+                      {(Object.keys(BOOST_LABELS) as BoostAnswer[]).map((answer) => (
+                        <button key={answer} type="button" aria-pressed={another.boost === answer} onClick={() => setAnother({ ...another, boost: answer })} className={pill(another.boost === answer)}>
+                          {BOOST_LABELS[answer]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-navy-950/60">
+                  A few details make the price useful to others. Only these fields, the card type and
+                  the two prices are shared.
+                </p>
+              )}
+
               <div>
                 <p id="booking-type-label" className={`mb-1.5 ${LABEL}`}>
                   Flight or hotel
@@ -191,75 +280,83 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                {bookingType === 'flight' && (
-                  <div>
-                    <label htmlFor="report-origin" className={`mb-1.5 block ${LABEL}`}>
-                      From (airport code)
-                    </label>
-                    <input id="report-origin" value={origin} onChange={(e) => setOrigin(toCode(e.target.value))} placeholder="JFK" autoComplete="off" className={`${FIELD} uppercase ${TAP_TARGET} ${FOCUS_RING}`} />
-                  </div>
-                )}
+              {isFlight ? (
                 <div>
-                  <label htmlFor="report-destination" className={`mb-1.5 block ${LABEL}`}>
-                    {bookingType === 'flight' ? 'To (airport code)' : 'City (airport or city code)'}
+                  <label htmlFor="report-airline" className={`mb-1.5 block ${LABEL}`}>
+                    Airline <span className="normal-case text-navy-950/40">(optional)</span>
                   </label>
-                  <input id="report-destination" value={destination} onChange={(e) => setDestination(toCode(e.target.value))} placeholder={bookingType === 'flight' ? 'LIS' : 'PAR'} autoComplete="off" className={`${FIELD} uppercase ${TAP_TARGET} ${FOCUS_RING}`} />
+                  <select
+                    id="report-airline"
+                    value={airline}
+                    onChange={(e) => {
+                      setAirline(e.target.value);
+                      setFare('');
+                    }}
+                    className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
+                  >
+                    <option value="">Not specified or not listed</option>
+                    {TRACKED_AIRLINES.map((a) => (
+                      <option key={a.code} value={a.code}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              ) : (
+                <div>
+                  <label htmlFor="report-hotel-chain" className={`mb-1.5 block ${LABEL}`}>
+                    Hotel chain <span className="normal-case text-navy-950/40">(optional)</span>
+                  </label>
+                  <select id="report-hotel-chain" value={hotelChain} onChange={(e) => setHotelChain(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
+                    <option value="">Not specified</option>
+                    {HOTEL_CHAINS.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isFlight && (
+                <div>
+                  <p id="report-fare-label" className={`mb-1.5 ${LABEL}`}>
+                    {fares.length > 0 ? 'Fare' : 'Cabin'} <span className="normal-case text-navy-950/40">(optional)</span>
+                  </p>
+                  {/* Tap again to clear. An airline's own fares where we list
+                      them; otherwise the shared cabins. */}
+                  <div role="group" aria-labelledby="report-fare-label" className="flex flex-wrap gap-2">
+                    {fares.length > 0
+                      ? fares.map((f) => (
+                          <button key={f.id} type="button" aria-pressed={fare === f.id} onClick={() => setFare(fare === f.id ? '' : f.id)} className={pill(fare === f.id)}>
+                            {f.name}
+                          </button>
+                        ))
+                      : CABINS.map((c) => (
+                          <button key={c} type="button" aria-pressed={cabin === c} onClick={() => setCabin(cabin === c ? '' : c)} className={pill(cabin === c)}>
+                            {CABIN_LABELS[c]}
+                          </button>
+                        ))}
+                  </div>
+                  {fare && <p className="mt-1.5 text-xs text-navy-950/55">Counted as {CABIN_LABELS[findFare(airline, fare)!.cabin].toLowerCase()} when comparing airlines.</p>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                {isFlight && <AirportField id="report-origin" label="From" value={origin} onChange={setOrigin} />}
+                <AirportField id="report-destination" label={isFlight ? 'To' : 'City'} value={destination} onChange={setDestination} />
                 <div>
                   <label htmlFor="report-month" className={`mb-1.5 block ${LABEL}`}>
                     Travel month
                   </label>
                   <input id="report-month" type="month" value={travelMonth} min={thisMonth()} onChange={(e) => setTravelMonth(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`} />
                 </div>
-                {bookingType === 'flight' ? (
-                  <div>
-                    <label htmlFor="report-airline" className={`mb-1.5 block ${LABEL}`}>
-                      Airline <span className="normal-case text-navy-950/40">(optional)</span>
-                    </label>
-                    <select id="report-airline" value={airline} onChange={(e) => setAirline(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
-                      <option value="">Not specified or not listed</option>
-                      {TRACKED_AIRLINES.map((a) => (
-                        <option key={a.code} value={a.code}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label htmlFor="report-hotel-chain" className={`mb-1.5 block ${LABEL}`}>
-                      Hotel chain <span className="normal-case text-navy-950/40">(optional)</span>
-                    </label>
-                    <select id="report-hotel-chain" value={hotelChain} onChange={(e) => setHotelChain(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
-                      <option value="">Not specified</option>
-                      {HOTEL_CHAINS.map((h) => (
-                        <option key={h.id} value={h.id}>
-                          {h.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {bookingType === 'flight' && (
-                  <div>
-                    <label htmlFor="report-cabin" className={`mb-1.5 block ${LABEL}`}>
-                      Cabin <span className="normal-case text-navy-950/40">(optional)</span>
-                    </label>
-                    <select id="report-cabin" value={cabin} onChange={(e) => setCabin(e.target.value as Cabin | '')} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
-                      <option value="">Not specified</option>
-                      {CABINS.map((c) => (
-                        <option key={c} value={c}>
-                          {CABIN_LABELS[c]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
 
-              {boost === null && (
-                <p className="text-sm text-navy-950/60">Answer the Points Boost question above to share.</p>
+              {reportBoost === null && (
+                <p className="text-sm text-navy-950/60">
+                  {another ? 'Answer the Points Boost question to share.' : 'Answer the Points Boost question above to share.'}
+                </p>
               )}
               {!check.ok && check.reason === 'out_of_range' && (
                 <p className="text-sm text-amber" role="alert">
@@ -274,7 +371,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
 
               <button
                 type="submit"
-                disabled={!check.ok || boost === null || status.kind === 'sending'}
+                disabled={!check.ok || reportBoost === null || status.kind === 'sending'}
                 className={`rounded-full bg-navy px-6 text-sm font-semibold text-slate-50 transition-colors hover:bg-navy-950 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
               >
                 {status.kind === 'sending' ? 'Sharing…' : 'Share price'}

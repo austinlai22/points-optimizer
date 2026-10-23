@@ -16,6 +16,12 @@ Add prices you've seen in Chase Travel to the reports database in bulk. They're 
    ```
    If any row has a problem, the import lists it and stores nothing. Fix it and rerun, or add `--skip-invalid` to store only the good rows. Importing the same file twice stores the rows twice, so start a fresh file for each batch.
 
+To correct entries you've already imported, delete your own entries and import the corrected file again. Visitors' reports are never touched:
+```bash
+npm run delete-admin-reports              # lists them, deletes nothing
+npm run delete-admin-reports -- --confirm # deletes them
+```
+
 The database keys must be in `.env.local` in the project folder (see the comments in that file).
 
 ## Columns
@@ -30,6 +36,7 @@ The database keys must be in `.env.local` in the project folder (see the comment
 | `travel_month` | YYYY-MM, within 12 months before and 18 months after `submitted_on` | `2027-05` |
 | `cabin` | Flights only, optional: `basic_economy` (or `basic`), `economy`, `premium_economy`, `business` or `first` | `economy` |
 | `airline` | Flights only, optional: an airline PointCompass tracks, as its name or 2-letter code. Leave blank for any other airline. | `Southwest` or `WN` |
+| `fare` | Flights on Delta or Southwest, optional: the fare name as Chase Travel shows it. Delta: `Main Basic`, `Main Classic`, `Main Extra`, `Comfort Basic`, `Comfort Classic`, `Comfort Extra`, `Premium Select Basic`, `Premium Select Classic`, `First Basic`, `First Classic`, `First Extra`, `Delta One Classic`, `Delta One Extra`. Southwest: `Basic`, `Choice`, `Choice Preferred`, `Choice Extra`. With a fare, leave `cabin` blank: it's filled in from the fare. | `Main Classic` |
 | `hotel_chain` | Hotels only, optional: `accor`, `choice`, `hilton`, `hyatt`, `ihg`, `leadinghotels`, `marriott`, `iprefer`, `wyndham` (names like `World of Hyatt` work too), `independent` or `other` | `hyatt` |
 | `cash_price_usd` | The cash price you compared against | `900` |
 | `chase_points_price` | The Chase Travel price in points | `60000` |
@@ -37,6 +44,6 @@ The database keys must be in `.env.local` in the project folder (see the comment
 
 A row works out to between 0.3¢ and 5¢ per point or it's refused. Outside that range is almost always a typo.
 
-The airline and hotel chain columns can be left out entirely; files made before they existed still import.
+The airline, fare and hotel chain columns can be left out entirely; files made before they existed still import.
 
 Tracked airlines: Aer Lingus, Aeromexico, Air Canada, Air France, Alaska, American, ANA, Avianca, British Airways, Cathay Pacific, Delta, Emirates, Etihad, EVA Air, Finnair, Hawaiian, Iberia, Japan Airlines, JetBlue, KLM, Qantas, Qatar, Singapore, Southwest, TAP Air Portugal, Thai, Turkish, United and Virgin Atlantic.

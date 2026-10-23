@@ -1,0 +1,34 @@
+{
+  "_note": "Each airline's own fare names, as Chase Travel shows them, for price reports. Each fare also maps to one shared cabin so reports compare across airlines: Delta Comfort is extra-legroom economy, so it maps to economy; Premium Select is Delta's premium economy. Airlines not listed here use the shared cabins only.",
+  "airlines": {
+    "DL": {
+      "source_url": "https://www.delta.com/us/en/booking-information/fare-classes-and-tickets/fares-and-discounts",
+      "verified_on": "2026-10-23",
+      "fares": [
+        { "id": "main_basic", "name": "Main Basic", "cabin": "basic_economy" },
+        { "id": "main_classic", "name": "Main Classic", "cabin": "economy" },
+        { "id": "main_extra", "name": "Main Extra", "cabin": "economy" },
+        { "id": "comfort_basic", "name": "Comfort Basic", "cabin": "economy" },
+        { "id": "comfort_classic", "name": "Comfort Classic", "cabin": "economy" },
+        { "id": "comfort_extra", "name": "Comfort Extra", "cabin": "economy" },
+        { "id": "premium_select_basic", "name": "Premium Select Basic", "cabin": "premium_economy" },
+        { "id": "premium_select_classic", "name": "Premium Select Classic", "cabin": "premium_economy" },
+        { "id": "first_basic", "name": "First Basic", "cabin": "first" },
+        { "id": "first_classic", "name": "First Classic", "cabin": "first" },
+        { "id": "first_extra", "name": "First Extra", "cabin": "first" },
+        { "id": "delta_one_classic", "name": "Delta One Classic", "cabin": "business" },
+        { "id": "delta_one_extra", "name": "Delta One Extra", "cabin": "business" }
+      ]
+    },
+    "WN": {
+      "source_url": "https://www.southwest.com/airfare-types-benefits",
+      "verified_on": "2026-10-23",
+      "fares": [
+        { "id": "basic", "name": "Basic", "cabin": "basic_economy" },
+        { "id": "choice", "name": "Choice", "cabin": "economy" },
+        { "id": "choice_preferred", "name": "Choice Preferred", "cabin": "economy" },
+        { "id": "choice_extra", "name": "Choice Extra", "cabin": "economy" }
+      ]
+    }
+  }
+}

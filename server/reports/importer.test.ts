@@ -23,6 +23,7 @@ describe('bulk import of your own price entries', () => {
       travel_month: '2027-05',
       cabin: 'premium_economy',
       airline: null,
+      fare: null,
       hotel_chain: null,
       cash_price_usd: 1900,
       chase_points_price: 95000,
@@ -39,6 +40,16 @@ describe('bulk import of your own price entries', () => {
     const checks = checkRows(rows, TODAY);
     expect(checks.map((c) => c.report?.airline ?? null)).toEqual(['WN', 'DL', 'DL', null]);
     expect(checks[3].errors.join()).toMatch(/airline PointCompass tracks/);
+  });
+
+  it('reads fare names as written, and fills in the cabin from them', () => {
+    const header = `${HEADER},airline,fare`;
+    const rows = parseCsv([header, '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,Southwest,Choice Preferred', '2026-10-20,reserve,flight,SFO,LGA,2027-01,,387,38640,no,DL,Delta Main Basic', '2026-10-20,reserve,flight,SFO,LGA,2027-01,first,1377,137639,no,DL,first_classic'].join('\n'));
+    const checks = checkRows(rows, TODAY);
+    expect(checks.map((c) => c.errors)).toEqual([[], [], []]);
+    expect(checks.map((c) => [c.report?.fare, c.report?.cabin])).toEqual([
+      ['choice_preferred', 'economy'], ['main_basic', 'basic_economy'], ['first_classic', 'first'],
+    ]);
   });
 
   it('turns hotel chain names into program ids', () => {

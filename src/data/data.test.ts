@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import cardsData from './cards.json';
 import transferPartnersData from './transferPartners.json';
 import boostData from './chase-points-boost.json';
+import faresData from './fares.json';
+import { TRACKED_AIRLINES } from '../lib/reports/brands';
+import { CABINS } from '../lib/reports/validate';
 import verdictConfig from './verdict-config.json';
 import {
   computeCardValuation,
@@ -628,5 +631,26 @@ describe('real data: verdict-config.json', () => {
     expect(verdictConfig.strain.min_months_of_buffer).toBeGreaterThanOrEqual(0);
     expect(verdictConfig.strain.negative_leftover_max_share_of_cash).toBeGreaterThan(0);
     expect(verdictConfig.strain.negative_leftover_max_share_of_cash).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('real data: fares.json', () => {
+  const airlines = Object.entries(faresData.airlines);
+
+  it("cites the airline's own site, dated and not stale, for every fare list", () => {
+    for (const [code, entry] of airlines) {
+      expect(TRACKED_AIRLINES.map((a) => a.code), code).toContain(code);
+      expect(isValidIsoDate(entry.verified_on), code).toBe(true);
+      expect(isStale(entry.verified_on), `${code} last checked ${entry.verified_on}`).toBe(false);
+      expect(new URL(entry.source_url).protocol).toBe('https:');
+    }
+  });
+
+  it('gives every fare a unique id and a shared cabin', () => {
+    for (const [code, entry] of airlines) {
+      const ids = entry.fares.map((f) => f.id);
+      expect(new Set(ids).size, code).toBe(ids.length);
+      for (const fare of entry.fares) expect(CABINS, `${code} ${fare.id}`).toContain(fare.cabin);
+    }
   });
 });

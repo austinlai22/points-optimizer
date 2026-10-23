@@ -120,8 +120,8 @@ describe('Chase Travel price check and sharing', () => {
     type(/chase travel price in points/i, '45000');
     fireEvent.click(priceCheck().getByRole('button', { name: 'Yes' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
-    type(/from \(airport code\)/i, 'jfk');
-    type(/to \(airport code\)/i, 'lis');
+    type(/^from$/i, 'jfk');
+    type(/^to$/i, 'lis');
     const month = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7);
     type(/travel month/i, month);
     fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
@@ -137,6 +137,7 @@ describe('Chase Travel price check and sharing', () => {
       travel_month: month,
       cabin: null,
       airline: null,
+      fare: null,
       hotel_chain: null,
       cash_price_usd: 900,
       chase_points_price: 45000,
@@ -150,9 +151,101 @@ describe('Chase Travel price check and sharing', () => {
     withRecommendation();
     type(/chase travel price in points/i, '45000');
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
-    type(/from \(airport code\)/i, 'JFK');
-    type(/to \(airport code\)/i, 'LIS');
+    type(/^from$/i, 'JFK');
+    type(/^to$/i, 'LIS');
     type(/travel month/i, new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7));
     expect(screen.getByRole('button', { name: 'Share price' })).toBeDisabled();
+  });
+
+  const nextMonth = () => new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7);
+  const sentBodies = (spy: { mock: { calls: unknown[][] } }) =>
+    spy.mock.calls.map(([, init]) => JSON.parse((init as RequestInit).body as string));
+
+  it('fills in the airline from step 1 and offers its own fares', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 201 }));
+    withRecommendation();
+    type(/airline or hotel program/i, 'southwest');
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(priceCheck().getByRole('button', { name: 'No' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+
+    expect(screen.getByLabelText(/^airline \(optional\)/i)).toHaveValue('WN');
+    expect(screen.getByRole('button', { name: 'Flight' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Choice Preferred' }));
+    expect(screen.getByText(/counted as economy/i)).toBeInTheDocument();
+
+    type(/^from$/i, 'SFO');
+    type(/^to$/i, 'LGA');
+    type(/travel month/i, nextMonth());
+    fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
+    expect(sentBodies(fetchSpy)[0]).toMatchObject({ airline: 'WN', fare: 'choice_preferred', cabin: null });
+    await screen.findByText(/shared anonymously/);
+    fetchSpy.mockRestore();
+  });
+
+  it('switches to the cabins for an airline without a fare list', () => {
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    type(/^airline \(optional\)/i, 'DL');
+    expect(screen.getByRole('button', { name: 'Main Classic' })).toBeInTheDocument();
+    type(/^airline \(optional\)/i, 'UA');
+    expect(screen.queryByRole('button', { name: 'Main Classic' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
+  });
+
+  it('fills in hotel and the chain from a hotel program in step 1', () => {
+    withRecommendation();
+    type(/airline or hotel program/i, 'hyatt');
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    expect(screen.getByRole('button', { name: 'Hotel' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText(/hotel chain/i)).toHaveValue('hyatt');
+  });
+
+  it('finds the airport code from a city name', async () => {
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    const from = screen.getByLabelText(/^from$/i);
+    fireEvent.focus(from);
+    fireEvent.change(from, { target: { value: 'san francisco' } });
+    fireEvent.mouseDown(await screen.findByRole('option', { name: /^SFO/ }));
+    expect(from).toHaveValue('San Francisco · San Francisco International Airport (SFO)');
+  });
+
+  it('shares another fare for the same trip without retyping it', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 201 }));
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(priceCheck().getByRole('button', { name: 'No' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    type(/^from$/i, 'SFO');
+    type(/^to$/i, 'LGA');
+    type(/travel month/i, nextMonth());
+    type(/^airline \(optional\)/i, 'DL');
+    fireEvent.click(screen.getByRole('button', { name: 'Main Basic' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Share another fare for this trip' }));
+    type(/^cash price$/i, '562');
+    type(/^price in points$/i, '48818');
+    const boost = within(screen.getByRole('group', { name: /points boost offer shown/i }));
+    fireEvent.click(boost.getByRole('button', { name: 'Yes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Main Classic' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
+
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
+    const [first, second] = sentBodies(fetchSpy);
+    expect(second).toEqual({
+      ...first,
+      fare: 'main_classic',
+      cash_price_usd: 562,
+      chase_points_price: 48818,
+      boost_shown: 'yes',
+    });
+    // The recommendation above still uses the trip's own price.
+    expect(screen.getByLabelText(/chase travel price in points/i)).toHaveValue(45000);
+    fetchSpy.mockRestore();
   });
 });

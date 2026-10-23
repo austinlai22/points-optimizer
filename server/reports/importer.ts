@@ -1,6 +1,7 @@
 import { validateReport, type PriceReport } from '../../src/lib/reports/validate';
 import type { Store } from '../store';
 import { toAirlineCode, toHotelChainId } from '../../src/lib/reports/brands';
+import { toFareId } from '../../src/lib/reports/fares';
 import { retentionEnd, saveReport } from './save';
 
 // Bulk import of Austin's own Chase Travel price entries from a CSV. Every row
@@ -16,6 +17,7 @@ export const IMPORT_COLUMNS = [
   'travel_month',
   'cabin',
   'airline',
+  'fare',
   'hotel_chain',
   'cash_price_usd',
   'chase_points_price',
@@ -50,6 +52,7 @@ export function checkRows(rows: Record<string, string>[], today: string): RowChe
     else if (submittedOn > today) errors.push('submitted_on is in the future.');
     else if (retentionEnd(submittedOn).toISOString().slice(0, 10) <= today) errors.push('submitted_on is older than the retention period.');
 
+    const airline = blankToNull(row.airline) === null ? null : toAirlineCode(row.airline);
     const raw = {
       card_type: blankToNull(row.card_type),
       booking_type: blankToNull(row.booking_type)?.toLowerCase(),
@@ -57,7 +60,8 @@ export function checkRows(rows: Record<string, string>[], today: string): RowChe
       destination: blankToNull(row.destination)?.toUpperCase(),
       travel_month: blankToNull(row.travel_month),
       cabin: normalizeCabin(row.cabin),
-      airline: blankToNull(row.airline) === null ? null : toAirlineCode(row.airline),
+      airline,
+      fare: blankToNull(row.fare) === null ? null : toFareId(airline, row.fare),
       hotel_chain: blankToNull(row.hotel_chain) === null ? null : toHotelChainId(row.hotel_chain),
       cash_price_usd: asNumber(row.cash_price_usd),
       chase_points_price: asNumber(row.chase_points_price),

@@ -1,6 +1,7 @@
 import reportConfig from '../../data/report-config.json';
 import { listChaseCardTypes } from '../verdict/chaseTravel';
 import { isTrackedAirline, isTrackedHotelChain } from './brands';
+import { faresFor, findFare } from './fares';
 import type { ChaseCardType } from '../verdict/types';
 
 // An opt-in Chase Travel price report: what Chase Travel charged in points for
@@ -30,6 +31,9 @@ export interface PriceReportInput {
   // limited to airlines behind the programs PointCompass tracks. Chase limits
   // Boost to "select airlines", so this shows where offers appear.
   airline: string | null;
+  // Flights only, optional: the airline's own fare, e.g. "main_classic", for
+  // airlines listed in fares.json. When given, the cabin follows from it.
+  fare: string | null;
   // Hotels only, optional: a tracked hotel program's id, e.g. "hyatt", or
   // "independent" or "other".
   hotel_chain: string | null;
@@ -86,7 +90,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
   // client can't slip extra data in.
   const allowed = new Set([
     'card_type', 'booking_type', 'origin', 'destination', 'travel_month',
-    'cabin', 'airline', 'hotel_chain', 'cash_price_usd', 'chase_points_price', 'boost_shown',
+    'cabin', 'airline', 'fare', 'hotel_chain', 'cash_price_usd', 'chase_points_price', 'boost_shown',
   ]);
   for (const key of Object.keys(r)) if (!allowed.has(key)) errors.push(`Unknown field: ${key}.`);
 
@@ -123,6 +127,16 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
     errors.push('Airline must be the 2-letter code of an airline PointCompass tracks, e.g. WN for Southwest, or left blank.');
   }
 
+  const hasFare = r.fare !== null && r.fare !== undefined && r.fare !== '';
+  const fare = hasFare && isFlight && hasAirline ? findFare(r.airline as string, r.fare) : undefined;
+  if (hasFare && !isFlight) errors.push('Hotels have no fare.');
+  else if (hasFare && !hasAirline) errors.push('A fare needs its airline.');
+  else if (hasFare && faresFor(r.airline as string).length === 0) errors.push('PointCompass has no fare list for that airline yet. Give the cabin instead.');
+  else if (hasFare && !fare) errors.push(`That isn't one of ${r.airline}'s fares.`);
+  else if (fare && r.cabin !== null && r.cabin !== undefined && r.cabin !== '' && r.cabin !== fare.cabin) {
+    errors.push(`${fare.name} is ${fare.cabin.replace('_', ' ')}. Leave the cabin blank and it follows from the fare.`);
+  }
+
   const hasHotelChain = r.hotel_chain !== null && r.hotel_chain !== undefined && r.hotel_chain !== '';
   if (hasHotelChain && isFlight) errors.push('Flights have no hotel chain.');
   else if (hasHotelChain && !isTrackedHotelChain(r.hotel_chain)) {
@@ -155,8 +169,9 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
       origin: isFlight ? (r.origin as string) : null,
       destination: r.destination as string,
       travel_month: r.travel_month as string,
-      cabin: isFlight ? ((r.cabin as Cabin | undefined) ?? null) : null,
+      cabin: isFlight ? (fare?.cabin ?? (r.cabin as Cabin | undefined) ?? null) : null,
       airline: isFlight && hasAirline ? (r.airline as string) : null,
+      fare: fare?.id ?? null,
       hotel_chain: !isFlight && hasHotelChain ? (r.hotel_chain as string) : null,
       cash_price_usd: r.cash_price_usd as number,
       chase_points_price: r.chase_points_price as number,

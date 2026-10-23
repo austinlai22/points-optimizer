@@ -68,7 +68,7 @@ export function Privacy() {
             <li>the date it was shared (no time)</li>
             <li>your Chase card type, and whether it was a flight or a hotel</li>
             <li>the 3-letter airport or city codes and the travel month</li>
-            <li>if you give them, the cabin and airline for a flight, or the hotel chain for a hotel, picked from a fixed list</li>
+            <li>if you give them, the airline, fare and cabin for a flight, or the hotel chain for a hotel, picked from a fixed list</li>
             <li>the cash price, the Chase Travel points price, and whether a Points Boost offer was shown</li>
             <li>the value per point, worked out from those two prices</li>
           </ul>

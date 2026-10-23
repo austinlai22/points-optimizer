@@ -45,6 +45,22 @@ describe('validateReport', () => {
     expect(validateReport({ ...HOTEL, airline: 'DL' }, TODAY)).toMatchObject({ ok: false });
   });
 
+  it("takes the airline's own fare, and the cabin follows from it", () => {
+    expect(validateReport({ ...FLIGHT, cabin: null, airline: 'DL', fare: 'main_classic' }, TODAY)).toMatchObject({
+      ok: true, report: { fare: 'main_classic', cabin: 'economy' },
+    });
+    expect(validateReport({ ...FLIGHT, cabin: null, airline: 'WN', fare: 'basic' }, TODAY)).toMatchObject({ ok: true, report: { cabin: 'basic_economy' } });
+    // A Southwest fare on Delta, a fare without its airline, a fare for an
+    // airline with no list yet, and a cabin that contradicts the fare.
+    expect(validateReport({ ...FLIGHT, cabin: null, airline: 'DL', fare: 'choice' }, TODAY).ok).toBe(false);
+    expect(validateReport({ ...FLIGHT, cabin: null, fare: 'main_classic' }, TODAY).ok).toBe(false);
+    expect(validateReport({ ...FLIGHT, cabin: null, airline: 'UA', fare: 'main_classic' }, TODAY).ok).toBe(false);
+    expect(validateReport({ ...FLIGHT, airline: 'DL', fare: 'first_classic', cabin: 'business' }, TODAY)).toMatchObject({
+      ok: false, errors: [expect.stringMatching(/First Classic is first/)],
+    });
+    expect(validateReport({ ...HOTEL, fare: 'basic' }, TODAY).ok).toBe(false);
+  });
+
   it('accepts a tracked hotel chain on hotels only', () => {
     expect(validateReport({ ...HOTEL, hotel_chain: 'hyatt' }, TODAY)).toMatchObject({ ok: true, report: { hotel_chain: 'hyatt', airline: null } });
     expect(validateReport({ ...HOTEL, hotel_chain: 'independent' }, TODAY).ok).toBe(true);

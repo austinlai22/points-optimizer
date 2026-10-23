@@ -809,6 +809,113 @@ function isTrackedHotelChain(id) {
 	return typeof id === "string" && HOTEL_IDS.has(id);
 }
 //#endregion
+//#region src/lib/reports/fares.ts
+const FARES_BY_AIRLINE = {
+	"DL": {
+		"source_url": "https://www.delta.com/us/en/booking-information/fare-classes-and-tickets/fares-and-discounts",
+		"verified_on": "2026-10-23",
+		"fares": [
+			{
+				"id": "main_basic",
+				"name": "Main Basic",
+				"cabin": "basic_economy"
+			},
+			{
+				"id": "main_classic",
+				"name": "Main Classic",
+				"cabin": "economy"
+			},
+			{
+				"id": "main_extra",
+				"name": "Main Extra",
+				"cabin": "economy"
+			},
+			{
+				"id": "comfort_basic",
+				"name": "Comfort Basic",
+				"cabin": "economy"
+			},
+			{
+				"id": "comfort_classic",
+				"name": "Comfort Classic",
+				"cabin": "economy"
+			},
+			{
+				"id": "comfort_extra",
+				"name": "Comfort Extra",
+				"cabin": "economy"
+			},
+			{
+				"id": "premium_select_basic",
+				"name": "Premium Select Basic",
+				"cabin": "premium_economy"
+			},
+			{
+				"id": "premium_select_classic",
+				"name": "Premium Select Classic",
+				"cabin": "premium_economy"
+			},
+			{
+				"id": "first_basic",
+				"name": "First Basic",
+				"cabin": "first"
+			},
+			{
+				"id": "first_classic",
+				"name": "First Classic",
+				"cabin": "first"
+			},
+			{
+				"id": "first_extra",
+				"name": "First Extra",
+				"cabin": "first"
+			},
+			{
+				"id": "delta_one_classic",
+				"name": "Delta One Classic",
+				"cabin": "business"
+			},
+			{
+				"id": "delta_one_extra",
+				"name": "Delta One Extra",
+				"cabin": "business"
+			}
+		]
+	},
+	"WN": {
+		"source_url": "https://www.southwest.com/airfare-types-benefits",
+		"verified_on": "2026-10-23",
+		"fares": [
+			{
+				"id": "basic",
+				"name": "Basic",
+				"cabin": "basic_economy"
+			},
+			{
+				"id": "choice",
+				"name": "Choice",
+				"cabin": "economy"
+			},
+			{
+				"id": "choice_preferred",
+				"name": "Choice Preferred",
+				"cabin": "economy"
+			},
+			{
+				"id": "choice_extra",
+				"name": "Choice Extra",
+				"cabin": "economy"
+			}
+		]
+	}
+};
+function faresFor(airline) {
+	return airline && FARES_BY_AIRLINE[airline]?.fares || [];
+}
+function findFare(airline, fareId) {
+	return faresFor(airline).find((f) => f.id === fareId);
+}
+//#endregion
 //#region src/lib/reports/validate.ts
 const CARD_TYPES = listChaseCardTypes().map((t) => t.id);
 const BOOKING_TYPES = ["flight", "hotel"];
@@ -852,6 +959,7 @@ function validateReport(raw, today) {
 		"travel_month",
 		"cabin",
 		"airline",
+		"fare",
 		"hotel_chain",
 		"cash_price_usd",
 		"chase_points_price",
@@ -877,6 +985,13 @@ function validateReport(raw, today) {
 	const hasAirline = r.airline !== null && r.airline !== void 0 && r.airline !== "";
 	if (hasAirline && !isFlight) errors.push("Hotels have no airline.");
 	else if (hasAirline && !isTrackedAirline(r.airline)) errors.push("Airline must be the 2-letter code of an airline PointCompass tracks, e.g. WN for Southwest, or left blank.");
+	const hasFare = r.fare !== null && r.fare !== void 0 && r.fare !== "";
+	const fare = hasFare && isFlight && hasAirline ? findFare(r.airline, r.fare) : void 0;
+	if (hasFare && !isFlight) errors.push("Hotels have no fare.");
+	else if (hasFare && !hasAirline) errors.push("A fare needs its airline.");
+	else if (hasFare && faresFor(r.airline).length === 0) errors.push("PointCompass has no fare list for that airline yet. Give the cabin instead.");
+	else if (hasFare && !fare) errors.push(`That isn't one of ${r.airline}'s fares.`);
+	else if (fare && r.cabin !== null && r.cabin !== void 0 && r.cabin !== "" && r.cabin !== fare.cabin) errors.push(`${fare.name} is ${fare.cabin.replace("_", " ")}. Leave the cabin blank and it follows from the fare.`);
 	const hasHotelChain = r.hotel_chain !== null && r.hotel_chain !== void 0 && r.hotel_chain !== "";
 	if (hasHotelChain && isFlight) errors.push("Flights have no hotel chain.");
 	else if (hasHotelChain && !isTrackedHotelChain(r.hotel_chain)) errors.push("Hotel chain must be a hotel program PointCompass tracks, independent, other, or left blank.");
@@ -903,8 +1018,9 @@ function validateReport(raw, today) {
 			origin: isFlight ? r.origin : null,
 			destination: r.destination,
 			travel_month: r.travel_month,
-			cabin: isFlight ? r.cabin ?? null : null,
+			cabin: isFlight ? fare?.cabin ?? r.cabin ?? null : null,
 			airline: isFlight && hasAirline ? r.airline : null,
+			fare: fare?.id ?? null,
 			hotel_chain: !isFlight && hasHotelChain ? r.hotel_chain : null,
 			cash_price_usd: r.cash_price_usd,
 			chase_points_price: r.chase_points_price,
