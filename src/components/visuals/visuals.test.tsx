@@ -59,7 +59,7 @@ describe('bars fill when scrolled to', () => {
     const { container } = render(<ValueBars benchmarkCents={1} rows={[{ label: 'Transfer', cents: 1.5, highlight: true }]} />);
     const fill = container.querySelector<HTMLElement>('.bg-teal')!;
     expect(fill.style.width).toBe('0%');
-    expect(fill.className).toContain('duration-250');
+    expect(fill.className).toContain('duration-1000');
     act(() => trigger(true));
     expect(parseFloat(fill.style.width)).toBeGreaterThan(0);
 

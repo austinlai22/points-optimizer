@@ -87,7 +87,7 @@ export function PortfolioSummary({ ownedCards, balances, transferPartners }: Por
               return share > 0 ? (
                 <div
                   key={issuer}
-                  className="h-full transition-[width] duration-250 ease-out motion-reduce:transition-none"
+                  className="h-full transition-[width] duration-1000 ease-out motion-reduce:transition-none"
                   style={{ width: `${barInView ? share * 100 : 0}%`, backgroundColor: ISSUER_TONES[issuer] }}
                 />
               ) : null;

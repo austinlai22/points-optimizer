@@ -5,7 +5,7 @@ import { useInView } from '../../utils/useInView';
 
 type Tone = 'light' | 'dark';
 
-const FILL = 'transition-[width] duration-250 ease-out motion-reduce:transition-none';
+const FILL = 'transition-[width] duration-1000 ease-out motion-reduce:transition-none';
 
 const ink = (tone: Tone) => ({
   text: tone === 'dark' ? 'text-slate-50' : 'text-navy-950',
@@ -36,7 +36,7 @@ export function ValueBars({
   tone?: Tone;
 }) {
   const c = ink(tone);
-  // Bars start empty and fill in a quarter of a second once scrolled to.
+  // Bars start empty and fill over one second once scrolled to.
   const [ref, inView] = useInView<HTMLDivElement>();
   const benchmarks = rows.map((r) => r.benchmarkCents ?? benchmarkCents);
   const max = Math.max(...benchmarks.map((b) => b * 1.5), ...rows.map((r) => r.cents ?? 0)) * 1.08;
