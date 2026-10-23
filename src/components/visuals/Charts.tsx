@@ -1,8 +1,11 @@
 import { formatCents, formatMonths } from '../../lib/verdict';
 import type { RunwayResult } from '../../lib/verdict/types';
 import { formatPoints, formatUSD } from '../../utils/format';
+import { useInView } from '../../utils/useInView';
 
 type Tone = 'light' | 'dark';
+
+const FILL = 'transition-[width] duration-250 ease-out motion-reduce:transition-none';
 
 const ink = (tone: Tone) => ({
   text: tone === 'dark' ? 'text-slate-50' : 'text-navy-950',
@@ -33,12 +36,14 @@ export function ValueBars({
   tone?: Tone;
 }) {
   const c = ink(tone);
+  // Bars start empty and fill in a quarter of a second once scrolled to.
+  const [ref, inView] = useInView<HTMLDivElement>();
   const benchmarks = rows.map((r) => r.benchmarkCents ?? benchmarkCents);
   const max = Math.max(...benchmarks.map((b) => b * 1.5), ...rows.map((r) => r.cents ?? 0)) * 1.08;
   const sameBenchmark = benchmarks.every((b) => Math.abs(b - benchmarks[0]) < 1e-9);
   const pct = (value: number) => `${Math.min((value / max) * 100, 100)}%`;
   return (
-    <div className="space-y-3" role="img" aria-label={`Value per point for each option, compared with a usual value of ${formatCents(benchmarkCents)}`}>
+    <div ref={ref} className="space-y-3" role="img" aria-label={`Value per point for each option, compared with a usual value of ${formatCents(benchmarkCents)}`}>
       {rows.map((row, i) => (
         <div key={row.label}>
           <div className={`mb-1 flex justify-between text-xs ${c.muted}`}>
@@ -49,10 +54,8 @@ export function ValueBars({
           </div>
           <div className={`relative h-2.5 rounded-full ${c.track}`}>
             <div
-              className={`h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${
-                row.highlight ? 'bg-teal' : c.plain
-              }`}
-              style={{ width: row.cents === null ? '100%' : pct(row.cents) }}
+              className={`h-full rounded-full ${FILL} ${row.highlight ? 'bg-teal' : c.plain}`}
+              style={{ width: !inView ? '0%' : row.cents === null ? '100%' : pct(row.cents) }}
             />
             <div
               className={`absolute -top-1 -bottom-1 border-l-2 border-dashed ${c.line}`}
@@ -85,6 +88,7 @@ export function RunwayMeter({
   maxMonths?: number;
 }) {
   const c = ink(tone);
+  const [ref, inView] = useInView<HTMLDivElement>();
   const row = (label: string, runway: RunwayResult, highlight: boolean) => {
     const months = Math.max(runway.monthsOfBuffer, 0);
     const short = runway.bufferAfter < 0;
@@ -106,8 +110,8 @@ export function RunwayMeter({
             return (
               <div key={i} className={`h-2.5 overflow-hidden rounded-full ${c.track}`}>
                 <div
-                  className={`h-full ${runway.strained ? 'bg-amber' : highlight ? 'bg-teal' : c.plain}`}
-                  style={{ width: `${fill * 100}%` }}
+                  className={`h-full ${FILL} ${runway.strained ? 'bg-amber' : highlight ? 'bg-teal' : c.plain}`}
+                  style={{ width: `${inView ? fill * 100 : 0}%` }}
                 />
               </div>
             );
@@ -118,7 +122,7 @@ export function RunwayMeter({
   };
 
   return (
-    <div className="space-y-3" role="img" aria-label="Months of usual spending left after paying, with cash compared to points">
+    <div ref={ref} className="space-y-3" role="img" aria-label="Months of usual spending left after paying, with cash compared to points">
       {row('Pay cash', payCash, false)}
       {usePoints && row('Use points', usePoints, true)}
       <p className={`text-[11px] ${c.muted}`}>Each segment is one month of your usual spending.</p>
@@ -140,6 +144,7 @@ export function BreakevenScale({
   tone?: Tone;
 }) {
   const c = ink(tone);
+  const [ref, inView] = useInView<HTMLDivElement>();
   const max = Math.max(breakevenPoints, standardPoints, pastedPoints ?? 0) * 1.15 || 1;
   const pct = (value: number) => `${(value / max) * 100}%`;
   // A tick on the track with its label above or below. Labels near either
@@ -161,10 +166,10 @@ export function BreakevenScale({
     );
   };
   return (
-    <div role="img" aria-label={`Chase Travel breakeven of ${formatPoints(breakevenPoints)} points, against a standard price of ${formatPoints(standardPoints)} points`} className="relative mx-2 h-24">
+    <div ref={ref} role="img" aria-label={`Chase Travel breakeven of ${formatPoints(breakevenPoints)} points, against a standard price of ${formatPoints(standardPoints)} points`} className="relative mx-2 h-24">
       <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2">
         <div className={`h-2 rounded-full ${c.track}`}>
-          <div className="h-full rounded-full bg-teal/70" style={{ width: pct(breakevenPoints) }} />
+          <div className={`h-full rounded-full bg-teal/70 ${FILL}`} style={{ width: inView ? pct(breakevenPoints) : '0%' }} />
         </div>
       </div>
       {marker(breakevenPoints, 'breakeven', 'bg-teal', 'above')}

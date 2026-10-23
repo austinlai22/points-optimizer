@@ -5,6 +5,7 @@ import { AnimatedNumber } from './AnimatedNumber';
 import { ValuationBasisSelect } from './ValuationBasisSelect';
 import { HERO_SURFACE, ISSUER_LABELS, ISSUER_ORDER, LABEL_ON_DARK } from '../styles/constants';
 import { ISSUER_TONES } from '../styles/cardArt';
+import { useInView } from '../utils/useInView';
 import { VALUATION_KEY_BY_BASIS } from '../types';
 import type { CardConfig, Issuer, TransferPartner, ValuationBasis } from '../types';
 
@@ -47,6 +48,7 @@ function sumValuations(cards: CardConfig[], balances: Record<string, number>, al
 export function PortfolioSummary({ ownedCards, balances, transferPartners }: PortfolioSummaryProps) {
   const { basis } = useCardBalances();
   const totals = sumValuations(ownedCards, balances, ownedCards, transferPartners);
+  const [barRef, barInView] = useInView<HTMLDivElement>();
   const headlineKey = VALUATION_KEY_BY_BASIS[basis];
 
   const totalsByIssuer = Object.fromEntries(
@@ -78,15 +80,15 @@ export function PortfolioSummary({ ownedCards, balances, transferPartners }: Por
         </p>
         {/* How the total splits by bank, as one bar. Empty until a balance
             is entered, so a new visitor sees the track rather than nothing. */}
-        <div className="mt-5 flex h-3 overflow-hidden rounded-full bg-slate-50/10" aria-hidden="true">
+        <div ref={barRef} className="mt-5 flex h-3 overflow-hidden rounded-full bg-slate-50/10" aria-hidden="true">
           {totals[headlineKey] > 0 &&
             ISSUER_ORDER.map((issuer) => {
               const share = (totalsByIssuer[issuer]?.[headlineKey] ?? 0) / totals[headlineKey];
               return share > 0 ? (
                 <div
                   key={issuer}
-                  className="h-full transition-[width] duration-500 motion-reduce:transition-none"
-                  style={{ width: `${share * 100}%`, backgroundColor: ISSUER_TONES[issuer] }}
+                  className="h-full transition-[width] duration-250 ease-out motion-reduce:transition-none"
+                  style={{ width: `${barInView ? share * 100 : 0}%`, backgroundColor: ISSUER_TONES[issuer] }}
                 />
               ) : null;
             })}

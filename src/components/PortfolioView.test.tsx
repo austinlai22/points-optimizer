@@ -96,3 +96,16 @@ describe('PortfolioView', () => {
     expect(reserveToggle?.getAttribute('aria-checked')).toBe('true');
   });
 });
+
+describe('PortfolioView card order', () => {
+  it("lists each bank's cards from least to most premium, left to right", () => {
+    renderPortfolio('guaranteed', {}, {});
+    const chase = screen.getByRole('heading', { name: 'Chase', level: 2 }).closest('section')!;
+    const names = [...chase.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(names).toEqual([
+      'Chase Freedom / Freedom Unlimited',
+      'Chase Sapphire Preferred',
+      'Chase Sapphire Reserve',
+    ]);
+  });
+});

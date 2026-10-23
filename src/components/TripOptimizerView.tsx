@@ -17,7 +17,8 @@ import { RedemptionPathCard } from './RedemptionPathCard';
 import { ValuationBasisSelect } from './ValuationBasisSelect';
 import { Methodology } from './Methodology';
 import { PageIntro } from './PageShell';
-import { linkHandler } from '../lib/router';
+import { linkHandler, scrollToSection } from '../lib/router';
+import { useOnScreen } from '../utils/useInView';
 import { VerdictCard } from './VerdictCard';
 import { CashCushionInputs } from './CashCushionInputs';
 import { ChaseTravelInputs } from './ChaseTravelInputs';
@@ -27,7 +28,7 @@ import {
   sanitizeCashInputs,
   sanitizeChaseInputs,
 } from '../utils/verdictInputs';
-import { evaluateVerdict, inferChaseCardType } from '../lib/verdict';
+import { evaluateVerdict, inferChaseCardType, verdictHeadline } from '../lib/verdict';
 import type { VerdictResult } from '../lib/verdict/types';
 import { track } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
@@ -227,6 +228,7 @@ export function TripOptimizerView() {
   const [awardCashFees, setAwardCashFees] = useState(initialTripInputs.awardCashFees);
   const [chaseTravelPoints, setChaseTravelPoints] = useState(initialTripInputs.chaseTravelPoints);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [verdictRef, verdictOnScreen] = useOnScreen<HTMLDivElement>();
   const [cashInputs, setCashInputs] = usePersistentState(CASH_STORAGE_KEY, EMPTY_CASH_INPUTS, sanitizeCashInputs);
   const [chaseInputs, setChaseInputs] = usePersistentState(CHASE_STORAGE_KEY, EMPTY_CHASE_INPUTS, sanitizeChaseInputs);
 
@@ -462,8 +464,8 @@ export function TripOptimizerView() {
         }
       >
         <p>
-          Enter the trip's price and your cash position to receive a recommendation. To compare
-          transferring points as well, choose an airline or hotel program and enter its award price.
+          Find the best way to pay for your trip. Enter the price and your cash position for a
+          recommendation, and add an airline or hotel award price to compare transferring too.
         </p>
       </PageIntro>
 
@@ -637,7 +639,9 @@ export function TripOptimizerView() {
 
           <div className="min-w-0">
             {verdict ? (
-              <VerdictCard result={verdict} />
+              <div id="recommendation" ref={verdictRef} className="scroll-mt-20">
+                <VerdictCard result={verdict} />
+              </div>
             ) : (
               <div className="mb-8 rounded-3xl border border-dashed border-navy/20 bg-white px-6 py-12 text-center">
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-navy/10 text-navy">
@@ -678,6 +682,23 @@ export function TripOptimizerView() {
 
         <Methodology />
       </div>
+
+      {/* On phones the answer sits below the inputs, so offer a way to it
+          whenever it's off screen. */}
+      {verdict && !verdictOnScreen && (
+        <button
+          type="button"
+          onClick={() => scrollToSection('recommendation')}
+          className={`fixed bottom-5 left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded-full bg-navy px-5 text-sm font-semibold text-slate-50 shadow-control lg:hidden ${TAP_TARGET} ${FOCUS_RING}`}
+        >
+          <span className="truncate">
+            <span className="text-slate-50/60">Recommendation:</span> {verdictHeadline(verdict)}
+          </span>
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M12 5v14M6 13l6 6 6-6" />
+          </svg>
+        </button>
+      )}
     </>
   );
 }

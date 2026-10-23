@@ -124,7 +124,7 @@ function FloatingNote({ label, value, className }: { label: string; value: strin
 const STEPS: { title: string; body: string; visual: ReactNode }[] = [
   {
     title: 'Add your cards',
-    body: 'Select the cards you hold and enter the points balance on each.',
+    body: 'Select your cards and balances once. PointCompass works out what every point is worth.',
     visual: (
       <div className="relative h-28 w-48">
         <CardArt cardId="venturex" issuer="capitalOne" compact className="absolute left-0 top-4 w-32 -rotate-12" />
@@ -134,8 +134,8 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
     ),
   },
   {
-    title: 'Describe your cash position',
-    body: 'Enter what you could spend on travel, what remains after bills each month, and your usual monthly spending.',
+    title: 'Add your cash position',
+    body: 'Three figures let PointCompass protect the savings you need for the month ahead.',
     visual: (
       <div className="w-56 rounded-2xl bg-white p-4 shadow-card">
         <RunwayMeter payCash={example.runway.payCash} />
@@ -143,8 +143,8 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
     ),
   },
   {
-    title: 'Review the recommendation',
-    body: 'Enter the trip price to see the recommended option, the value per point, and what each choice leaves in your savings.',
+    title: 'Get your answer',
+    body: 'Enter the trip price and receive one clear recommendation, with the numbers behind it.',
     visual: (
       <div className={`${HERO_SURFACE} flex w-56 items-center gap-3 rounded-2xl p-4`}>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal text-slate-50">
@@ -245,8 +245,8 @@ export function Landing() {
             Points or cash? Know before you book.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-950/60 sm:text-xl">
-            PointCompass weighs your credit card points against your cash position and recommends
-            whether to pay cash, transfer points, book through Chase Travel, or wait.
+            Enter a trip and PointCompass tells you the best way to pay for it, based on what your
+            points are worth and how much cash you can spare.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <a href="/app" onClick={linkHandler('/app')} className={PRIMARY_BUTTON}>
@@ -298,7 +298,7 @@ export function Landing() {
         <SectionHeading
           id="how"
           eyebrow="How it works"
-          title="Three steps to an answer."
+          title="From trip to answer in three steps."
           intro="Your figures stay in your browser, and no bank connection is required."
         />
         <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -321,7 +321,7 @@ export function Landing() {
         <SectionHeading
           id="example"
           eyebrow="An example"
-          title="One trip, three ways to pay."
+          title="One trip. One clear answer."
           intro={
             <>
               {EXAMPLE.route}, {EXAMPLE.when}. The traveller holds a Sapphire Reserve with{' '}
@@ -411,15 +411,19 @@ export function Landing() {
       </Section>
 
       <Section id="different">
-        <SectionHeading id="different" eyebrow="Why PointCompass" title="Built around your whole situation." />
+        <SectionHeading
+          id="different"
+          eyebrow="Why PointCompass"
+          title="Spend points when they are worth it. Keep cash when you need it."
+        />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Reveal className="lg:col-span-2">
             <div className={`${TILE} grid h-full gap-6 p-7 sm:grid-cols-2 sm:p-8`}>
               <div>
-                <h3 className="font-display text-2xl font-semibold text-navy-950">Accounts for your cash</h3>
+                <h3 className="font-display text-2xl font-semibold text-navy-950">Protects your cash cushion</h3>
                 <p className="mt-3 text-sm leading-relaxed text-navy-950/60">
-                  A good redemption is less useful if paying cash would leave you short for the
-                  month. The recommendation considers your points and your savings together.
+                  If paying cash would leave you short for the month, PointCompass looks for a
+                  points option that holds its value, or suggests waiting.
                 </p>
               </div>
               <div className="self-center rounded-2xl bg-slate-50 p-5">
@@ -429,9 +433,10 @@ export function Landing() {
           </Reveal>
           <Reveal delay={80}>
             <div className={`${TILE} flex h-full flex-col p-7 sm:p-8`}>
-              <h3 className="font-display text-2xl font-semibold text-navy-950">Says “pay cash” when it should</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy-950">Saves your points for better trips</h3>
               <p className="mt-3 text-sm leading-relaxed text-navy-950/60">
-                If your points are worth more on another trip, PointCompass recommends keeping them.
+                When a redemption is poor value, PointCompass recommends paying cash and keeping your
+                points for a trip where they are worth more.
               </p>
               <div className="mt-auto pt-6">
                 <div className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-2.5 font-display text-lg font-semibold text-slate-50">
@@ -442,10 +447,10 @@ export function Landing() {
           </Reveal>
           <Reveal>
             <div className={`${TILE} flex h-full flex-col p-7 sm:p-8`}>
-              <h3 className="font-display text-2xl font-semibold text-navy-950">A breakeven for Chase Travel</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy-950">Tells you which Chase Travel price to accept</h3>
               <p className="mt-3 text-sm leading-relaxed text-navy-950/60">
-                Points Boost offers change often. PointCompass shows the highest Chase Travel price
-                worth accepting.
+                Points Boost offers change often. PointCompass gives you the highest price worth
+                accepting, so you can decide in seconds.
               </p>
               {example.chaseTravel && (
                 <div className="mt-auto pt-4">
@@ -456,9 +461,10 @@ export function Landing() {
           </Reveal>
           <Reveal className="lg:col-span-2" delay={80}>
             <div className={`${TILE} h-full p-7 sm:p-8`}>
-              <h3 className="font-display text-2xl font-semibold text-navy-950">{transferPartners.length} airline and hotel programs</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy-950">Covers {transferPartners.length} airline and hotel programs</h3>
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-navy-950/60">
-                Every transfer route from the six supported banks, each at its published ratio.
+                Every transfer route from six banks, each at its published ratio, so the best option
+                is never missed.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 {partnerNames.slice(0, 16).map((name) => (
@@ -540,9 +546,9 @@ export function Landing() {
               <CardArt cardId="amexplatinum" issuer="amex" className="absolute right-0 top-28 w-60 rotate-[6deg] opacity-90" />
             </div>
             <div className="relative max-w-lg">
-              <h2 className="font-display text-3xl font-semibold text-slate-50 sm:text-4xl">Check your next trip.</h2>
+              <h2 className="font-display text-3xl font-semibold text-slate-50 sm:text-4xl">Get an answer for your next trip.</h2>
               <p className="mt-3 text-slate-50/70">
-                Enter the trip and your cash position to see what PointCompass recommends.
+                Enter the trip and your cash position. No account or bank login needed.
               </p>
               <a
                 href="/app"

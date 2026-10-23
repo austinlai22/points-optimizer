@@ -85,9 +85,9 @@ export function PortfolioView() {
         }
       >
         <p>
-          Turn on each card you hold and enter its points balance to see what the points are worth,
-          from their cash-back value to their guaranteed travel value. Every bar uses the same scale,
-          so cards can be compared directly. Points combine only within the same bank.
+          See what your points are worth today. Turn on each card you hold and enter its balance:
+          every card shows its cash-back value and its guaranteed travel value on the same scale,
+          so they compare directly. Points combine only within the same bank.
         </p>
       </PageIntro>
 
@@ -99,12 +99,12 @@ export function PortfolioView() {
         />
 
         {ISSUER_ORDER.map((issuer) => {
-          // Most premium (highest annual fee) first, left to right — annual
-          // fee is this roster's own signal for card tier, so no separate
-          // "premium rank" field is needed.
+          // Least premium (lowest annual fee) on the left, most premium on the
+          // right. Annual fee is this roster's own signal for card tier, so no
+          // separate "premium rank" field is needed.
           const issuerCards = cards
             .filter((card) => card.issuer === issuer)
-            .sort((a, b) => b.annualFee - a.annualFee);
+            .sort((a, b) => a.annualFee - b.annualFee);
           if (issuerCards.length === 0) return null;
 
           return (

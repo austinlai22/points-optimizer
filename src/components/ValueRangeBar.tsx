@@ -2,6 +2,7 @@ import { formatUSD } from '../utils/format';
 import { LABEL } from '../styles/constants';
 import { useCardBalances } from '../context/CardBalancesContext';
 import { AnimatedNumber } from './AnimatedNumber';
+import { useInView } from '../utils/useInView';
 import { VALUATION_KEY_BY_BASIS, VALUATION_LABEL_BY_BASIS, type CardValuation } from '../types';
 
 interface ValueRangeBarProps {
@@ -25,6 +26,8 @@ function dotLeft(percent: number): string {
 
 export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
   const { basis } = useCardBalances();
+  // Called before the early return below, as hooks must be.
+  const [ref, inView] = useInView<HTMLDivElement>();
   const { floor, marker, isPooled, pooledViaCard } = valuation;
   const selected = valuation[VALUATION_KEY_BY_BASIS[basis]];
 
@@ -38,7 +41,8 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
     );
   }
 
-  const pct = (value: number) => Math.min((value / axisMax) * 100, 100);
+  // Zero until scrolled to, so the bars fill in as you reach them.
+  const pct = (value: number) => (inView ? Math.min((value / axisMax) * 100, 100) : 0);
   const floorPct = pct(floor);
   const markerPct = pct(marker);
   const selectedPct = pct(selected);
@@ -48,7 +52,7 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
   const estimatePct = Math.max(selectedPct - markerPct, 0);
 
   return (
-    <div>
+    <div ref={ref}>
       {/* Filled from zero rather than drawn as a floating band: bar LENGTH is
           what reads as "how much is this worth" at a glance, which is the
           comparison a grid of cards invites. The tones step down in solidity
@@ -61,23 +65,23 @@ export function ValueRangeBar({ valuation, axisMax }: ValueRangeBarProps) {
       <div className="relative">
         <div className="h-2.5 overflow-hidden rounded-full bg-navy/10">
           <div
-            className="h-full bg-navy transition-all duration-300 motion-reduce:transition-none"
+            className="h-full bg-navy transition-all duration-250 ease-out motion-reduce:transition-none"
             style={{ width: `${floorPct}%` }}
             aria-hidden="true"
           />
           <div
-            className="-mt-2.5 h-full bg-navy/35 transition-all duration-300 motion-reduce:transition-none"
+            className="-mt-2.5 h-full bg-navy/35 transition-all duration-250 ease-out motion-reduce:transition-none"
             style={{ marginLeft: `${floorPct}%`, width: `${Math.max(markerPct - floorPct, 0)}%` }}
             aria-hidden="true"
           />
           <div
-            className="-mt-2.5 h-full bg-navy/15 transition-all duration-300 motion-reduce:transition-none"
+            className="-mt-2.5 h-full bg-navy/15 transition-all duration-250 ease-out motion-reduce:transition-none"
             style={{ marginLeft: `${markerPct}%`, width: `${estimatePct}%` }}
             aria-hidden="true"
           />
         </div>
         <div
-          className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal shadow-md ring-4 ring-slate-50 transition-[left] duration-300 motion-reduce:transition-none"
+          className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal shadow-md ring-4 ring-slate-50 transition-[left] duration-250 ease-out motion-reduce:transition-none"
           style={{ left: dotLeft(selectedPct) }}
           aria-hidden="true"
         />

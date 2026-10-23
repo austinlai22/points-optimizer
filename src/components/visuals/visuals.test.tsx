@@ -38,3 +38,31 @@ describe('visuals', () => {
     expect(screen.getByText('100,000')).toBeInTheDocument();
   });
 });
+
+describe('bars fill when scrolled to', () => {
+  it('starts empty and fills once the chart is on screen', async () => {
+    const { act } = await import('@testing-library/react');
+    // Motion allowed, and an observer we can trigger by hand.
+    window.matchMedia = ((query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+    let trigger: (visible: boolean) => void = () => {};
+    const original = window.IntersectionObserver;
+    window.IntersectionObserver = class {
+      constructor(cb: IntersectionObserverCallback) {
+        trigger = (visible) => cb([{ isIntersecting: visible } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+      takeRecords() { return []; }
+    } as unknown as typeof IntersectionObserver;
+
+    const { container } = render(<ValueBars benchmarkCents={1} rows={[{ label: 'Transfer', cents: 1.5, highlight: true }]} />);
+    const fill = container.querySelector<HTMLElement>('.bg-teal')!;
+    expect(fill.style.width).toBe('0%');
+    expect(fill.className).toContain('duration-250');
+    act(() => trigger(true));
+    expect(parseFloat(fill.style.width)).toBeGreaterThan(0);
+
+    window.IntersectionObserver = original;
+  });
+});
