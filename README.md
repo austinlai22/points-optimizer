@@ -20,6 +20,8 @@ Each verdict comes with a one-line reason, cents per point against the benchmark
 
 **Chase Travel price check**: after a recommendation, enter the points price Chase Travel shows and the recommendation re-checks it. Sharing that price is optional and anonymous (see Privacy).
 
+**For AI assistants** (`/api/mcp`): PointCompass as a remote MCP server, so Claude (or any MCP client) can call five read-only tools: `recommend_payment`, `list_transfer_partners`, `compute_cents_per_point`, `chase_travel_breakeven` and `points_boost_rules`. Same engine and data as the website; every fact carries `source_url` and `verified_on`. See [/agents](https://pointcompass.vercel.app/agents).
+
 **Ranked paths**: below the verdict, every way to pay with points (each transfer partner and each portal) ranked by cost.
 
 **Portfolio** (`/portfolio`): what each card's balance is worth, from cash-back floor to guaranteed travel value, with an optional "potential transfer value" estimate.
@@ -44,12 +46,13 @@ The app's own transparent assumptions, not a claim to match The Points Guy, Nerd
 | `src/utils/valuation.ts` | Point valuation and ranked redemption paths |
 | `src/data/` | Cards, transfer partners, Chase Boost rules, verdict thresholds |
 | `src/pages/`, `src/components/` | Landing page, `/app`, `/portfolio`, `/privacy`, and the shared banner and footer |
-| `server/` | Usage counts, price reports and the Plaid sandbox (TypeScript source) |
+| `server/` | Usage counts, price reports, the agent tool (MCP) and the Plaid sandbox (TypeScript source) |
+| `experiment/` | Kit for testing AI assistants on points facts, with and without PointCompass |
 | `api/` | The same, bundled for Vercel by `npm run build:api` (generated; committed) |
 
 ## Tech stack
 
-Vite + React 19 + TypeScript + Tailwind CSS v4, routed with a small pushState router. Vercel functions in `api/`, and Upstash Redis (free tier) for anonymous event counts. Plaid is sandbox-only, behind `ENABLE_PLAID_SANDBOX`.
+Vite + React 19 + TypeScript + Tailwind CSS v4, routed with a small pushState router. Vercel functions in `api/` (including a remote MCP server built on `@modelcontextprotocol/server`), Upstash Redis (free tier) for usage counts and price reports, and Vercel Web Analytics (Hobby allowance) for page views. Nothing paid. Plaid is sandbox-only, behind `ENABLE_PLAID_SANDBOX`.
 
 ## Running locally
 
@@ -61,6 +64,7 @@ npm run build      # type-check and produce a production build
 npm run build:api  # rebundle server/ into api/ after changing server code
 npm run stats           # weekly usage totals (needs the database keys in .env.local)
 npm run export-reports  # all shared Chase Travel prices as CSV
+npm run experiment:generate   # build the experiment's answer key (kept out of git)
 ```
 
 Add `/?internal=1` to the site address once in your own browser so your visits aren't counted.
