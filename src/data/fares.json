@@ -50,10 +50,14 @@
         { "id": "basic_economy", "name": "Basic Economy", "cabin": "basic_economy" },
         { "id": "economy", "name": "Economy", "cabin": "economy" },
         { "id": "economy_plus", "name": "Economy Plus", "cabin": "economy" },
+        { "id": "economy_fully_refundable", "name": "Economy Fully Refundable", "cabin": "economy" },
+        { "id": "economy_plus_fully_refundable", "name": "Economy Plus Fully Refundable", "cabin": "economy" },
         { "id": "premium_economy", "name": "Premium Economy", "cabin": "premium_economy" },
         { "id": "premium_economy_fully_refundable", "name": "Premium Economy Fully Refundable", "cabin": "premium_economy" },
         { "id": "business", "name": "Business", "cabin": "business" },
-        { "id": "business_fully_refundable", "name": "Business Fully Refundable", "cabin": "business" }
+        { "id": "business_fully_refundable", "name": "Business Fully Refundable", "cabin": "business" },
+        { "id": "first", "name": "First", "cabin": "first" },
+        { "id": "first_fully_refundable", "name": "First Fully Refundable", "cabin": "first" }
       ]
     }
   }
