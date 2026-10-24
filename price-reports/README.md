@@ -2,6 +2,10 @@
 
 Add prices you've seen in Chase Travel to the reports database in bulk. They're checked with the same rules as reports shared on the website, and marked `source = admin` so they can always be told apart from visitors' reports.
 
+## Quickest way: `/add-prices`
+
+In Claude Code, type `/add-prices` and attach screenshots of Chase Travel results (or paste the page text). Claude writes the rows to `new-prices.csv`, dry-runs them, shows you a table, and imports only when you confirm. It then adds them to `my-prices.csv`. Claude never opens Chase itself; you do the searching.
+
 ## Steps
 
 1. Copy `template.csv` to `my-prices.csv` in this folder. Any `.csv` here except the template stays on your computer and out of git.
