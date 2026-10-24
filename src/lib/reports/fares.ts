@@ -36,7 +36,7 @@ const simplify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim
 // all give "main_classic". Anything unrecognised comes back as written for
 // validation to refuse.
 export function toFareId(airline: string | null, value: string): string {
-  const v = simplify(value).replace(/^(delta|southwest|american|united) /, '');
+  const v = simplify(value).replace(/^(delta|southwest|american|jetblue|united) /, '');
   const match = faresFor(airline).find((f) => simplify(f.id) === v || simplify(f.name) === v);
   return match ? match.id : value.trim();
 }
