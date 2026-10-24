@@ -128,6 +128,7 @@ describe('Chase Travel price check and sharing', () => {
     type(/chase travel price in points/i, '45000');
     fireEvent.click(priceCheck().getByRole('button', { name: 'Yes' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
     type(/^from$/i, 'jfk');
     type(/^to$/i, 'lis');
     const month = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7);
@@ -142,6 +143,7 @@ describe('Chase Travel price check and sharing', () => {
       booking_type: 'flight',
       origin: 'JFK',
       destination: 'LIS',
+      trip_type: 'one_way',
       travel_month: month,
       cabin: null,
       airline: null,
@@ -159,6 +161,7 @@ describe('Chase Travel price check and sharing', () => {
     withRecommendation();
     type(/chase travel price in points/i, '45000');
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
     type(/^from$/i, 'JFK');
     type(/^to$/i, 'LIS');
     pickMonth(new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 7));
@@ -176,6 +179,7 @@ describe('Chase Travel price check and sharing', () => {
     type(/chase travel price in points/i, '45000');
     fireEvent.click(priceCheck().getByRole('button', { name: 'No' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
 
     expect(screen.getByLabelText(/^airline \(optional\)/i)).toHaveValue('WN');
     expect(screen.getByRole('button', { name: 'Flight' })).toHaveAttribute('aria-pressed', 'true');
@@ -197,9 +201,29 @@ describe('Chase Travel price check and sharing', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
     type(/^airline \(optional\)/i, 'DL');
     expect(screen.getByRole('button', { name: 'Main Classic' })).toBeInTheDocument();
-    type(/^airline \(optional\)/i, 'UA');
-    expect(screen.queryByRole('button', { name: 'Main Classic' })).toBeNull();
+    // A fare missing from Delta's list: the shared cabins instead.
+    expect(screen.queryByRole('button', { name: 'Premium economy' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Other fare' }));
     expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
+    type(/^airline \(optional\)/i, 'AS');
+    expect(screen.queryByRole('button', { name: 'Main Classic' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Other fare' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
+  });
+
+  it('will not share a flight until it says one way or round trip', () => {
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(priceCheck().getByRole('button', { name: 'Yes' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    type(/^from$/i, 'JFK');
+    type(/^to$/i, 'LIS');
+    pickMonth(nextMonth());
+    expect(screen.getByRole('button', { name: 'Share price' })).toBeDisabled();
+    expect(screen.getByText(/choose one way or round trip/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Round trip' }));
+    expect(screen.getByRole('button', { name: 'Share price' })).toBeEnabled();
+    expect(screen.getByText(/fare for the first flight/i)).toBeInTheDocument();
   });
 
   it('fills in hotel and the chain from a hotel program in step 1', () => {
@@ -228,6 +252,7 @@ describe('Chase Travel price check and sharing', () => {
     type(/chase travel price in points/i, '45000');
     fireEvent.click(priceCheck().getByRole('button', { name: 'No' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
     type(/^from$/i, 'SFO');
     type(/^to$/i, 'LGA');
     pickMonth(nextMonth());

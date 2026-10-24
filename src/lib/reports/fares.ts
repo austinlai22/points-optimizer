@@ -12,7 +12,10 @@ export interface Fare {
 }
 
 interface AirlineFares {
-  source_url: string;
+  // The airline's own fare page, or, where it couldn't be read, a note on
+  // where the names came from.
+  source_url?: string;
+  source_note?: string;
   verified_on: string;
   fares: Fare[];
 }
@@ -33,7 +36,7 @@ const simplify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim
 // all give "main_classic". Anything unrecognised comes back as written for
 // validation to refuse.
 export function toFareId(airline: string | null, value: string): string {
-  const v = simplify(value).replace(/^(delta|southwest) /, '');
+  const v = simplify(value).replace(/^(delta|southwest|american|united) /, '');
   const match = faresFor(airline).find((f) => simplify(f.id) === v || simplify(f.name) === v);
   return match ? match.id : value.trim();
 }

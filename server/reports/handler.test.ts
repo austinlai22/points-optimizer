@@ -10,6 +10,7 @@ const VALID = {
   booking_type: 'flight',
   origin: 'JFK',
   destination: 'LIS',
+  trip_type: 'one_way',
   travel_month: '2027-05',
   cabin: 'economy',
   cash_price_usd: 900,

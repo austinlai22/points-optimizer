@@ -637,12 +637,14 @@ describe('real data: verdict-config.json', () => {
 describe('real data: fares.json', () => {
   const airlines = Object.entries(faresData.airlines);
 
-  it("cites the airline's own site, dated and not stale, for every fare list", () => {
+  it("cites a source, dated and not stale, for every fare list", () => {
     for (const [code, entry] of airlines) {
       expect(TRACKED_AIRLINES.map((a) => a.code), code).toContain(code);
       expect(isValidIsoDate(entry.verified_on), code).toBe(true);
       expect(isStale(entry.verified_on), `${code} last checked ${entry.verified_on}`).toBe(false);
-      expect(new URL(entry.source_url).protocol).toBe('https:');
+      const source = entry as { source_url?: string; source_note?: string };
+      if (source.source_url) expect(new URL(source.source_url).protocol).toBe('https:');
+      else expect(source.source_note, `${code} needs a source_url or source_note`).toMatch(/\S/);
     }
   });
 

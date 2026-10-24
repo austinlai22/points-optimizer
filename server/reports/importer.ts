@@ -14,6 +14,7 @@ export const IMPORT_COLUMNS = [
   'booking_type',
   'origin',
   'destination',
+  'trip_type',
   'travel_month',
   'cabin',
   'airline',
@@ -38,6 +39,13 @@ function normalizeCabin(value: string | undefined): string | null {
   const cabin = blankToNull(value)?.toLowerCase().replace(/[\s-]+/g, '_') ?? null;
   return cabin === 'basic' ? 'basic_economy' : cabin;
 }
+// "One way", "one-way", "oneway" and "round trip" all work; blank means one
+// way for a flight.
+function normalizeTripType(value: string | undefined, isFlight: boolean): string | null {
+  const t = blankToNull(value)?.toLowerCase().replace(/[\s-]+/g, '_') ?? null;
+  if (t === null) return isFlight ? 'one_way' : null;
+  return t === 'oneway' ? 'one_way' : t === 'roundtrip' ? 'round_trip' : t;
+}
 const asNumber = (v: string | undefined) => (blankToNull(v) === null ? undefined : Number(v!.replace(/[$,\s]/g, '')));
 
 export function checkRows(rows: Record<string, string>[], today: string): RowCheck[] {
@@ -58,6 +66,8 @@ export function checkRows(rows: Record<string, string>[], today: string): RowChe
       booking_type: blankToNull(row.booking_type)?.toLowerCase(),
       origin: blankToNull(row.origin)?.toUpperCase() ?? null,
       destination: blankToNull(row.destination)?.toUpperCase(),
+      // Your own entries are one way unless the file says otherwise.
+      trip_type: normalizeTripType(row.trip_type, blankToNull(row.booking_type)?.toLowerCase() === 'flight'),
       travel_month: blankToNull(row.travel_month),
       cabin: normalizeCabin(row.cabin),
       airline,

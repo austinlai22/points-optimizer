@@ -33,10 +33,11 @@ The database keys must be in `.env.local` in the project folder (see the comment
 | `booking_type` | `flight` or `hotel` | `flight` |
 | `origin` | Flights only: 3-letter airport or city code. Blank for hotels. | `JFK` |
 | `destination` | 3-letter airport or city code | `LIS` |
+| `trip_type` | Flights only: `one_way` or `round_trip`. Blank means one way. Check prices one way where you can: points bookings usually go one way at a time, and a round-trip price mixes in a return fare you didn't pick. | `one_way` |
 | `travel_month` | YYYY-MM, within 12 months before and 18 months after `submitted_on` | `2027-05` |
 | `cabin` | Flights only, optional: `basic_economy` (or `basic`), `economy`, `premium_economy`, `business` or `first` | `economy` |
 | `airline` | Flights only, optional: an airline PointCompass tracks, as its name or 2-letter code. Leave blank for any other airline. | `Southwest` or `WN` |
-| `fare` | Flights on Delta or Southwest, optional: the fare name as Chase Travel shows it. Delta: `Main Basic`, `Main Classic`, `Main Extra`, `Comfort Basic`, `Comfort Classic`, `Comfort Extra`, `Premium Select Basic`, `Premium Select Classic`, `First Basic`, `First Classic`, `First Extra`, `Delta One Classic`, `Delta One Extra`. Southwest: `Basic`, `Choice`, `Choice Preferred`, `Choice Extra`. With a fare, leave `cabin` blank: it's filled in from the fare. | `Main Classic` |
+| `fare` | Flights on Delta, Southwest, American or United, optional: the fare name as Chase Travel shows it. Delta: `Main Basic`, `Main Classic`, `Main Extra`, `Comfort Basic`, `Comfort Classic`, `Comfort Extra`, `Premium Select Basic`, `Premium Select Classic`, `First Basic`, `First Classic`, `First Extra`, `Delta One Classic`, `Delta One Extra`. Southwest: `Basic`, `Choice`, `Choice Preferred`, `Choice Extra`. American: `Main Cabin`, `Main Cabin Flexible`, `Main Plus`, `First`. United: `Basic Economy`, `Economy`, `Economy Plus`, `Premium Economy`, `Premium Economy Fully Refundable`, `Business`, `Business Fully Refundable`. With a fare, leave `cabin` blank: it's filled in from the fare. For a fare not listed, leave `fare` blank and give the `cabin`. | `Main Classic` |
 | `hotel_chain` | Hotels only, optional: `accor`, `choice`, `hilton`, `hyatt`, `ihg`, `leadinghotels`, `marriott`, `iprefer`, `wyndham` (names like `World of Hyatt` work too), `independent` or `other` | `hyatt` |
 | `cash_price_usd` | The cash price you compared against | `900` |
 | `chase_points_price` | The Chase Travel price in points | `60000` |
@@ -44,6 +45,6 @@ The database keys must be in `.env.local` in the project folder (see the comment
 
 A row works out to between 0.3¢ and 5¢ per point or it's refused. Outside that range is almost always a typo.
 
-The airline, fare and hotel chain columns can be left out entirely; files made before they existed still import.
+The trip type, airline, fare and hotel chain columns can be left out entirely; files made before they existed still import.
 
 Tracked airlines: Aer Lingus, Aeromexico, Air Canada, Air France, Alaska, American, ANA, Avianca, British Airways, Cathay Pacific, Delta, Emirates, Etihad, EVA Air, Finnair, Hawaiian, Iberia, Japan Airlines, JetBlue, KLM, Qantas, Qatar, Singapore, Southwest, TAP Air Portugal, Thai, Turkish, United and Virgin Atlantic.

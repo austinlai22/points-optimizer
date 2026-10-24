@@ -7,6 +7,7 @@ const FLIGHT = {
   booking_type: 'flight',
   origin: 'SFO',
   destination: 'NRT',
+  trip_type: 'one_way',
   travel_month: '2027-03',
   cabin: 'business',
   cash_price_usd: 4200,
@@ -59,6 +60,14 @@ describe('validateReport', () => {
       ok: false, errors: [expect.stringMatching(/First Classic is first/)],
     });
     expect(validateReport({ ...HOTEL, fare: 'basic' }, TODAY).ok).toBe(false);
+  });
+
+  it('needs a trip type for flights, and none for hotels', () => {
+    expect(validateReport({ ...FLIGHT, trip_type: 'round_trip' }, TODAY)).toMatchObject({ ok: true, report: { trip_type: 'round_trip' } });
+    expect(validateReport({ ...FLIGHT, trip_type: undefined }, TODAY)).toMatchObject({ ok: false, errors: [expect.stringMatching(/one way or a round trip/)] });
+    expect(validateReport({ ...FLIGHT, trip_type: 'multi_city' }, TODAY).ok).toBe(false);
+    expect(validateReport(HOTEL, TODAY)).toMatchObject({ ok: true, report: { trip_type: null } });
+    expect(validateReport({ ...HOTEL, trip_type: 'one_way' }, TODAY).ok).toBe(false);
   });
 
   it('accepts a tracked hotel chain on hotels only', () => {

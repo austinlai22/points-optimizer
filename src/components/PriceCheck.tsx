@@ -4,11 +4,13 @@ import type { VerdictResult } from '../lib/verdict/types';
 import {
   BOOKING_TYPES,
   CABINS,
+  TRIP_TYPES,
   impliedCpp,
   validateReport,
   type BookingType,
   type BoostAnswer,
   type Cabin,
+  type TripType,
 } from '../lib/reports/validate';
 import { linkHandler } from '../lib/router';
 import { AIRLINES_BY_PROGRAM, HOTEL_CHAINS, TRACKED_AIRLINES, isTrackedHotelChain } from '../lib/reports/brands';
@@ -21,6 +23,7 @@ import { MonthPicker } from './MonthPicker';
 import reportConfig from '../data/report-config.json';
 
 const BOOST_LABELS: Record<BoostAnswer, string> = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
+const TRIP_LABELS: Record<TripType, string> = { one_way: 'One way', round_trip: 'Round trip' };
 const CABIN_LABELS: Record<Cabin, string> = {
   basic_economy: 'Basic economy',
   economy: 'Economy',
@@ -76,11 +79,14 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
   const start = startingChoices(program);
   const [sharing, setSharing] = useState(false);
   const [bookingType, setBookingType] = useState<BookingType>(start.bookingType);
+  const [tripType, setTripType] = useState<TripType | ''>('');
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [travelMonth, setTravelMonth] = useState('');
   const [airline, setAirline] = useState(start.airline);
   const [fare, setFare] = useState('');
+  // A fare missing from the airline's list: pick the shared cabin instead.
+  const [otherFare, setOtherFare] = useState(false);
   const [cabin, setCabin] = useState<Cabin | ''>('');
   const [hotelChain, setHotelChain] = useState(start.hotelChain);
   const [another, setAnother] = useState<AnotherFare | null>(null);
@@ -94,6 +100,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
     booking_type: bookingType,
     origin: isFlight ? origin : null,
     destination,
+    trip_type: isFlight && tripType ? tripType : null,
     travel_month: travelMonth,
     // With a fare chosen, the cabin follows from it.
     cabin: isFlight && !fare && cabin ? cabin : null,
@@ -134,6 +141,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
   const shareAnother = () => {
     setAnother({ cash: 0, points: 0, boost: null });
     setFare('');
+    setOtherFare(false);
     setCabin('');
     setStatus({ kind: 'idle' });
     setSharing(true);
@@ -282,6 +290,24 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                 </div>
               </div>
 
+              {isFlight && (
+                <div>
+                  <p id="trip-type-label" className={`mb-1.5 ${LABEL}`}>
+                    Prices for
+                  </p>
+                  <div role="group" aria-labelledby="trip-type-label" className="flex gap-2">
+                    {TRIP_TYPES.map((t) => (
+                      <button key={t} type="button" aria-pressed={tripType === t} onClick={() => setTripType(t)} className={pill(tripType === t)}>
+                        {TRIP_LABELS[t]}
+                      </button>
+                    ))}
+                  </div>
+                  {tripType === 'round_trip' && (
+                    <p className="mt-1.5 text-xs text-navy-950/55">Pick the fare for the first flight. One-way prices are the most useful, as points bookings usually go one way at a time.</p>
+                  )}
+                </div>
+              )}
+
               {isFlight ? (
                 <div>
                   <label htmlFor="report-airline" className={`mb-1.5 block ${LABEL}`}>
@@ -293,6 +319,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                     onChange={(e) => {
                       setAirline(e.target.value);
                       setFare('');
+                      setOtherFare(false);
                     }}
                     className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}
                   >
@@ -326,20 +353,47 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                     {fares.length > 0 ? 'Fare' : 'Cabin'} <span className="normal-case text-navy-950/40">(optional)</span>
                   </p>
                   {/* Tap again to clear. An airline's own fares where we list
-                      them; otherwise the shared cabins. */}
-                  <div role="group" aria-labelledby="report-fare-label" className="flex flex-wrap gap-2">
-                    {fares.length > 0
-                      ? fares.map((f) => (
-                          <button key={f.id} type="button" aria-pressed={fare === f.id} onClick={() => setFare(fare === f.id ? '' : f.id)} className={pill(fare === f.id)}>
-                            {f.name}
-                          </button>
-                        ))
-                      : CABINS.map((c) => (
-                          <button key={c} type="button" aria-pressed={cabin === c} onClick={() => setCabin(cabin === c ? '' : c)} className={pill(cabin === c)}>
-                            {CABIN_LABELS[c]}
-                          </button>
-                        ))}
-                  </div>
+                      them, with "Other fare" for one missing from the list;
+                      otherwise the shared cabins. */}
+                  {fares.length > 0 && (
+                    <div role="group" aria-labelledby="report-fare-label" className="flex flex-wrap gap-2">
+                      {fares.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          aria-pressed={fare === f.id}
+                          onClick={() => {
+                            setFare(fare === f.id ? '' : f.id);
+                            setOtherFare(false);
+                          }}
+                          className={pill(fare === f.id)}
+                        >
+                          {f.name}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        aria-pressed={otherFare}
+                        onClick={() => {
+                          setOtherFare(!otherFare);
+                          setFare('');
+                          setCabin('');
+                        }}
+                        className={pill(otherFare)}
+                      >
+                        Other fare
+                      </button>
+                    </div>
+                  )}
+                  {(fares.length === 0 || otherFare) && (
+                    <div role="group" {...(fares.length > 0 ? { 'aria-label': 'Cabin' } : { 'aria-labelledby': 'report-fare-label' })} className={`flex flex-wrap gap-2 ${fares.length > 0 ? 'mt-3' : ''}`}>
+                      {CABINS.map((c) => (
+                        <button key={c} type="button" aria-pressed={cabin === c} onClick={() => setCabin(cabin === c ? '' : c)} className={pill(cabin === c)}>
+                          {CABIN_LABELS[c]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {fare && <p className="mt-1.5 text-xs text-navy-950/55">Counted as {CABIN_LABELS[findFare(airline, fare)!.cabin].toLowerCase()} when comparing airlines.</p>}
                 </div>
               )}
@@ -353,6 +407,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                 <MonthPicker label="Travel month" value={travelMonth} onChange={setTravelMonth} from={thisMonth()} monthsAhead={reportConfig.travel_month_window.months_ahead} />
               </div>
 
+              {isFlight && !tripType && <p className="text-sm text-navy-950/60">Choose one way or round trip to share.</p>}
               {reportBoost === null && (
                 <p className="text-sm text-navy-950/60">
                   {another ? 'Answer the Points Boost question to share.' : 'Answer the Points Boost question above to share.'}

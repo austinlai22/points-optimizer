@@ -12,10 +12,12 @@ export const CARD_TYPES = listChaseCardTypes().map((t) => t.id);
 export const BOOKING_TYPES = ['flight', 'hotel'] as const;
 export const CABINS = ['basic_economy', 'economy', 'premium_economy', 'business', 'first'] as const;
 export const BOOST_ANSWERS = ['yes', 'no', 'unsure'] as const;
+export const TRIP_TYPES = ['one_way', 'round_trip'] as const;
 
 export type BookingType = (typeof BOOKING_TYPES)[number];
 export type Cabin = (typeof CABINS)[number];
 export type BoostAnswer = (typeof BOOST_ANSWERS)[number];
+export type TripType = (typeof TRIP_TYPES)[number];
 
 // What the form sends. Every field is a fixed choice, a number or a 3-letter
 // code, so nothing typed freely is ever stored.
@@ -25,6 +27,10 @@ export interface PriceReportInput {
   // Airport or city code. Null for hotels, which have no origin.
   origin: string | null;
   destination: string;
+  // Flights only, required: whether the prices cover one way or a round
+  // trip. Points bookings are usually one way at a time, so analysis uses
+  // one-way prices; round trips are kept but labelled.
+  trip_type: TripType | null;
   travel_month: string;
   cabin: Cabin | null;
   // Flights only, optional: the airline's 2-letter IATA code, e.g. "WN",
@@ -89,7 +95,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
   // Anything beyond the known fields is refused rather than ignored, so a
   // client can't slip extra data in.
   const allowed = new Set([
-    'card_type', 'booking_type', 'origin', 'destination', 'travel_month',
+    'card_type', 'booking_type', 'origin', 'destination', 'trip_type', 'travel_month',
     'cabin', 'airline', 'fare', 'hotel_chain', 'cash_price_usd', 'chase_points_price', 'boost_shown',
   ]);
   for (const key of Object.keys(r)) if (!allowed.has(key)) errors.push(`Unknown field: ${key}.`);
@@ -106,6 +112,9 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
   if (typeof r.destination !== 'string' || !CODE.test(r.destination)) {
     errors.push('Destination must be a 3-letter airport or city code.');
   }
+
+  if (isFlight && !TRIP_TYPES.includes(r.trip_type as TripType)) errors.push('Say whether the flight price is one way or a round trip.');
+  else if (!isFlight && r.trip_type !== null && r.trip_type !== undefined) errors.push('Hotels have no trip type.');
 
   if (typeof r.travel_month !== 'string' || !MONTH.test(r.travel_month)) {
     errors.push('Travel month must be YYYY-MM.');
@@ -168,6 +177,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
       booking_type: r.booking_type as BookingType,
       origin: isFlight ? (r.origin as string) : null,
       destination: r.destination as string,
+      trip_type: isFlight ? (r.trip_type as TripType) : null,
       travel_month: r.travel_month as string,
       cabin: isFlight ? (fare?.cabin ?? (r.cabin as Cabin | undefined) ?? null) : null,
       airline: isFlight && hasAirline ? (r.airline as string) : null,

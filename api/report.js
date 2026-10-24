@@ -907,6 +907,73 @@ const FARES_BY_AIRLINE = {
 				"cabin": "economy"
 			}
 		]
+	},
+	"AA": {
+		"source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
+		"verified_on": "2026-10-23",
+		"fares": [
+			{
+				"id": "main_cabin",
+				"name": "Main Cabin",
+				"cabin": "economy"
+			},
+			{
+				"id": "main_cabin_flexible",
+				"name": "Main Cabin Flexible",
+				"cabin": "economy"
+			},
+			{
+				"id": "main_plus",
+				"name": "Main Plus",
+				"cabin": "economy"
+			},
+			{
+				"id": "first",
+				"name": "First",
+				"cabin": "first"
+			}
+		]
+	},
+	"UA": {
+		"source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
+		"verified_on": "2026-10-23",
+		"fares": [
+			{
+				"id": "basic_economy",
+				"name": "Basic Economy",
+				"cabin": "basic_economy"
+			},
+			{
+				"id": "economy",
+				"name": "Economy",
+				"cabin": "economy"
+			},
+			{
+				"id": "economy_plus",
+				"name": "Economy Plus",
+				"cabin": "economy"
+			},
+			{
+				"id": "premium_economy",
+				"name": "Premium Economy",
+				"cabin": "premium_economy"
+			},
+			{
+				"id": "premium_economy_fully_refundable",
+				"name": "Premium Economy Fully Refundable",
+				"cabin": "premium_economy"
+			},
+			{
+				"id": "business",
+				"name": "Business",
+				"cabin": "business"
+			},
+			{
+				"id": "business_fully_refundable",
+				"name": "Business Fully Refundable",
+				"cabin": "business"
+			}
+		]
 	}
 };
 function faresFor(airline) {
@@ -931,6 +998,7 @@ const BOOST_ANSWERS = [
 	"no",
 	"unsure"
 ];
+const TRIP_TYPES = ["one_way", "round_trip"];
 const CODE = /^[A-Z]{3}$/;
 const MONTH = /^(\d{4})-(0[1-9]|1[0-2])$/;
 function monthIndex(yyyyMm) {
@@ -956,6 +1024,7 @@ function validateReport(raw, today) {
 		"booking_type",
 		"origin",
 		"destination",
+		"trip_type",
 		"travel_month",
 		"cabin",
 		"airline",
@@ -973,6 +1042,8 @@ function validateReport(raw, today) {
 		if (typeof r.origin !== "string" || !CODE.test(r.origin)) errors.push("Origin must be a 3-letter airport or city code.");
 	} else if (r.origin !== null && r.origin !== void 0) errors.push("Hotels have no origin.");
 	if (typeof r.destination !== "string" || !CODE.test(r.destination)) errors.push("Destination must be a 3-letter airport or city code.");
+	if (isFlight && !TRIP_TYPES.includes(r.trip_type)) errors.push("Say whether the flight price is one way or a round trip.");
+	else if (!isFlight && r.trip_type !== null && r.trip_type !== void 0) errors.push("Hotels have no trip type.");
 	if (typeof r.travel_month !== "string" || !MONTH.test(r.travel_month)) errors.push("Travel month must be YYYY-MM.");
 	else {
 		const { months_back, months_ahead } = travel_month_window;
@@ -1017,6 +1088,7 @@ function validateReport(raw, today) {
 			booking_type: r.booking_type,
 			origin: isFlight ? r.origin : null,
 			destination: r.destination,
+			trip_type: isFlight ? r.trip_type : null,
 			travel_month: r.travel_month,
 			cabin: isFlight ? fare?.cabin ?? r.cabin ?? null : null,
 			airline: isFlight && hasAirline ? r.airline : null,

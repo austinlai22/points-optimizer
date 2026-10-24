@@ -1,5 +1,5 @@
 {
-  "_note": "Each airline's own fare names, as Chase Travel shows them, for price reports. Each fare also maps to one shared cabin so reports compare across airlines: Delta Comfort is extra-legroom economy, so it maps to economy; Premium Select is Delta's premium economy. Airlines not listed here use the shared cabins only.",
+  "_note": "Each airline's own fare names, as Chase Travel shows them, for price reports. Each fare also maps to one shared cabin so reports compare across airlines: Delta Comfort is extra-legroom economy, so it maps to economy; Premium Select is Delta's premium economy. Airlines not listed here use the shared cabins only, as does 'Other fare' for a fare missing from a list. Each list cites the airline's own fare page where it could be read; otherwise source_note says where the names came from.",
   "airlines": {
     "DL": {
       "source_url": "https://www.delta.com/us/en/booking-information/fare-classes-and-tickets/fares-and-discounts",
@@ -28,6 +28,29 @@
         { "id": "choice", "name": "Choice", "cabin": "economy" },
         { "id": "choice_preferred", "name": "Choice Preferred", "cabin": "economy" },
         { "id": "choice_extra", "name": "Choice Extra", "cabin": "economy" }
+      ]
+    },
+    "AA": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-23",
+      "fares": [
+        { "id": "main_cabin", "name": "Main Cabin", "cabin": "economy" },
+        { "id": "main_cabin_flexible", "name": "Main Cabin Flexible", "cabin": "economy" },
+        { "id": "main_plus", "name": "Main Plus", "cabin": "economy" },
+        { "id": "first", "name": "First", "cabin": "first" }
+      ]
+    },
+    "UA": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-23",
+      "fares": [
+        { "id": "basic_economy", "name": "Basic Economy", "cabin": "basic_economy" },
+        { "id": "economy", "name": "Economy", "cabin": "economy" },
+        { "id": "economy_plus", "name": "Economy Plus", "cabin": "economy" },
+        { "id": "premium_economy", "name": "Premium Economy", "cabin": "premium_economy" },
+        { "id": "premium_economy_fully_refundable", "name": "Premium Economy Fully Refundable", "cabin": "premium_economy" },
+        { "id": "business", "name": "Business", "cabin": "business" },
+        { "id": "business_fully_refundable", "name": "Business Fully Refundable", "cabin": "business" }
       ]
     }
   }

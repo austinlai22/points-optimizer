@@ -20,6 +20,7 @@ describe('bulk import of your own price entries', () => {
       booking_type: 'flight',
       origin: 'JFK',
       destination: 'LIS',
+      trip_type: 'one_way',
       travel_month: '2027-05',
       cabin: 'premium_economy',
       airline: null,
@@ -50,6 +51,12 @@ describe('bulk import of your own price entries', () => {
     expect(checks.map((c) => [c.report?.fare, c.report?.cabin])).toEqual([
       ['choice_preferred', 'economy'], ['main_basic', 'basic_economy'], ['first_classic', 'first'],
     ]);
+  });
+
+  it('reads a flight as one way unless the file says round trip', () => {
+    const header = `${HEADER},trip_type`;
+    const rows = parseCsv([header, '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,', '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,Round trip', '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,one-way', ',reserve,hotel,,PAR,2026-12,,1200,60000,no,'].join('\n'));
+    expect(checkRows(rows, TODAY).map((c) => c.report?.trip_type)).toEqual(['one_way', 'round_trip', 'one_way', null]);
   });
 
   it('turns hotel chain names into program ids', () => {
