@@ -39,7 +39,8 @@
         { "id": "main_cabin_flexible", "name": "Main Cabin Flexible", "cabin": "economy" },
         { "id": "main_plus", "name": "Main Plus", "cabin": "economy" },
         { "id": "main_select", "name": "Main Select", "cabin": "economy" },
-        { "id": "first", "name": "First", "cabin": "first" }
+        { "id": "first", "name": "First", "cabin": "first" },
+        { "id": "first_flexible", "name": "First Flexible", "cabin": "first" }
       ]
     },
     "UA": {
