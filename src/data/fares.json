@@ -34,9 +34,11 @@
       "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
       "verified_on": "2026-10-23",
       "fares": [
+        { "id": "basic_economy", "name": "Basic Economy", "cabin": "basic_economy" },
         { "id": "main_cabin", "name": "Main Cabin", "cabin": "economy" },
         { "id": "main_cabin_flexible", "name": "Main Cabin Flexible", "cabin": "economy" },
         { "id": "main_plus", "name": "Main Plus", "cabin": "economy" },
+        { "id": "main_select", "name": "Main Select", "cabin": "economy" },
         { "id": "first", "name": "First", "cabin": "first" }
       ]
     },
