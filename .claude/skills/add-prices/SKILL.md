@@ -34,7 +34,10 @@ only when he says so.
    - `card_type`: one of `reserve`, `preferred`, `reserveForBusiness`,
      `jpmReserve`, `inkPreferred`, `inkPlus`, `other`
    - `origin`, `destination`: 3-letter codes
-   - `travel_month`: YYYY-MM
+   - `travel_date`: the exact travel date, YYYY-MM-DD. Ask for it each batch
+     (the search page shows it, the result cards don't). Leave `travel_month`
+     blank when you give a date: it is worked out from it.
+   - `travel_month`: YYYY-MM, only if no date is known
    - `trip_type`: `one_way` or `round_trip`. If the results are a round
      trip, remind him once that one-way searches give cleaner data.
 
