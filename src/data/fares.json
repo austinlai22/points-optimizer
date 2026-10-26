@@ -97,6 +97,7 @@
         { "id": "economy_select_pro", "name": "Economy Select Pro", "cabin": "economy" },
         { "id": "economy_fully_flex", "name": "Economy Fully Flex", "cabin": "economy" },
         { "id": "premium_economy", "name": "Premium Economy", "cabin": "premium_economy" },
+        { "id": "premium_economy_fully_refundable", "name": "Premium Economy Fully Refundable", "cabin": "premium_economy" },
         { "id": "business_promo", "name": "Business Promo", "cabin": "business" },
         { "id": "business_select_pro", "name": "Business Select Pro", "cabin": "business" },
         { "id": "business_fully_flex", "name": "Business Fully Flex", "cabin": "business" },
@@ -104,7 +105,7 @@
         { "id": "first_select_pro", "name": "First Select Pro", "cabin": "first" },
         { "id": "first_fully_flex", "name": "First Fully Flex", "cabin": "first" }
       ],
-      "note": "Two premium economy fares are missing because Chase cut their names off: 'Premium Economy Sele…' and 'Premium Economy Fully…'. Use Other fare."
+      "note": "One premium economy fare is still missing because Chase cut its name off ('Premium Economy Sele…'). Use Other fare."
     },
     "VS": {
       "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
@@ -153,11 +154,12 @@
       "fares": [
         { "id": "optima", "name": "Optima", "cabin": "economy" },
         { "id": "flexible", "name": "Flexible", "cabin": "economy" },
+        { "id": "premium_economy_flexible", "name": "Premium Economy Flexible", "cabin": "premium_economy" },
         { "id": "business_optima", "name": "Business Optima", "cabin": "business" },
         { "id": "business_flexible", "name": "Business Flexible", "cabin": "business" },
         { "id": "business_fully_flexible", "name": "Business Fully Flexible", "cabin": "business" }
       ],
-      "note": "Iberia's two premium economy fares are missing because Chase cut their names off ('Premium Economy Opti…', 'Premium Economy Flexi…'). Use Other fare."
+      "note": "One premium economy fare is still missing because Chase cut its name off ('Premium Economy Opti…'). Use Other fare."
     },
     "TP": {
       "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
@@ -194,13 +196,13 @@
         { "id": "economy_saver", "name": "Economy Saver", "cabin": "basic_economy" },
         { "id": "economy_flex", "name": "Economy Flex", "cabin": "economy" },
         { "id": "economy_flex_plus", "name": "Economy Flex Plus", "cabin": "economy" },
+        { "id": "premium_economy_flexible", "name": "Premium Economy Flexible", "cabin": "premium_economy" },
         { "id": "business_saver", "name": "Business Saver", "cabin": "business" },
         { "id": "business_flex", "name": "Business Flex", "cabin": "business" },
         { "id": "business_flex_plus", "name": "Business Flex Plus", "cabin": "business" },
         { "id": "first_flex", "name": "First Flex", "cabin": "first" },
         { "id": "first_flex_plus", "name": "First Flex Plus", "cabin": "first" }
-      ],
-      "note": "The premium economy fare is missing because Chase cut its name off ('Premium Economy Flex…'). Use Other fare."
+      ]
     },
     "SQ": {
       "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
