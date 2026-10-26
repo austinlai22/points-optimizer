@@ -19,6 +19,9 @@ only when he says so.
 - **Never guess a number.** If a price or points figure is cut off, blurry or
   ambiguous, leave that row out and say which one and why.
 - **Nothing is stored until Austin confirms** the dry-run result.
+- **Leave out any airline PointCompass doesn't track** (its list is in
+  `src/lib/reports/brands.ts`), without asking. Mention in the summary which
+  airlines and how many fares were left out.
 - Never read or print `.env.local`.
 
 ## Steps
