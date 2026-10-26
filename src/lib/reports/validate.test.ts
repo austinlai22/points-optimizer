@@ -70,6 +70,14 @@ describe('validateReport', () => {
     expect(validateReport({ ...HOTEL, trip_type: 'one_way' }, TODAY).ok).toBe(false);
   });
 
+  it('takes an optional travel date inside the travel month', () => {
+    expect(validateReport({ ...FLIGHT, travel_date: '2027-03-14' }, TODAY)).toMatchObject({ ok: true, report: { travel_date: '2027-03-14' } });
+    expect(validateReport(FLIGHT, TODAY)).toMatchObject({ ok: true, report: { travel_date: null } });
+    expect(validateReport({ ...FLIGHT, travel_date: '2027-04-14' }, TODAY).ok).toBe(false);
+    expect(validateReport({ ...FLIGHT, travel_date: '2027-02-30', travel_month: '2027-02' }, TODAY).ok).toBe(false);
+    expect(validateReport({ ...FLIGHT, travel_date: 'March 14' }, TODAY).ok).toBe(false);
+  });
+
   it('accepts a tracked hotel chain on hotels only', () => {
     expect(validateReport({ ...HOTEL, hotel_chain: 'hyatt' }, TODAY)).toMatchObject({ ok: true, report: { hotel_chain: 'hyatt', airline: null } });
     expect(validateReport({ ...HOTEL, hotel_chain: 'independent' }, TODAY).ok).toBe(true);

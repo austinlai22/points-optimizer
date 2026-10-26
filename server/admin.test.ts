@@ -48,8 +48,8 @@ describe('admin scripts', () => {
     await store.set('report:a', JSON.stringify(report));
     const csv = toCsv((await allReports(store)) as unknown as Record<string, unknown>[], REPORT_COLUMNS);
     expect(csv).toBe(
-      'submitted_on,card_type,booking_type,origin,destination,trip_type,travel_month,cabin,airline,fare,hotel_chain,cash_price_usd,chase_points_price,boost_shown,implied_cpp,source\n' +
-        '2026-10-23,reserve,hotel,,PAR,,2026-12,,,,,1200,60000,yes,2,visitor\n',
+      'submitted_on,card_type,booking_type,origin,destination,trip_type,travel_month,travel_date,cabin,airline,fare,hotel_chain,cash_price_usd,chase_points_price,boost_shown,implied_cpp,source\n' +
+        '2026-10-23,reserve,hotel,,PAR,,2026-12,,,,,,1200,60000,yes,2,visitor\n',
     );
   });
 });

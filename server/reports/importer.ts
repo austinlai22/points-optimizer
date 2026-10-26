@@ -16,6 +16,7 @@ export const IMPORT_COLUMNS = [
   'destination',
   'trip_type',
   'travel_month',
+  'travel_date',
   'cabin',
   'airline',
   'fare',
@@ -68,7 +69,9 @@ export function checkRows(rows: Record<string, string>[], today: string): RowChe
       destination: blankToNull(row.destination)?.toUpperCase(),
       // Your own entries are one way unless the file says otherwise.
       trip_type: normalizeTripType(row.trip_type, blankToNull(row.booking_type)?.toLowerCase() === 'flight'),
-      travel_month: blankToNull(row.travel_month),
+      // A date alone is enough: the month follows from it.
+      travel_month: blankToNull(row.travel_month) ?? blankToNull(row.travel_date)?.slice(0, 7) ?? null,
+      travel_date: blankToNull(row.travel_date),
       cabin: normalizeCabin(row.cabin),
       airline,
       fare: blankToNull(row.fare) === null ? null : toFareId(airline, row.fare),

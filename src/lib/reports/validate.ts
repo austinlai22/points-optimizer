@@ -32,6 +32,9 @@ export interface PriceReportInput {
   // one-way prices; round trips are kept but labelled.
   trip_type: TripType | null;
   travel_month: string;
+  // Optional exact travel date (YYYY-MM-DD), always within travel_month.
+  // For a hotel it is the check-in date.
+  travel_date: string | null;
   cabin: Cabin | null;
   // Flights only, optional: the airline's 2-letter IATA code, e.g. "WN",
   // limited to airlines behind the programs PointCompass tracks. Chase limits
@@ -95,7 +98,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
   // Anything beyond the known fields is refused rather than ignored, so a
   // client can't slip extra data in.
   const allowed = new Set([
-    'card_type', 'booking_type', 'origin', 'destination', 'trip_type', 'travel_month',
+    'card_type', 'booking_type', 'origin', 'destination', 'trip_type', 'travel_month', 'travel_date',
     'cabin', 'airline', 'fare', 'hotel_chain', 'cash_price_usd', 'chase_points_price', 'boost_shown',
   ]);
   for (const key of Object.keys(r)) if (!allowed.has(key)) errors.push(`Unknown field: ${key}.`);
@@ -122,6 +125,14 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
     const { months_back, months_ahead } = reportConfig.travel_month_window;
     const delta = monthIndex(r.travel_month) - monthIndex(today.slice(0, 7));
     if (delta < -months_back || delta > months_ahead) errors.push('Travel month is too far from today.');
+  }
+
+  const hasDate = r.travel_date !== null && r.travel_date !== undefined && r.travel_date !== '';
+  if (hasDate) {
+    const d = typeof r.travel_date === 'string' ? r.travel_date : '';
+    const real = /^\d{4}-\d{2}-\d{2}$/.test(d) && new Date(`${d}T00:00:00Z`).toISOString().slice(0, 10) === d;
+    if (!real) errors.push('Travel date must be a real date, YYYY-MM-DD.');
+    else if (d.slice(0, 7) !== r.travel_month) errors.push('Travel date must fall in the travel month.');
   }
 
   if (isFlight) {
@@ -179,6 +190,7 @@ export function validateReport(raw: unknown, today: string): ValidationResult {
       destination: r.destination as string,
       trip_type: isFlight ? (r.trip_type as TripType) : null,
       travel_month: r.travel_month as string,
+      travel_date: hasDate ? (r.travel_date as string) : null,
       cabin: isFlight ? (fare?.cabin ?? (r.cabin as Cabin | undefined) ?? null) : null,
       airline: isFlight && hasAirline ? (r.airline as string) : null,
       fare: fare?.id ?? null,

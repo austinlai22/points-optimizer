@@ -79,6 +79,7 @@ export const REPORT_COLUMNS: (keyof PriceReport)[] = [
   'destination',
   'trip_type',
   'travel_month',
+  'travel_date',
   'cabin',
   'airline',
   'fare',
@@ -98,6 +99,6 @@ export async function allReports(store: Store): Promise<PriceReport[]> {
     .filter((v): v is string => v !== null)
     // Reports stored before the source field existed all came from visitors;
     // ones from before the trip type, airline, fare and hotel chain fields have none.
-    .map((v) => ({ source: 'visitor', trip_type: null, airline: null, fare: null, hotel_chain: null, ...JSON.parse(v) }) as PriceReport)
+    .map((v) => ({ source: 'visitor', trip_type: null, travel_date: null, airline: null, fare: null, hotel_chain: null, ...JSON.parse(v) }) as PriceReport)
     .sort((a, b) => a.submitted_on.localeCompare(b.submitted_on));
 }

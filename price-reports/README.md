@@ -38,6 +38,7 @@ The database keys must be in `.env.local` in the project folder (see the comment
 | `origin` | Flights only: 3-letter airport or city code. Blank for hotels. | `JFK` |
 | `destination` | 3-letter airport or city code | `LIS` |
 | `trip_type` | Flights only: `one_way` or `round_trip`. Blank means one way. Check prices one way where you can: points bookings usually go one way at a time, and a round-trip price mixes in a return fare you didn't pick. | `one_way` |
+| `travel_date` | Optional exact date, YYYY-MM-DD (the hotel check-in date for hotels). If `travel_month` is blank it is worked out from this. | `2027-05-14` |
 | `travel_month` | YYYY-MM, within 12 months before and 18 months after `submitted_on` | `2027-05` |
 | `cabin` | Flights only, optional: `basic_economy` (or `basic`), `economy`, `premium_economy`, `business` or `first` | `economy` |
 | `airline` | Flights only, optional: an airline PointCompass tracks, as its name or 2-letter code. Leave blank for any other airline. | `Southwest` or `WN` |

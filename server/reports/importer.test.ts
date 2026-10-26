@@ -22,6 +22,7 @@ describe('bulk import of your own price entries', () => {
       destination: 'LIS',
       trip_type: 'one_way',
       travel_month: '2027-05',
+      travel_date: null,
       cabin: 'premium_economy',
       airline: null,
       fare: null,
@@ -57,6 +58,14 @@ describe('bulk import of your own price entries', () => {
     const header = `${HEADER},trip_type`;
     const rows = parseCsv([header, '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,', '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,Round trip', '2026-10-20,reserve,flight,SFO,LGA,2027-01,,452,45141,no,one-way', ',reserve,hotel,,PAR,2026-12,,1200,60000,no,'].join('\n'));
     expect(checkRows(rows, TODAY).map((c) => c.report?.trip_type)).toEqual(['one_way', 'round_trip', 'one_way', null]);
+  });
+
+  it('works out the month from a travel date', () => {
+    const header = `${HEADER},travel_date`;
+    const rows = parseCsv([header, '2026-10-20,reserve,flight,SFO,LGA,,,452,45141,no,2027-01-14'].join('\n'));
+    const [row] = checkRows(rows, TODAY);
+    expect(row.errors).toEqual([]);
+    expect(row.report).toMatchObject({ travel_month: '2027-01', travel_date: '2027-01-14' });
   });
 
   it('turns hotel chain names into program ids', () => {

@@ -145,6 +145,7 @@ describe('Chase Travel price check and sharing', () => {
       destination: 'LIS',
       trip_type: 'one_way',
       travel_month: month,
+      travel_date: null,
       cabin: null,
       airline: null,
       fare: null,
@@ -244,6 +245,24 @@ describe('Chase Travel price check and sharing', () => {
     fireEvent.change(from, { target: { value: 'san francisco' } });
     fireEvent.mouseDown(await screen.findByRole('option', { name: /^SFO/ }));
     expect(from).toHaveValue('San Francisco · San Francisco International Airport (SFO)');
+  });
+
+  it('offers a travel day once the month is picked, and sends the date', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 201 }));
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(priceCheck().getByRole('button', { name: 'Yes' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    expect(screen.queryByLabelText(/travel day/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
+    type(/^from$/i, 'SFO');
+    type(/^to$/i, 'LGA');
+    pickMonth(nextMonth());
+    type(/travel day/i, '14');
+    fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
+    expect(sentBodies(fetchSpy)[0]).toMatchObject({ travel_month: nextMonth(), travel_date: `${nextMonth()}-14` });
+    await screen.findByText(/shared anonymously/);
+    fetchSpy.mockRestore();
   });
 
   it('shares another fare for the same trip without retyping it', async () => {

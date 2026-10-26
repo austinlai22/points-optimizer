@@ -50,6 +50,10 @@ function pill(active: boolean) {
   }`;
 }
 
+function daysIn(yyyyMm: string): number {
+  return new Date(Number(yyyyMm.slice(0, 4)), Number(yyyyMm.slice(5, 7)), 0).getDate();
+}
+
 function thisMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -83,6 +87,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [travelMonth, setTravelMonth] = useState('');
+  const [travelDay, setTravelDay] = useState('');
   const [airline, setAirline] = useState(start.airline);
   const [fare, setFare] = useState('');
   // A fare missing from the airline's list: pick the shared cabin instead.
@@ -102,6 +107,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
     destination,
     trip_type: isFlight && tripType ? tripType : null,
     travel_month: travelMonth,
+    travel_date: travelMonth && travelDay ? `${travelMonth}-${travelDay}` : null,
     // With a fare chosen, the cabin follows from it.
     cabin: isFlight && !fare && cabin ? cabin : null,
     airline: isFlight && airline ? airline : null,
@@ -404,8 +410,33 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
               </div>
 
               <div className="max-w-sm">
-                <MonthPicker label="Travel month" value={travelMonth} onChange={setTravelMonth} from={thisMonth()} monthsAhead={reportConfig.travel_month_window.months_ahead} />
+                <MonthPicker
+                  label="Travel month"
+                  value={travelMonth}
+                  onChange={(m) => {
+                    setTravelMonth(m);
+                    setTravelDay('');
+                  }}
+                  from={thisMonth()}
+                  monthsAhead={reportConfig.travel_month_window.months_ahead}
+                />
               </div>
+
+              {travelMonth && (
+                <div className="max-w-sm">
+                  <label htmlFor="report-day" className={`mb-1.5 block ${LABEL}`}>
+                    Travel day <span className="normal-case text-navy-950/40">(optional)</span>
+                  </label>
+                  <select id="report-day" value={travelDay} onChange={(e) => setTravelDay(e.target.value)} className={`${FIELD} ${TAP_TARGET} ${FOCUS_RING}`}>
+                    <option value="">Not specified</option>
+                    {Array.from({ length: daysIn(travelMonth) }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
+                      <option key={d} value={d}>
+                        {Number(d)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {isFlight && !tripType && <p className="text-sm text-navy-950/60">Choose one way or round trip to share.</p>}
               {reportBoost === null && (
