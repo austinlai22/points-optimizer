@@ -16,6 +16,8 @@ interface AirlineFares {
   // where the names came from.
   source_url?: string;
   source_note?: string;
+  // Where Chase's names differ from the airline's own.
+  note?: string;
   verified_on: string;
   fares: Fare[];
 }

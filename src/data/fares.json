@@ -1,5 +1,5 @@
 {
-  "_note": "Each airline's own fare names, as Chase Travel shows them, for price reports. Each fare also maps to one shared cabin so reports compare across airlines: Delta Comfort is extra-legroom economy, so it maps to economy; Premium Select is Delta's premium economy. Airlines not listed here use the shared cabins only, as does 'Other fare' for a fare missing from a list. Each list cites the airline's own fare page where it could be read; otherwise source_note says where the names came from.",
+  "_note": "Each airline's own fare names, as Chase Travel shows them, for price reports. Each fare also maps to one shared cabin so reports compare across airlines: Delta Comfort is extra-legroom economy, so it maps to economy; Premium Select is Delta's premium economy. 'Other fare' falls back to the shared cabins for a fare missing from a list; an airline not listed here uses the shared cabins only. A 'note' records where Chase's names differ from the airline's own. Each list cites the airline's own fare page where it could be read; otherwise source_note says where the names came from.",
   "airlines": {
     "DL": {
       "source_url": "https://www.delta.com/us/en/booking-information/fare-classes-and-tickets/fares-and-discounts",
@@ -49,7 +49,8 @@
         { "id": "flagship_business_plus", "name": "Flagship Business Plus", "cabin": "business" },
         { "id": "flagship_first", "name": "Flagship First", "cabin": "first" },
         { "id": "flagship_first_flexible", "name": "Flagship First Flexible", "cabin": "first" }
-      ]
+      ],
+      "note": "American calls Main Plus and Main Select add-on packages: Main Select is the fully refundable economy fare. Chase also shows 'Flexible' versions (Main Cabin Flexible, Premium Economy Flexible, Flagship Business Flexible, First Flexible, Flagship First Flexible) that American's own guides don't name. Flagship First is being phased out from November 2026."
     },
     "B6": {
       "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
@@ -64,7 +65,8 @@
         { "id": "mint_base", "name": "Mint Base", "cabin": "business" },
         { "id": "mint", "name": "Mint", "cabin": "business" },
         { "id": "mint_flex", "name": "Mint Flex", "cabin": "business" }
-      ]
+      ],
+      "note": "Since July 2026 JetBlue sells a cabin (Main, Even More, Mint, BlueFirst) and then a fare (Base, Standard, Flex). Chase leaves Standard unlabeled. BlueFirst has not yet appeared in Chase Travel."
     },
     "UA": {
       "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-23. The airline's own fare pages refuse automated reading, so check them by hand when this list is next reviewed.",
@@ -83,7 +85,163 @@
         { "id": "business_fully_refundable", "name": "Business Fully Refundable", "cabin": "business" },
         { "id": "first", "name": "First", "cabin": "first" },
         { "id": "first_fully_refundable", "name": "First Fully Refundable", "cabin": "first" }
+      ],
+      "note": "United's own cabin names are Premium Plus (Chase shows Premium Economy) and Polaris (Chase shows Business). 'Base' and 'Fully Refundable' are Chase's wording; United is moving First and Business to Base, Standard and Flexible tiers from fall 2026."
+    },
+    "BA": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "basic_economy", "name": "Basic Economy", "cabin": "basic_economy" },
+        { "id": "standard_economy", "name": "Standard Economy", "cabin": "economy" },
+        { "id": "economy_select_pro", "name": "Economy Select Pro", "cabin": "economy" },
+        { "id": "economy_fully_flex", "name": "Economy Fully Flex", "cabin": "economy" },
+        { "id": "premium_economy", "name": "Premium Economy", "cabin": "premium_economy" },
+        { "id": "business_promo", "name": "Business Promo", "cabin": "business" },
+        { "id": "business_select_pro", "name": "Business Select Pro", "cabin": "business" },
+        { "id": "business_fully_flex", "name": "Business Fully Flex", "cabin": "business" },
+        { "id": "first", "name": "First", "cabin": "first" },
+        { "id": "first_select_pro", "name": "First Select Pro", "cabin": "first" },
+        { "id": "first_fully_flex", "name": "First Fully Flex", "cabin": "first" }
+      ],
+      "note": "Two premium economy fares are missing because Chase cut their names off: 'Premium Economy Sele…' and 'Premium Economy Fully…'. Use Other fare."
+    },
+    "VS": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "economy_light", "name": "Economy Light", "cabin": "basic_economy" },
+        { "id": "economy_classic", "name": "Economy Classic", "cabin": "economy" },
+        { "id": "economy_delight", "name": "Economy Delight", "cabin": "economy" },
+        { "id": "economy_classic_flex", "name": "Economy Classic Flex", "cabin": "economy" },
+        { "id": "economy_delight_flex", "name": "Economy Delight Flex", "cabin": "economy" },
+        { "id": "premium", "name": "Premium", "cabin": "premium_economy" },
+        { "id": "premium_flex", "name": "Premium Flex", "cabin": "premium_economy" },
+        { "id": "upper_class", "name": "Upper Class", "cabin": "business" },
+        { "id": "upper_class_flex", "name": "Upper Class Flex", "cabin": "business" }
       ]
+    },
+    "AF": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "light", "name": "Light", "cabin": "basic_economy" },
+        { "id": "standard", "name": "Standard", "cabin": "economy" },
+        { "id": "flex", "name": "Flex", "cabin": "economy" },
+        { "id": "premium_standard", "name": "Premium Standard", "cabin": "premium_economy" },
+        { "id": "premium_flex", "name": "Premium Flex", "cabin": "premium_economy" },
+        { "id": "business_standard", "name": "Business Standard", "cabin": "business" },
+        { "id": "business_flex", "name": "Business Flex", "cabin": "business" }
+      ]
+    },
+    "KL": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "light", "name": "Light", "cabin": "basic_economy" },
+        { "id": "standard", "name": "Standard", "cabin": "economy" },
+        { "id": "flex", "name": "Flex", "cabin": "economy" },
+        { "id": "premium_standard", "name": "Premium Standard", "cabin": "premium_economy" },
+        { "id": "premium_flex", "name": "Premium Flex", "cabin": "premium_economy" },
+        { "id": "business_standard", "name": "Business Standard", "cabin": "business" },
+        { "id": "business_flex", "name": "Business Flex", "cabin": "business" }
+      ]
+    },
+    "IB": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "optima", "name": "Optima", "cabin": "economy" },
+        { "id": "flexible", "name": "Flexible", "cabin": "economy" },
+        { "id": "business_optima", "name": "Business Optima", "cabin": "business" },
+        { "id": "business_flexible", "name": "Business Flexible", "cabin": "business" },
+        { "id": "business_fully_flexible", "name": "Business Fully Flexible", "cabin": "business" }
+      ],
+      "note": "Iberia's two premium economy fares are missing because Chase cut their names off ('Premium Economy Opti…', 'Premium Economy Flexi…'). Use Other fare."
+    },
+    "TP": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "discount", "name": "Discount", "cabin": "basic_economy" },
+        { "id": "basic", "name": "Basic", "cabin": "basic_economy" },
+        { "id": "classic", "name": "Classic", "cabin": "economy" },
+        { "id": "plus", "name": "Plus", "cabin": "economy" },
+        { "id": "prime", "name": "Prime", "cabin": "premium_economy" },
+        { "id": "top_prime", "name": "Top Prime", "cabin": "premium_economy" },
+        { "id": "executive", "name": "Executive", "cabin": "business" },
+        { "id": "top_executive", "name": "Top Executive", "cabin": "business" }
+      ]
+    },
+    "AS": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "saver", "name": "Saver", "cabin": "basic_economy" },
+        { "id": "main", "name": "Main", "cabin": "economy" },
+        { "id": "refundable_main", "name": "Refundable Main", "cabin": "economy" },
+        { "id": "first", "name": "First", "cabin": "first" },
+        { "id": "refundable_first", "name": "Refundable First", "cabin": "first" },
+        { "id": "business", "name": "Business", "cabin": "business" },
+        { "id": "refundable_business", "name": "Refundable Business", "cabin": "business" }
+      ],
+      "note": "Alaska's own pages also list a Premium fare, not yet seen in Chase Travel."
+    },
+    "EK": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "economy_saver", "name": "Economy Saver", "cabin": "basic_economy" },
+        { "id": "economy_flex", "name": "Economy Flex", "cabin": "economy" },
+        { "id": "economy_flex_plus", "name": "Economy Flex Plus", "cabin": "economy" },
+        { "id": "business_saver", "name": "Business Saver", "cabin": "business" },
+        { "id": "business_flex", "name": "Business Flex", "cabin": "business" },
+        { "id": "business_flex_plus", "name": "Business Flex Plus", "cabin": "business" },
+        { "id": "first_flex", "name": "First Flex", "cabin": "first" },
+        { "id": "first_flex_plus", "name": "First Flex Plus", "cabin": "first" }
+      ],
+      "note": "The premium economy fare is missing because Chase cut its name off ('Premium Economy Flex…'). Use Other fare."
+    },
+    "SQ": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "economy_value", "name": "Economy Value", "cabin": "basic_economy" },
+        { "id": "economy_standard", "name": "Economy Standard", "cabin": "economy" },
+        { "id": "economy_flexi", "name": "Economy Flexi", "cabin": "economy" },
+        { "id": "business_flexi", "name": "Business Flexi", "cabin": "business" },
+        { "id": "first", "name": "First", "cabin": "first" }
+      ]
+    },
+    "BR": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "economy_basic", "name": "Economy Basic", "cabin": "basic_economy" },
+        { "id": "economy_standard", "name": "Economy Standard", "cabin": "economy" },
+        { "id": "economy_up", "name": "Economy Up", "cabin": "economy" },
+        { "id": "premium_economy_standard", "name": "Premium Economy Standard", "cabin": "premium_economy" },
+        { "id": "premium_economy_up", "name": "Premium Economy Up", "cabin": "premium_economy" },
+        { "id": "business_basic", "name": "Business Basic", "cabin": "business" },
+        { "id": "business_standard", "name": "Business Standard", "cabin": "business" },
+        { "id": "business_up", "name": "Business Up", "cabin": "business" }
+      ],
+      "note": "'Premium Economy Standard' was cut off in Chase Travel as 'Premium Economy Stan…'."
+    },
+    "CX": {
+      "source_note": "Fare names as shown in Chase Travel, recorded by PointCompass on 2026-10-26. The airline's own fare pages could not be read, so check them by hand when this list is next reviewed.",
+      "verified_on": "2026-10-26",
+      "fares": [
+        { "id": "economy_light", "name": "Economy Light", "cabin": "basic_economy" },
+        { "id": "economy_essential", "name": "Economy Essential", "cabin": "economy" },
+        { "id": "economy_flex", "name": "Economy Flex", "cabin": "economy" },
+        { "id": "premium_economy_essential", "name": "Premium Economy Essential", "cabin": "premium_economy" },
+        { "id": "premium_economy_flex", "name": "Premium Economy Flex", "cabin": "premium_economy" },
+        { "id": "business_light", "name": "Business Light", "cabin": "business" },
+        { "id": "business_essential", "name": "Business Essential", "cabin": "business" },
+        { "id": "business_flex", "name": "Business Flex", "cabin": "business" }
+      ],
+      "note": "'Premium Economy Essential' was cut off in Chase Travel as 'Premium Economy Esse…'."
     }
   }
 }

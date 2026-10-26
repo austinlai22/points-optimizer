@@ -205,7 +205,7 @@ describe('Chase Travel price check and sharing', () => {
     expect(screen.queryByRole('button', { name: 'Premium economy' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Other fare' }));
     expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
-    type(/^airline \(optional\)/i, 'AS');
+    type(/^airline \(optional\)/i, 'JL');
     expect(screen.queryByRole('button', { name: 'Main Classic' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Other fare' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
