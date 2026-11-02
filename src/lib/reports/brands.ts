@@ -27,6 +27,7 @@ export const AIRLINES_BY_PROGRAM: Record<string, { code: string; name: string }[
   avianca: [{ code: 'AV', name: 'Avianca' }],
   britishairways: [{ code: 'BA', name: 'British Airways' }],
   cathay: [{ code: 'CX', name: 'Cathay Pacific' }],
+  copa: [{ code: 'CM', name: 'Copa Airlines' }],
   delta: [{ code: 'DL', name: 'Delta Air Lines' }],
   eva: [{ code: 'BR', name: 'EVA Air' }],
   emirates: [{ code: 'EK', name: 'Emirates' }],

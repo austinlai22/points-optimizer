@@ -181,7 +181,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'Which cards are supported?',
-    a: 'Cards from Chase, Capital One, American Express, Citi, Bank of America and Bilt, together with 36 airline and hotel programs they transfer to.',
+    a: `Cards from Chase, Capital One, American Express, Citi, Bank of America and Bilt, together with ${transferPartners.length} airline and hotel programs they transfer to.`,
   },
   {
     q: 'Do I need to connect a bank account?',

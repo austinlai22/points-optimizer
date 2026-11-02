@@ -425,15 +425,15 @@ describe('real data: transfer partner roster is complete per issuer', () => {
   // issuer actually adds or removes a partner.
   const EXPECTED: Record<Issuer, { airlines: number; hotels: number }> = {
     chase: { airlines: 10, hotels: 4 },
-    capitalOne: { airlines: 18, hotels: 4 },
+    capitalOne: { airlines: 19, hotels: 4 },
     amex: { airlines: 16, hotels: 4 },
-    citi: { airlines: 15, hotels: 5 },
+    citi: { airlines: 16, hotels: 5 },
     // Bank of America has no transfer partners at all — see the dedicated
     // Bank of America block above.
     bankOfAmerica: { airlines: 0, hotels: 0 },
     // Bilt is the only transferable currency that reaches Atmos (Alaska and
     // Hawaiian), which is why it's modelled at all.
-    bilt: { airlines: 17, hotels: 7 },
+    bilt: { airlines: 18, hotels: 7 },
   };
 
   it('matches each issuer\'s published airline and hotel partner counts', () => {

@@ -80,7 +80,7 @@ export const TRANSFER_PREMIUM_FACTOR = 1.75;
 // lands near break-even. Same story for Capital One and Citi at 1:2 to
 // I Prefer, and Citi at 1:1.5 to Choice.
 //
-// Rather than publish our own value for all 35 partners — the subjective
+// Rather than publish our own value for every partner — the subjective
 // third-party guesswork this app deliberately avoids — we simply decline to
 // credit ratios above parity. Ratios BELOW parity still count in full, since
 // those are a real loss you'd actually take.

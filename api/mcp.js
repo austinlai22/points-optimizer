@@ -25661,7 +25661,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "choice",
@@ -25677,7 +25677,7 @@ var transferPartners_default = [
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "hilton",
@@ -25691,7 +25691,7 @@ var transferPartners_default = [
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "ihg",
@@ -25702,10 +25702,10 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "leadinghotels",
@@ -25719,7 +25719,7 @@ var transferPartners_default = [
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "marriott",
@@ -25731,11 +25731,11 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "iprefer",
@@ -25751,7 +25751,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "hyatt",
@@ -25762,10 +25762,10 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "wyndham",
@@ -25778,12 +25778,12 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "ana",
@@ -25791,7 +25791,7 @@ var transferPartners_default = [
 		"type": "airline",
 		"ratiosByIssuer": { "amex": 1 },
 		"sourceUrls": { "amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners" },
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "aerlingus",
@@ -25803,11 +25803,11 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "aeromexico",
@@ -25821,7 +25821,7 @@ var transferPartners_default = [
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "aeroplan",
@@ -25834,12 +25834,12 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "flyingblue",
@@ -25853,13 +25853,13 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "aa",
@@ -25867,7 +25867,7 @@ var transferPartners_default = [
 		"type": "airline",
 		"ratiosByIssuer": { "citi": 1 },
 		"sourceUrls": { "citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/" },
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "atmos",
@@ -25875,7 +25875,7 @@ var transferPartners_default = [
 		"type": "airline",
 		"ratiosByIssuer": { "bilt": 1 },
 		"sourceUrls": { "bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/" },
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "avianca",
@@ -25893,7 +25893,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "britishairways",
@@ -25906,12 +25906,12 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "cathay",
@@ -25929,7 +25929,21 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
+	},
+	{
+		"id": "copa",
+		"name": "Copa ConnectMiles",
+		"type": "airline",
+		"ratiosByIssuer": {
+			"capitalOne": .75,
+			"citi": 1
+		},
+		"sourceUrls": {
+			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
+			"citi": "https://frequentmiler.com/citi-adds-new-transfer-partner-copa-connectmiles/"
+		},
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "delta",
@@ -25937,7 +25951,7 @@ var transferPartners_default = [
 		"type": "airline",
 		"ratiosByIssuer": { "amex": 1 },
 		"sourceUrls": { "amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners" },
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "eva",
@@ -25951,7 +25965,7 @@ var transferPartners_default = [
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "emirates",
@@ -25969,7 +25983,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "etihad",
@@ -25985,7 +25999,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "finnair",
@@ -25993,7 +26007,7 @@ var transferPartners_default = [
 		"type": "airline",
 		"ratiosByIssuer": { "capitalOne": 1 },
 		"sourceUrls": { "capitalOne": "https://www.capitalone.com/credit-cards/travel-partners" },
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "iberia",
@@ -26005,11 +26019,11 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "jal",
@@ -26025,7 +26039,7 @@ var transferPartners_default = [
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "jetblue",
@@ -26035,15 +26049,17 @@ var transferPartners_default = [
 			"chase": 1,
 			"capitalOne": .6,
 			"amex": .8,
-			"citi": 1
+			"citi": 1,
+			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
-			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
+			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
+			"bilt": "https://newsroom.biltrewards.com/jetblue-transfer"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "qantas",
@@ -26059,7 +26075,7 @@ var transferPartners_default = [
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "qatar",
@@ -26077,7 +26093,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "singapore",
@@ -26090,12 +26106,12 @@ var transferPartners_default = [
 			"citi": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "southwest",
@@ -26106,10 +26122,10 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "tap",
@@ -26123,7 +26139,7 @@ var transferPartners_default = [
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "thai",
@@ -26131,7 +26147,7 @@ var transferPartners_default = [
 		"type": "airline",
 		"ratiosByIssuer": { "citi": 1 },
 		"sourceUrls": { "citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/" },
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "turkish",
@@ -26147,7 +26163,7 @@ var transferPartners_default = [
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "united",
@@ -26158,10 +26174,10 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	},
 	{
 		"id": "virginatlantic",
@@ -26175,13 +26191,13 @@ var transferPartners_default = [
 			"bilt": 1
 		},
 		"sourceUrls": {
-			"chase": "https://www.thepointsguy.com/loyalty-programs/chase-ultimate-rewards-transfer-partners/",
+			"chase": "https://www.chase.com/personal/credit-cards/education/basics/how-to-transfer-chase-ultimate-rewards-points",
 			"capitalOne": "https://www.capitalone.com/credit-cards/travel-partners",
 			"amex": "https://upgradedpoints.com/amex-membership-rewards-transfer-partners",
 			"citi": "https://www.thepointsguy.com/loyalty-programs/citi-transfer-partners/",
 			"bilt": "https://www.thepointsguy.com/loyalty-programs/bilt-transfer-partners/"
 		},
-		"verifiedOn": "2026-10-22"
+		"verifiedOn": "2026-11-02"
 	}
 ];
 //#endregion
