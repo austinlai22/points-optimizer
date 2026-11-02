@@ -363,6 +363,10 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
           ? `All ${formatPoints(chaseBalance)} of your Chase points are assumed to have been earned before October 26, 2025, so they redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.`
           : `${formatPoints(legacyPoints)} of your Chase points redeem at ${formatCents(LEGACY_CENTS)} in Chase Travel until October 26, 2027.`,
       );
+    } else if (chaseCardType === 'reserve' && chase.reserveAppliedBeforeCutoff === undefined && today < LEGACY_EXPIRES_ON) {
+      assumptions.push(
+        "The 1.5¢ legacy rate isn't counted, because it wasn't said whether this Sapphire Reserve was applied for before June 23, 2025. Answer that to include it.",
+      );
     } else if (chaseCardType === 'reserve' && chase.reserveAppliedBeforeCutoff && today >= LEGACY_EXPIRES_ON) {
       assumptions.push('The Sapphire Reserve legacy rate of 1.5¢ ended on October 26, 2027.');
     } else if (chaseCardType === 'preferred') {

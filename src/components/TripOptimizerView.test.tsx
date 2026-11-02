@@ -47,6 +47,40 @@ describe('TripOptimizerView verdict', () => {
     expect(verdictCard().getByText(/no cash position was given/i, { selector: 'li' })).toBeInTheDocument();
   });
 
+  it('treats the June 23, 2025 question as optional, and says so when it is skipped', () => {
+    renderView();
+    type(/trip cash price/i, '1000');
+    const group = screen.getByRole('group', { name: /applied before june 23, 2025\? \(optional\)/i });
+    expect(verdictCard().getByText(/legacy rate isn't counted/i, { selector: 'li' })).toBeInTheDocument();
+
+    const yes = within(group).getByRole('button', { name: 'Yes' });
+    fireEvent.click(yes);
+    expect(yes).toHaveAttribute('aria-pressed', 'true');
+    expect(verdictCard().queryByText(/legacy rate isn't counted/i, { selector: 'li' })).toBeNull();
+    // Tapping it again clears the answer.
+    fireEvent.click(yes);
+    expect(yes).toHaveAttribute('aria-pressed', 'false');
+    expect(within(group).getByRole('button', { name: 'No' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it("folds Chase Travel details away for a program Chase doesn't transfer to, and keeps Chase Travel in the answer", () => {
+    renderView({ owned: { csr: true, citistratapremier: true }, balances: { csr: 200_000, citistratapremier: 100_000 } });
+    type(/trip cash price/i, '500');
+    expect(screen.getByLabelText(/chase card your points are on/i)).toBeInTheDocument();
+
+    type(/airline or hotel program/i, 'aa');
+    expect(screen.queryByLabelText(/chase card your points are on/i)).toBeNull();
+    expect(screen.getByText(/chase doesn't transfer to american airlines aadvantage/i)).toBeInTheDocument();
+    expect(verdictCard().getAllByText(/chase travel/i).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: /add chase travel details/i }));
+    expect(screen.getByLabelText(/chase card your points are on/i)).toBeInTheDocument();
+
+    // A Chase partner keeps it open.
+    type(/airline or hotel program/i, 'united');
+    expect(screen.getByLabelText(/chase card your points are on/i)).toBeInTheDocument();
+  });
+
   it('puts the optional cash position after the trip and Chase Travel', () => {
     renderView();
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);

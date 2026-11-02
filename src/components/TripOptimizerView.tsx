@@ -272,6 +272,11 @@ export function TripOptimizerView() {
   );
 
   const ownsChase = ownedCards.some((card) => card.issuer === 'chase');
+  // For a program Chase doesn't transfer to, the Chase Travel details fold
+  // down to one line: Chase Travel can still book the trip, so it still
+  // counts, but the details matter less. A tap opens them.
+  const [chaseExpanded, setChaseExpanded] = useState(false);
+  const chaseCollapsed = !chaseExpanded && selectedPartner !== null && selectedPartner.ratiosByIssuer.chase === undefined;
   const inferredChaseCardType = useMemo(() => inferChaseCardType(ownedCards), [ownedCards]);
 
   const tripInputs: TripInputs = useMemo(
@@ -314,6 +319,7 @@ export function TripOptimizerView() {
 
   const handleBrandChange = (partnerId: string) => {
     setSelectedPartnerId(partnerId);
+    setChaseExpanded(false);
     // A new brand means a new award chart — last brand's points requirement
     // and its taxes/surcharges no longer apply, so don't silently carry
     // either over.
@@ -567,13 +573,27 @@ export function TripOptimizerView() {
             {ownsChase && (
               <section className={`${CARD_SURFACE} p-6`}>
                 <StepHeading step={2} title="Chase Travel">
-                  Optional details that refine the Chase recommendation.
+                  {chaseCollapsed && selectedPartner
+                    ? `Chase doesn't transfer to ${selectedPartner.name}, but Chase Travel can still book this trip with your points.`
+                    : 'Optional details that refine the Chase recommendation.'}
                 </StepHeading>
-                <ChaseTravelInputs
-                  values={chaseInputs}
-                  inferredCardType={inferredChaseCardType}
-                  onChange={setChaseInputs}
-                />
+                {chaseCollapsed ? (
+                  <button
+                    type="button"
+                    onClick={() => setChaseExpanded(true)}
+                    aria-expanded={false}
+                    className={`-ml-1 inline-flex items-center gap-1.5 rounded-full px-1 text-sm font-medium text-navy hover:underline ${TAP_TARGET} ${FOCUS_RING}`}
+                  >
+                    Add Chase Travel details <span className="font-normal text-navy-950/45">(optional)</span>
+                    <ChevronDownIcon />
+                  </button>
+                ) : (
+                  <ChaseTravelInputs
+                    values={chaseInputs}
+                    inferredCardType={inferredChaseCardType}
+                    onChange={setChaseInputs}
+                  />
+                )}
               </section>
             )}
 

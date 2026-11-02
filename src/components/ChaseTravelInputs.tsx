@@ -25,6 +25,8 @@ export function ChaseTravelInputs({
   onChange,
 }: ChaseTravelInputsProps) {
   const cardType = values.cardType || inferredCardType;
+  // Choosing the current answer again clears it back to unanswered.
+  const answer = (yes: boolean) => onChange({ ...values, appliedBeforeCutoff: values.appliedBeforeCutoff === yes ? null : yes });
   const choice = (yes: boolean) =>
     `rounded-lg border px-3 text-sm font-medium transition-colors motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING} ${
       values.appliedBeforeCutoff === yes
@@ -62,19 +64,20 @@ export function ChaseTravelInputs({
         {cardType === 'reserve' && (
           <div>
             <p className={`mb-1.5 ${LABEL}`} id="cutoff-label">
-              Applied before June 23, 2025?
+              Applied before June 23, 2025? <span className="normal-case text-navy-950/40">(optional)</span>
             </p>
+            {/* Tap a choice again to clear it. */}
             <div className="flex gap-2" role="group" aria-labelledby="cutoff-label">
-              <button type="button" aria-pressed={values.appliedBeforeCutoff === true} onClick={() => onChange({ ...values, appliedBeforeCutoff: true })} className={choice(true)}>
+              <button type="button" aria-pressed={values.appliedBeforeCutoff === true} onClick={() => answer(true)} className={choice(true)}>
                 Yes
               </button>
-              <button type="button" aria-pressed={values.appliedBeforeCutoff === false} onClick={() => onChange({ ...values, appliedBeforeCutoff: false })} className={choice(false)}>
+              <button type="button" aria-pressed={values.appliedBeforeCutoff === false} onClick={() => answer(false)} className={choice(false)}>
                 No
               </button>
             </div>
             <p className="mt-1.5 text-xs text-navy-950/50">
               If so, Chase redeems points earned before October 26, 2025 at 1.5¢ each in Chase Travel
-              until October 26, 2027.
+              until October 26, 2027. Not sure? Leave it blank and that rate isn't counted.
             </p>
             {values.appliedBeforeCutoff && (
               <div className="mt-4">
