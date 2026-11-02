@@ -4,6 +4,8 @@ import { evaluateVerdict, inferChaseCardType } from './verdict';
 import type { VerdictResult } from './verdict/types';
 import type { CashInputValues, ChaseInputValues } from '../utils/verdictInputs';
 import { parseFiniteNumber } from '../utils/format';
+import { TRIP_STORAGE_KEY } from '../utils/verdictInputs';
+import { navigate } from './router';
 import type { CardConfig, TransferPartner, ValuationBasis } from '../types';
 
 const transferPartners = transferPartnersData as TransferPartner[];
@@ -215,4 +217,14 @@ export function removeFromCompare(id: string) {
 
 export function clearCompare() {
   write(COMPARE_KEY, []);
+}
+
+// Loads a saved trip back into Check a trip.
+export function openTrip(trip: SavedTrip) {
+  try {
+    localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trip.inputs));
+  } catch {
+    // Without storage the trip can't be carried over; Check a trip opens empty.
+  }
+  navigate('/app');
 }

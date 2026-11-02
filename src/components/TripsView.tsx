@@ -1,22 +1,23 @@
 import { useMemo, useState, type DragEvent, type MouseEvent } from 'react';
 import cardsData from '../data/cards.json';
 import { useCardBalances } from '../context/CardBalancesContext';
-import { describeRunway, formatCents, verdictHeadline } from '../lib/verdict';
-import type { PointsOption, VerdictResult } from '../lib/verdict/types';
-import { linkHandler, navigate } from '../lib/router';
+import { verdictHeadline } from '../lib/verdict';
+import type { VerdictResult } from '../lib/verdict/types';
+import { linkHandler } from '../lib/router';
 import {
   MAX_COMPARE,
   addToCompare,
   clearCompare,
   deleteTrip,
   evaluateTrip,
+  openTrip,
   partnerName,
   removeFromCompare,
   useCompareIds,
   useSavedTrips,
   type SavedTrip,
 } from '../lib/trips';
-import { CARD_SURFACE, FOCUS_RING, ISSUER_LABELS, LABEL, TAP_TARGET } from '../styles/constants';
+import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 import { formatPoints, formatUSD } from '../utils/format';
 import { usePersistentState } from '../utils/usePersistentState';
 import {
@@ -24,37 +25,20 @@ import {
   CHASE_STORAGE_KEY,
   EMPTY_CASH_INPUTS,
   EMPTY_CHASE_INPUTS,
-  TRIP_STORAGE_KEY,
   sanitizeCashInputs,
   sanitizeChaseInputs,
 } from '../utils/verdictInputs';
 import { PageIntro } from './PageShell';
 import { BookmarkIcon } from './SaveTripControl';
+import { TripComparison } from './TripComparison';
 import type { CardConfig } from '../types';
 
 const cards = cardsData as CardConfig[];
 const DRAG_TYPE = 'application/x-pointcompass-trip';
 
-function describeOption(option: PointsOption | null): string {
-  if (!option) return 'None your points cover';
-  if (option.kind === 'transfer') return `Transfer to ${option.partner?.name ?? 'partner'} from ${ISSUER_LABELS[option.issuer]}`;
-  if (option.kind === 'chaseTravel') return 'Chase Travel';
-  return `${ISSUER_LABELS[option.issuer]} travel portal`;
-}
-
 function formatSavedOn(iso: string): string {
   if (!iso) return '';
   return new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-// Loads a saved trip back into Check a trip.
-function openTrip(trip: SavedTrip) {
-  try {
-    localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trip.inputs));
-  } catch {
-    // Without storage the trip can't be carried over; Check a trip opens empty.
-  }
-  navigate('/app');
 }
 
 function CheckIcon() {
@@ -167,53 +151,6 @@ function TripCard({ trip, verdict, selected, onToggle }: TripCardProps) {
   );
 }
 
-interface Row {
-  label: string;
-  value: (trip: SavedTrip, verdict: VerdictResult | null) => React.ReactNode;
-}
-
-const dash = <span className="text-navy-950/30">—</span>;
-
-const ROWS: Row[] = [
-  { label: 'Trip cash price', value: (t) => <span className="font-mono">{formatUSD(t.inputs.tripCashPrice)}</span> },
-  {
-    label: 'Award price entered',
-    value: (t) =>
-      t.inputs.selectedPartnerId && t.inputs.pointsRequired > 0 ? (
-        <>
-          <span className="font-mono">{formatPoints(t.inputs.pointsRequired)}</span>{' '}
-          <span className="text-navy-950/55">{partnerName(t.inputs.selectedPartnerId)}</span>
-        </>
-      ) : (
-        dash
-      ),
-  },
-  { label: 'Best way with points', value: (_, v) => (v ? describeOption(v.bestOption) : dash) },
-  {
-    label: 'Points needed',
-    value: (_, v) => (v?.bestOption ? <span className="font-mono">{formatPoints(v.bestOption.pointsUsed)}</span> : dash),
-  },
-  {
-    label: 'Cash still due',
-    value: (_, v) => (v?.bestOption ? <span className="font-mono">{formatUSD(v.bestOption.cashFees)}</span> : dash),
-  },
-  {
-    label: 'If you pay cash',
-    value: (_, v) => (v ? describeRunway(v.runway.payCash) : dash),
-  },
-  {
-    label: 'Chase Travel worth it at',
-    value: (_, v) =>
-      v?.chaseTravel ? (
-        <>
-          <span className="font-mono">{formatPoints(v.chaseTravel.breakevenPoints)}</span> <span className="text-navy-950/55">pts or fewer</span>
-        </>
-      ) : (
-        dash
-      ),
-  },
-];
-
 export function TripsView() {
   const trips = useSavedTrips();
   const compareIds = useCompareIds();
@@ -263,15 +200,6 @@ export function TripsView() {
     },
     onDrop,
   };
-
-  // The best value per point among the compared trips, measured against each
-  // currency's usual value so different banks' points compare fairly.
-  const ratios = compared.map((t) => verdicts.get(t.id)?.bestOption?.benchmarkRatio ?? null);
-  const finiteRatios = ratios.filter((r): r is number => r !== null && Number.isFinite(r));
-  const bestRatio = compared.length > 1 && finiteRatios.length > 0 ? Math.max(...finiteRatios) : null;
-
-  // The empty column beside the compared trips, while there's room for more.
-  const slot = compared.length < MAX_COMPARE ? <td className="border-l border-navy/10 bg-white" /> : null;
 
   return (
     <>
@@ -360,126 +288,7 @@ export function TripsView() {
                   </p>
                 </div>
               ) : (
-                <div className={`${CARD_SURFACE} overflow-hidden p-0 hover:shadow-card ${dragOver ? 'ring-2 ring-navy' : ''}`}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left text-sm">
-                      <caption className="sr-only">Saved trips side by side</caption>
-                      <thead>
-                        <tr className="align-top">
-                          <th scope="col" className="sticky left-0 z-10 w-36 min-w-36 bg-navy-100 p-4">
-                            <span className={LABEL}>Trip</span>
-                          </th>
-                          {compared.map((trip, i) => {
-                            const best = bestRatio !== null && ratios[i] === bestRatio;
-                            return (
-                              <th key={trip.id} scope="col" className="min-w-44 border-l border-navy/10 bg-white p-4 font-normal">
-                                <div className="flex items-start justify-between gap-2">
-                                  <span className="font-display text-base font-medium leading-snug text-navy-950">{trip.name}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFromCompare(trip.id)}
-                                    aria-label={`Remove ${trip.name} from comparison`}
-                                    className={`-mr-2 -mt-2 flex shrink-0 items-center justify-center rounded-full text-navy-950/40 hover:bg-navy/5 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}
-                                  >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4" aria-hidden="true">
-                                      <path d="M6 6l12 12M18 6 6 18" />
-                                    </svg>
-                                  </button>
-                                </div>
-                                {best && (
-                                  <span className="mt-1 inline-block rounded-full bg-teal/10 px-2 py-0.5 text-xs font-medium text-teal">Best value per point</span>
-                                )}
-                              </th>
-                            );
-                          })}
-                          {compared.length < MAX_COMPARE && (
-                            <th scope="col" className="min-w-44 border-l border-navy/10 bg-white p-4 font-normal">
-                              <div className={`rounded-2xl border-2 border-dashed px-3 py-4 text-center text-sm ${dragOver ? 'border-navy bg-navy/5 text-navy-950' : 'border-navy/15 text-navy-950/45'}`}>
-                                Drag or click another trip to add it
-                              </div>
-                            </th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-t border-navy/10 align-top">
-                          <th scope="row" className="sticky left-0 z-10 bg-navy-100 p-4 font-normal">
-                            <span className={LABEL}>Recommendation</span>
-                          </th>
-                          {compared.map((trip) => {
-                            const v = verdicts.get(trip.id) ?? null;
-                            return (
-                              <td key={trip.id} className="border-l border-navy/10 bg-white p-4">
-                                {v ? (
-                                  <span className="inline-block rounded-xl bg-gradient-to-br from-navy-950 to-navy px-3 py-1.5 font-display text-sm font-semibold text-slate-50">
-                                    {verdictHeadline(v)}
-                                  </span>
-                                ) : (
-                                  dash
-                                )}
-                              </td>
-                            );
-                          })}
-                          {slot}
-                        </tr>
-                        <tr className="border-t border-navy/10 align-top">
-                          <th scope="row" className="sticky left-0 z-10 bg-navy-100 p-4 font-normal">
-                            <span className={LABEL}>Value per point</span>
-                          </th>
-                          {compared.map((trip, i) => {
-                            const option = verdicts.get(trip.id)?.bestOption;
-                            const best = bestRatio !== null && ratios[i] === bestRatio;
-                            return (
-                              <td key={trip.id} className="border-l border-navy/10 bg-white p-4">
-                                {option?.cppCents != null ? (
-                                  <>
-                                    <span className={`font-mono text-base ${best ? 'font-semibold text-teal' : 'text-navy-950'}`}>{formatCents(option.cppCents)}</span>
-                                    <span className="block text-xs text-navy-950/50">
-                                      {Number.isFinite(option.benchmarkRatio) ? `${option.benchmarkRatio.toFixed(2)}× their usual value` : ''}
-                                    </span>
-                                  </>
-                                ) : (
-                                  dash
-                                )}
-                              </td>
-                            );
-                          })}
-                          {slot}
-                        </tr>
-                        {ROWS.map((row) => (
-                          <tr key={row.label} className="border-t border-navy/10 align-top">
-                            <th scope="row" className="sticky left-0 z-10 bg-navy-100 p-4 font-normal">
-                              <span className={LABEL}>{row.label}</span>
-                            </th>
-                            {compared.map((trip) => (
-                              <td key={trip.id} className="border-l border-navy/10 bg-white p-4 text-navy-950">
-                                {row.value(trip, verdicts.get(trip.id) ?? null)}
-                              </td>
-                            ))}
-                            {slot}
-                          </tr>
-                        ))}
-                        <tr className="border-t border-navy/10">
-                          <th scope="row" className="sticky left-0 z-10 bg-navy-100 p-4 font-normal">
-                            <span className="sr-only">Actions</span>
-                          </th>
-                          {compared.map((trip) => (
-                            <td key={trip.id} className="border-l border-navy/10 bg-white p-4 pt-2">
-                              <button type="button" onClick={() => openTrip(trip)} className={`rounded-full px-3 text-sm font-medium text-navy hover:bg-navy/5 ${TAP_TARGET} ${FOCUS_RING} -ml-3`}>
-                                Open in Check a trip
-                              </button>
-                            </td>
-                          ))}
-                          {slot}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="border-t border-navy/10 bg-white px-4 py-3 text-xs text-navy-950/50">
-                    Worked out with your current cards, balances and cash position, so a trip saved
-                    weeks ago reflects today’s numbers.
-                  </p>
-                </div>
+                <TripComparison trips={compared} verdicts={verdicts} dragOver={dragOver} />
               )}
             </section>
           </>

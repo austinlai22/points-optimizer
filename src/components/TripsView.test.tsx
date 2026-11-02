@@ -64,7 +64,7 @@ describe('comparing saved trips', () => {
     visit('/trips');
     fireEvent.click(within(card('Lisbon')).getByText('$900'));
     expect(screen.getByRole('checkbox', { name: 'Compare Lisbon' })).toBeChecked();
-    expect(compareSection().getByRole('columnheader', { name: /Lisbon/ })).toBeInTheDocument();
+    expect(compareSection().getByRole('button', { name: 'Remove Lisbon from comparison' })).toBeInTheDocument();
 
     fireEvent.click(card('Lisbon'));
     expect(screen.getByRole('checkbox', { name: 'Compare Lisbon' })).not.toBeChecked();
@@ -103,13 +103,33 @@ describe('comparing saved trips', () => {
     for (let i = 0; i < MAX_COMPARE; i++) saveTrip(`Trip ${i}`, trip(500 + i * 100));
     visit('/trips');
     for (let i = 0; i < MAX_COMPARE; i++) fireEvent.click(card(`Trip ${i}`));
-    const table = compareSection().getByRole('table');
-    expect(within(table).getAllByRole('columnheader')).toHaveLength(MAX_COMPARE + 1);
-    expect(within(table).getAllByText('Pay cash').length).toBeGreaterThan(0);
+    expect(compareSection().getAllByRole('button', { name: /^Remove .* from comparison$/ })).toHaveLength(MAX_COMPARE);
+    expect(compareSection().queryByText(/drag or click a trip to add it/i)).toBeNull();
+    expect(compareSection().getAllByText('Pay cash').length).toBeGreaterThan(0);
 
     fireEvent.click(card('Lisbon'));
     expect(screen.getByRole('checkbox', { name: 'Compare Lisbon' })).not.toBeChecked();
     expect(screen.getByRole('status')).toHaveTextContent(`up to ${MAX_COMPARE} trips`);
+  });
+
+  it('marks where each trip beats the others', () => {
+    visit('/trips');
+    fireEvent.click(card('Lisbon'));
+    fireEvent.click(card('Tokyo'));
+    const lisbon = compareSection().getByText('Lowest cash price').closest('div')!;
+    expect(lisbon).toHaveTextContent('$900');
+    // Both book in Chase Travel at the same rate, so neither wins on value.
+    expect(compareSection().queryByText('Highest value per point')).toBeNull();
+    expect(compareSection().getByText('Fewest points')).toBeInTheDocument();
+    expect(compareSection().getByText('Wins on 2 of 3')).toBeInTheDocument();
+  });
+
+  it('shows what points would get even when the recommendation is to pay cash', () => {
+    visit('/trips');
+    fireEvent.click(card('Lisbon'));
+    expect(compareSection().getByText('Pay cash')).toBeInTheDocument();
+    expect(compareSection().getByText('Book in Chase Travel')).toBeInTheDocument();
+    expect(compareSection().getByText('1¢')).toBeInTheDocument();
   });
 
   it('opens a saved trip back in Check a trip', () => {
