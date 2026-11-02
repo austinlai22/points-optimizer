@@ -7,7 +7,7 @@ import type { CashInputValues, ChaseInputValues } from '../utils/verdictInputs';
 import { parseFiniteNumber } from '../utils/format';
 import { TRIP_STORAGE_KEY } from '../utils/verdictInputs';
 import { navigate } from './router';
-import type { CardConfig, TransferPartner, ValuationBasis } from '../types';
+import type { CardConfig, Issuer, TransferPartner, ValuationBasis } from '../types';
 
 const transferPartners = transferPartnersData as TransferPartner[];
 
@@ -161,17 +161,46 @@ function sanitizeSnapshot(stored: unknown): TripSnapshot | null {
   };
 }
 
+export interface EnteredValue {
+  cppCents: number;
+  title: string;
+  detail: string;
+  // Bank points needed, or the partner's own points when perPartnerPoint.
+  pointsUsed: number;
+  // True when the bank behind the transfer isn't known and banks transfer to
+  // this partner at different ratios, so the value is per partner point (a
+  // Hilton point, say) rather than per bank point, and can't be ranked
+  // against other trips.
+  perPartnerPoint: boolean;
+  // The partner's name, for "per Hilton Honors point".
+  unit: string | null;
+}
+
 // Value per point from the trip's own prices, for when no card can produce an
-// option: the award (less its taxes) over its points, or the cash price over
-// the Chase Travel price. The higher of the two.
-export function valueFromInputs(trip: TripInputs): { cppCents: number; title: string; detail: string; pointsUsed: number } | null {
-  const candidates = [];
-  if (trip.selectedPartnerId && trip.pointsRequired > 0) {
+// option: the award (less its taxes) over the bank points it takes, or the
+// cash price over the Chase Travel price. The higher of the two.
+//
+// An award is priced in the partner's points, so it's converted with the
+// transfer ratio: the best one among the banks you hold, or the one every
+// bank shares. Hilton at 2 points per Amex point means a 60,000-point award
+// takes 30,000 Amex points.
+export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): EnteredValue | null {
+  const candidates: EnteredValue[] = [];
+  const partner = transferPartners.find((p) => p.id === trip.selectedPartnerId);
+  if (partner && trip.pointsRequired > 0) {
+    const ratios = Object.entries(partner.ratiosByIssuer) as [Issuer, number][];
+    const held = ratios.filter(([issuer]) => heldIssuers.includes(issuer)).map(([, r]) => r);
+    const all = [...new Set(ratios.map(([, r]) => r))];
+    const ratio = held.length > 0 ? Math.max(...held) : all.length === 1 ? all[0] : null;
+    const valueBought = trip.tripCashPrice - trip.awardCashFees;
+    const points = ratio ? Math.ceil(trip.pointsRequired / ratio) : trip.pointsRequired;
     candidates.push({
-      cppCents: ((trip.tripCashPrice - trip.awardCashFees) * 100) / trip.pointsRequired,
-      title: `Transfer to ${partnerName(trip.selectedPartnerId) ?? 'partner'}`,
+      cppCents: (valueBought * 100) / points,
+      title: `Transfer to ${partner.name}`,
       detail: 'award price you entered',
-      pointsUsed: trip.pointsRequired,
+      pointsUsed: points,
+      perPartnerPoint: ratio === null,
+      unit: ratio === null ? partner.name : null,
     });
   }
   if (trip.chaseTravelPoints > 0) {
@@ -180,9 +209,14 @@ export function valueFromInputs(trip: TripInputs): { cppCents: number; title: st
       title: 'Book in Chase Travel',
       detail: 'price you entered',
       pointsUsed: trip.chaseTravelPoints,
+      perPartnerPoint: false,
+      unit: null,
     });
   }
-  return candidates.sort((a, b) => b.cppCents - a.cppCents)[0] ?? null;
+  // A per-partner-point figure can't be compared with a per-bank-point one,
+  // so it's only the answer when it's the only one.
+  const comparable = candidates.filter((c) => !c.perPartnerPoint);
+  return (comparable.length > 0 ? comparable : candidates).sort((a, b) => b.cppCents - a.cppCents)[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -315,7 +349,20 @@ export function clearCompare() {
   write(COMPARE_KEY, []);
 }
 
-// Loads a saved trip back into Check a trip.
+export const sameTripInputs = (a: TripInputs, b: TripInputs) =>
+  (Object.keys(a) as (keyof TripInputs)[]).every((key) => a[key] === b[key]);
+
+// What's in Check a trip now, if opening `trip` would lose it: a trip with a
+// price that isn't saved and isn't the one being opened.
+export function unsavedCurrentTrip(trip: SavedTrip): TripInputs | null {
+  const current = read(TRIP_STORAGE_KEY, sanitizeTripInputs, DEFAULT_TRIP_INPUTS);
+  if (!(current.tripCashPrice > 0) || sameTripInputs(current, trip.inputs)) return null;
+  const saved = read(SAVED_TRIPS_KEY, sanitizeSavedTrips, []);
+  return saved.some((t) => sameTripInputs(t.inputs, current)) ? null : current;
+}
+
+// Loads a saved trip into Check a trip, replacing what's there. Check
+// unsavedCurrentTrip first.
 export function openTrip(trip: SavedTrip) {
   try {
     localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trip.inputs));

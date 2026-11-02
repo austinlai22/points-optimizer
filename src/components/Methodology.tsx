@@ -70,7 +70,8 @@ export function Methodology() {
             than {strain.min_months_of_buffer} month of your usual spending would remain, or if the
             trip would cost more than {strain.negative_leftover_max_share_of_cash * 100}% of your
             cash while your spending exceeds your income. Both thresholds are this app's own rules
-            of thumb.
+            of thumb. This check needs your cash position; without it, paying cash is assumed not to
+            leave you stretched, so the recommendation rests on value alone.
           </p>
           <p>
             Four rules then decide the recommendation. If no points option reaches its usual value,

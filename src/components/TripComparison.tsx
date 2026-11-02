@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { formatCents, verdictHeadline } from '../lib/verdict';
 import type { VerdictResult } from '../lib/verdict/types';
-import { MAX_COMPARE, describePointsOption, openTrip, removeFromCompare, valueFromInputs, type SavedTrip } from '../lib/trips';
+import type { Issuer } from '../types';
+import { MAX_COMPARE, describePointsOption, removeFromCompare, valueFromInputs, type SavedTrip } from '../lib/trips';
 import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 import { formatPoints, formatUSD } from '../utils/format';
 
@@ -17,6 +18,9 @@ interface ColumnOption {
   // are known.
   benchmarkRatio: number | null;
   pointsUsed: number;
+  // Per partner point rather than per bank point: shown, but not ranked.
+  perPartnerPoint?: boolean;
+  unit?: string | null;
 }
 
 interface Column {
@@ -32,7 +36,7 @@ interface Column {
 // the one saved with the trip; else value from the trip's own prices. The
 // verdict's own bestOption is empty when it says to pay cash, so the best
 // option is taken from the full list, to show what points would get.
-function columnFor(trip: SavedTrip, verdict: VerdictResult | null): Column {
+function columnFor(trip: SavedTrip, verdict: VerdictResult | null, heldIssuers: Issuer[]): Column {
   const best = verdict?.options[0];
   if (verdict && best) {
     return {
@@ -48,7 +52,7 @@ function columnFor(trip: SavedTrip, verdict: VerdictResult | null): Column {
     };
   }
   if (trip.snapshot?.option) return { trip, headline: trip.snapshot.headline, option: trip.snapshot.option, source: 'saved' };
-  const entered = valueFromInputs(trip.inputs);
+  const entered = valueFromInputs(trip.inputs, heldIssuers);
   const headline = verdict ? verdictHeadline(verdict) : (trip.snapshot?.headline ?? null);
   if (entered) return { trip, headline, option: { ...entered, benchmarkRatio: null }, source: 'entered' };
   return { trip, headline, option: null, source: 'none' };
@@ -87,22 +91,30 @@ const muted = <span className="text-navy-950/30">—</span>;
 export function TripComparison({
   trips,
   verdicts,
+  heldIssuers,
   dragOver,
+  onOpen,
 }: {
   trips: SavedTrip[];
   verdicts: Map<string, VerdictResult | null>;
+  heldIssuers: Issuer[];
   dragOver: boolean;
+  onOpen: (trip: SavedTrip) => void;
 }) {
-  const columns = trips.map((trip) => columnFor(trip, verdicts.get(trip.id) ?? null));
+  const columns = trips.map((trip) => columnFor(trip, verdicts.get(trip.id) ?? null, heldIssuers));
 
   // Value is judged against each currency's usual value when every column
   // knows it, so different banks' points compare fairly; otherwise on the
   // cents per point shown.
   const byRatio = columns.every((c) => c.option?.benchmarkRatio != null);
   const wins: Record<WinKey, Set<number>> = {
-    value: winners(columns.map((c) => (byRatio ? (c.option?.benchmarkRatio ?? null) : (c.option?.cppCents ?? null)))),
+    value: winners(
+      columns.map((c) =>
+        c.option?.perPartnerPoint ? null : byRatio ? (c.option?.benchmarkRatio ?? null) : (c.option?.cppCents ?? null),
+      ),
+    ),
     price: winners(columns.map((c) => -c.trip.inputs.tripCashPrice)),
-    points: winners(columns.map((c) => (c.option && c.option.pointsUsed > 0 ? -c.option.pointsUsed : null))),
+    points: winners(columns.map((c) => (c.option && c.option.pointsUsed > 0 && !c.option.perPartnerPoint ? -c.option.pointsUsed : null))),
   };
   const winsFor = (i: number) => (Object.keys(wins) as WinKey[]).filter((k) => wins[k].has(i));
 
@@ -146,7 +158,7 @@ export function TripComparison({
                 </svg>
               </button>
               <p className="mt-6 font-display text-xl font-semibold leading-tight tracking-tight text-navy-950">{c.trip.name}</p>
-              <button type="button" onClick={() => openTrip(c.trip)} className={`mt-1 rounded-full px-3 text-sm font-medium text-navy hover:underline ${FOCUS_RING}`}>
+              <button type="button" onClick={() => onOpen(c.trip)} className={`mt-1 rounded-full px-3 text-sm font-medium text-navy hover:underline ${FOCUS_RING}`}>
                 Open ›
               </button>
               <p className="mt-2 min-h-5 text-xs font-medium text-teal">
@@ -189,7 +201,9 @@ export function TripComparison({
                 <span className="mt-1 text-xs text-navy-950/50">
                   {c.option.benchmarkRatio != null
                     ? `${c.option.benchmarkRatio.toFixed(2)}× the points’ usual value`
-                    : 'from the prices you entered'}
+                    : c.option.perPartnerPoint
+                      ? `per ${c.option.unit} point, from the prices you entered`
+                      : 'from the prices you entered'}
                 </span>
                 {wins.value.has(i) && <WinMark>{WIN_LABELS.value}</WinMark>}
               </>
@@ -216,7 +230,7 @@ export function TripComparison({
                 <span className="mt-1 text-xs text-navy-950/50">{detail}</span>
                 {c.option.pointsUsed > 0 && (
                   <span className={`mt-2 font-mono text-sm ${wins.points.has(i) ? 'text-teal' : 'text-navy-950/70'}`}>
-                    {formatPoints(c.option.pointsUsed)} pts
+                    {formatPoints(c.option.pointsUsed)} {c.option.perPartnerPoint ? 'partner pts' : 'pts'}
                   </span>
                 )}
                 {wins.points.has(i) && <WinMark>{WIN_LABELS.points}</WinMark>}

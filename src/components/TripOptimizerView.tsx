@@ -273,15 +273,18 @@ export function TripOptimizerView() {
   // Pilot counts: a verdict counts once it has stayed put for a moment, so
   // typing "1", "12", "120" into a field isn't three verdicts.
   const verdictKey = verdict ? verdict.verdict : null;
+  const cashGiven = verdict?.cashConsidered ?? false;
   const pastedUsed = verdict?.chaseTravel?.pastedPricePoints != null;
   useEffect(() => {
     if (!verdictKey) return;
     const timer = setTimeout(() => {
-      track({ event: 'trip_check', verdict: verdictKey });
+      // Whether a cash position was given, so weeks before it became optional
+      // (when every check had one) can still be compared like for like.
+      track({ event: 'trip_check', verdict: verdictKey, cash: cashGiven });
       if (pastedUsed) track({ event: 'price_check' });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [verdictKey, pastedUsed]);
+  }, [verdictKey, cashGiven, pastedUsed]);
 
   const ranks = useMemo(() => computeDenseRanks(paths.map((p) => p.cost)), [paths]);
   const countByRank = useMemo(

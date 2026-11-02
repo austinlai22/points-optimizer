@@ -9,8 +9,12 @@ import type { Store } from './store';
 // Everything is keyed by UTC day, so any week is just seven days added up.
 
 export type UsageEvent =
-  | { name: 'trip_check'; verdict: Verdict }
+  // cash: whether a cash position was given. Before it became optional every
+  // check had one, so "with cash" compares like for like across that change.
+  | { name: 'trip_check'; verdict: Verdict; cash: boolean }
   | { name: 'price_check' }
+  | { name: 'trip_saved' }
+  | { name: 'trips_compared' }
   | { name: 'price_report' }
   | { name: 'price_report_rejected' }
   | { name: 'agent_call'; tool: string };
@@ -49,6 +53,7 @@ export async function recordEvent(
   const day = utcDate(now);
   const countsKey = `stats:day:${day}`;
   await store.hincrby(countsKey, fieldFor(event), 1);
+  if (event.name === 'trip_check' && event.cash) await store.hincrby(countsKey, 'trip_check_with_cash', 1);
   await store.expire(countsKey, COUNTS_TTL);
 
   if (event.name !== 'trip_check' || !anonId) return;

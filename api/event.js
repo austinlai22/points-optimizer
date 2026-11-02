@@ -22,6 +22,7 @@ async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date(
 	const day = utcDate(now);
 	const countsKey = `stats:day:${day}`;
 	await store.hincrby(countsKey, fieldFor(event), 1);
+	if (event.name === "trip_check" && event.cash) await store.hincrby(countsKey, "trip_check_with_cash", 1);
 	await store.expire(countsKey, COUNTS_TTL);
 	if (event.name !== "trip_check" || !anonId) return;
 	const activeKey = `stats:active:${day}`;
@@ -39,20 +40,22 @@ async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date(
 const ANON_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function parseEvent(body) {
 	if (typeof body !== "object" || body === null) return null;
-	const { event, verdict, id } = body;
+	const { event, verdict, id, cash } = body;
 	if (event === "trip_check") {
 		if (typeof id !== "string" || !ANON_ID.test(id)) return null;
 		if (!VERDICTS.includes(verdict)) return null;
+		if (cash !== void 0 && typeof cash !== "boolean") return null;
 		return {
 			event: {
 				name: "trip_check",
-				verdict
+				verdict,
+				cash: cash ?? true
 			},
 			id
 		};
 	}
-	if (event === "price_check") return {
-		event: { name: "price_check" },
+	if (event === "price_check" || event === "trip_saved" || event === "trips_compared") return {
+		event: { name: event },
 		id: null
 	};
 	return null;

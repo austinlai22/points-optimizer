@@ -11,15 +11,19 @@ import {
   deleteTrip,
   evaluateTrip,
   openTrip,
+  saveTrip,
+  unsavedCurrentTrip,
   partnerName,
   removeFromCompare,
   useCompareIds,
   useSavedTrips,
   type SavedTrip,
+  type TripInputs,
 } from '../lib/trips';
 import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 import { formatPoints, formatUSD } from '../utils/format';
 import { usePersistentState } from '../utils/usePersistentState';
+import { track } from '../utils/analytics';
 import {
   CASH_STORAGE_KEY,
   CHASE_STORAGE_KEY,
@@ -72,11 +76,12 @@ interface TripCardProps {
   verdict: VerdictResult | null;
   selected: boolean;
   onToggle: () => void;
+  onOpen: () => void;
 }
 
 // A saved trip. Clicking anywhere on it (other than its buttons) adds it to or
 // removes it from the comparison; it can also be dragged there.
-function TripCard({ trip, verdict, selected, onToggle }: TripCardProps) {
+function TripCard({ trip, verdict, selected, onToggle, onOpen }: TripCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { inputs } = trip;
   const program = inputs.selectedPartnerId ? partnerName(inputs.selectedPartnerId) : null;
@@ -156,7 +161,7 @@ function TripCard({ trip, verdict, selected, onToggle }: TripCardProps) {
           </>
         ) : (
           <>
-            <button type="button" onClick={() => openTrip(trip)} className={`mr-auto inline-flex items-center gap-1.5 rounded-full px-3 font-medium text-navy hover:bg-navy/5 ${TAP_TARGET} ${FOCUS_RING}`}>
+            <button type="button" onClick={onOpen} className={`mr-auto inline-flex items-center gap-1.5 rounded-full px-3 font-medium text-navy hover:bg-navy/5 ${TAP_TARGET} ${FOCUS_RING}`}>
               <OpenIcon /> Open
             </button>
             <button type="button" onClick={() => setConfirmingDelete(true)} className={`inline-flex items-center gap-1.5 rounded-full px-3 font-medium text-navy-950/50 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}>
@@ -177,8 +182,25 @@ export function TripsView() {
   const [chaseInputs] = usePersistentState(CHASE_STORAGE_KEY, EMPTY_CHASE_INPUTS, sanitizeChaseInputs);
   const [dragOver, setDragOver] = useState(false);
   const [notice, setNotice] = useState('');
+  // A trip waiting to be opened while Check a trip holds an unsaved one.
+  const [pendingOpen, setPendingOpen] = useState<{ trip: SavedTrip; current: TripInputs } | null>(null);
+
+  const requestOpen = (trip: SavedTrip) => {
+    const current = unsavedCurrentTrip(trip);
+    if (current) setPendingOpen({ trip, current });
+    else openTrip(trip);
+  };
+  const saveCurrentThenOpen = () => {
+    if (!pendingOpen) return;
+    const { trip, current } = pendingOpen;
+    const program = current.selectedPartnerId ? partnerName(current.selectedPartnerId) : null;
+    saveTrip(program ? `${program}, ${formatUSD(current.tripCashPrice)}` : `Trip, ${formatUSD(current.tripCashPrice)}`, current);
+    track({ event: 'trip_saved' });
+    openTrip(trip);
+  };
 
   const ownedCards = useMemo(() => cards.filter((card) => ownership[card.id]), [ownership]);
+  const heldIssuers = useMemo(() => [...new Set(ownedCards.filter((card) => card.transferEligible).map((card) => card.issuer))], [ownedCards]);
   const verdicts = useMemo(
     () =>
       new Map(
@@ -190,7 +212,12 @@ export function TripsView() {
   const cashMissing = trips.some((t) => verdicts.get(t.id)?.cashConsidered === false);
 
   const add = (id: string) => {
-    if (addToCompare(id)) setNotice('');
+    const before = compareIds.length;
+    if (addToCompare(id)) {
+      setNotice('');
+      // Counted once per comparison: when it reaches two trips.
+      if (before === 1 && !compareIds.includes(id)) track({ event: 'trips_compared' });
+    }
     else setNotice(`You can compare up to ${MAX_COMPARE} trips. Remove one to add another.`);
   };
   const toggle = (id: string) => {
@@ -264,6 +291,7 @@ export function TripsView() {
                     verdict={verdicts.get(trip.id) ?? null}
                     selected={compareIds.includes(trip.id)}
                     onToggle={() => toggle(trip.id)}
+                    onOpen={() => requestOpen(trip)}
                   />
                 ))}
               </ul>
@@ -306,12 +334,39 @@ export function TripsView() {
                   </p>
                 </div>
               ) : (
-                <TripComparison trips={compared} verdicts={verdicts} dragOver={dragOver} />
+                <TripComparison trips={compared} verdicts={verdicts} heldIssuers={heldIssuers} dragOver={dragOver} onOpen={requestOpen} />
               )}
             </section>
           </>
         )}
       </div>
+
+      {pendingOpen && (
+        <div
+          role="alertdialog"
+          aria-labelledby="replace-heading"
+          onKeyDown={(event) => event.key === 'Escape' && setPendingOpen(null)}
+          className="fixed inset-x-4 bottom-5 z-40 mx-auto max-w-xl rounded-3xl bg-navy p-5 text-slate-50 shadow-control sm:inset-x-6"
+        >
+          <p id="replace-heading" className="font-display text-base font-medium">
+            Replace the trip in Check a trip?
+          </p>
+          <p className="mt-1 text-sm text-slate-50/70">
+            It has an unsaved {formatUSD(pendingOpen.current.tripCashPrice)} trip. Opening “{pendingOpen.trip.name}” will replace it.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" autoFocus onClick={saveCurrentThenOpen} className={`rounded-full bg-slate-50 px-4 text-sm font-semibold text-navy ${TAP_TARGET} ${FOCUS_RING}`}>
+              Save it first
+            </button>
+            <button type="button" onClick={() => openTrip(pendingOpen.trip)} className={`rounded-full border border-slate-50/30 px-4 text-sm font-medium ${TAP_TARGET} ${FOCUS_RING}`}>
+              Replace it
+            </button>
+            <button type="button" onClick={() => setPendingOpen(null)} className={`rounded-full px-4 text-sm font-medium text-slate-50/70 hover:text-slate-50 ${TAP_TARGET} ${FOCUS_RING}`}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

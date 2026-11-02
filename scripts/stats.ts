@@ -24,13 +24,17 @@ if (args.includes('--csv')) {
     rows.map((r) => ({
       'Week of': r.week_starting,
       'Trip checks': r.trip_checks,
+      'With cash': r.trip_checks_with_cash,
       'Active users': r.active_users,
       Returning: r.returning_users,
       'Price checks': r.price_checks,
       'Price reports': r.price_reports,
       Rejected: r.price_reports_rejected,
       'Agent calls': r.agent_calls,
+      'Trips saved': r.trips_saved,
+      Compared: r.trips_compared,
     })),
   );
   console.log('Visitors: see Analytics on the Vercel dashboard. Add --csv for every column.');
+  console.log('"With cash" counts checks that included a cash position. Before it became optional, every check did.');
 }

@@ -55,6 +55,11 @@ export function Privacy() {
             Trip links you copy contain the trip's price and award details. They never contain your
             balances or cash figures.
           </p>
+          <p>
+            Trips you save, including the names you give them and the recommendation each got, are
+            kept the same way: in this browser only, never sent anywhere. Deleting a trip removes
+            it.
+          </p>
         </Block>
 
         <Block title="Chase Travel price reports (optional)">
@@ -83,9 +88,10 @@ export function Privacy() {
         <Block title="Anonymous usage counts">
           <p>
             To learn whether PointCompass is useful, it counts page views (through Vercel Web
-            Analytics), recommendations shown and which kind they were, Chase Travel price checks,
-            shared price reports, and calls from AI assistants using the agent tool. None of these
-            include anything you typed.
+            Analytics), recommendations shown, which kind they were and whether a cash position was
+            given, Chase Travel price checks, trips saved, comparisons made, shared price reports,
+            and calls from AI assistants using the agent tool. None of these include anything you
+            typed, and a saved trip's name or details are never counted or sent.
           </p>
           <p>
             Recommendations also carry a random identifier your browser creates, so we can count how

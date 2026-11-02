@@ -9,19 +9,22 @@ export interface EventDeps {
 // The web app's anonymous id: a random UUID made in the browser, nothing else.
 const ANON_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Accepts only the two events the browser sends, so nothing else can be
+// Accepts only the events the browser sends, so nothing else can be
 // written through here. Reading the counts is a local script (npm run stats),
 // not an endpoint, so there is no stats page to protect.
 function parseEvent(body: unknown): { event: UsageEvent; id: string | null } | null {
   if (typeof body !== 'object' || body === null) return null;
-  const { event, verdict, id } = body as Record<string, unknown>;
+  const { event, verdict, id, cash } = body as Record<string, unknown>;
   if (event === 'trip_check') {
     if (typeof id !== 'string' || !ANON_ID.test(id)) return null;
     if (!VERDICTS.includes(verdict as Verdict)) return null;
-    return { event: { name: 'trip_check', verdict: verdict as Verdict }, id };
+    // A page loaded before cash became optional sends no flag; back then
+    // every check had a cash position.
+    if (cash !== undefined && typeof cash !== 'boolean') return null;
+    return { event: { name: 'trip_check', verdict: verdict as Verdict, cash: cash ?? true }, id };
   }
-  // A price check is counted without any id.
-  if (event === 'price_check') return { event: { name: 'price_check' }, id: null };
+  // The rest are counted without any id.
+  if (event === 'price_check' || event === 'trip_saved' || event === 'trips_compared') return { event: { name: event }, id: null };
   return null;
 }
 

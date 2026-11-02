@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { linkHandler } from '../lib/router';
-import { MAX_SAVED_TRIPS, saveTrip, useSavedTrips, type TripInputs } from '../lib/trips';
+import { MAX_SAVED_TRIPS, sameTripInputs, saveTrip, useSavedTrips, type TripInputs } from '../lib/trips';
 import type { VerdictResult } from '../lib/verdict/types';
 import { FIELD, FOCUS_RING, TAP_TARGET } from '../styles/constants';
+import { track } from '../utils/analytics';
 
 export function HeartIcon({ filled = false }: { filled?: boolean }) {
   return (
@@ -12,22 +13,22 @@ export function HeartIcon({ filled = false }: { filled?: boolean }) {
   );
 }
 
-const sameInputs = (a: TripInputs, b: TripInputs) =>
-  (Object.keys(a) as (keyof TripInputs)[]).every((key) => a[key] === b[key]);
-
 // Keep this trip for later, in this browser only. Separate from sharing a
 // price report: nothing here leaves the device.
 export function SaveTripControl({ inputs, verdict, defaultName }: { inputs: TripInputs; verdict: VerdictResult | null; defaultName: string }) {
   const trips = useSavedTrips();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
-  const existing = trips.find((t) => sameInputs(t.inputs, inputs));
+  const existing = trips.find((t) => sameTripInputs(t.inputs, inputs));
   const full = trips.length >= MAX_SAVED_TRIPS;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     // The recommendation is kept with the trip, to fall back on later.
-    if (saveTrip(name || defaultName, inputs, verdict)) setNaming(false);
+    if (saveTrip(name || defaultName, inputs, verdict)) {
+      track({ event: 'trip_saved' });
+      setNaming(false);
+    }
   };
 
   const viewLink = (

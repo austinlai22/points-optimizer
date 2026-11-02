@@ -2,7 +2,8 @@ import { inject } from '@vercel/analytics';
 import type { Verdict } from '../lib/verdict/types';
 
 // Usage counts (v3 spec §7b), and nothing more: an event name, which verdict it
-// was, and for trip checks a random id this browser made up. No prices,
+// was and whether a cash position was given, and for trip checks a random id
+// this browser made up. No prices,
 // balances or cash figures ever leave the page.
 //
 // Nothing is sent outside production, under Do Not Track, from a browser
@@ -13,7 +14,12 @@ const ID_KEY = 'cco:anonId';
 const INTERNAL_KEY = 'cco:internal';
 const OPT_OUT_KEY = 'cco:analyticsOptOut';
 
-type WebEvent = { event: 'trip_check'; verdict: Verdict } | { event: 'price_check' };
+type WebEvent =
+  | { event: 'trip_check'; verdict: Verdict; cash: boolean }
+  | { event: 'price_check' }
+  // Bare counts: no trip details, no id.
+  | { event: 'trip_saved' }
+  | { event: 'trips_compared' };
 
 function readFlag(key: string): boolean {
   try {
@@ -64,7 +70,7 @@ function anonymousId(): string | null {
 export function track(event: WebEvent): void {
   if (!import.meta.env.PROD || countingOff()) return;
   // Only trip checks carry the id; it's what lets active and returning users
-  // be counted. A price check is a bare count.
+  // be counted. Everything else is a bare count.
   let body: Record<string, unknown> = { ...event };
   if (event.event === 'trip_check') {
     const id = anonymousId();

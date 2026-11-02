@@ -31,12 +31,15 @@ function sumPrefix(counts: Record<string, number>, prefix: string): number {
 export interface WeekRow {
   week_starting: string;
   trip_checks: number;
+  trip_checks_with_cash: number;
   active_users: number;
   returning_users: number;
   price_checks: number;
   price_reports: number;
   price_reports_rejected: number;
   agent_calls: number;
+  trips_saved: number;
+  trips_compared: number;
   [detail: string]: string | number;
 }
 
@@ -48,12 +51,15 @@ export function toRows(weeks: PeriodStats[]): WeekRow[] {
     const row: WeekRow = {
       week_starting: w.from,
       trip_checks: sumPrefix(w.counts, 'trip_check:'),
+      trip_checks_with_cash: w.counts.trip_check_with_cash ?? 0,
       active_users: w.activeUsers,
       returning_users: w.returningUsers,
       price_checks: w.counts.price_check ?? 0,
       price_reports: w.counts.price_report ?? 0,
       price_reports_rejected: w.counts.price_report_rejected ?? 0,
       agent_calls: sumPrefix(w.counts, 'agent_call:'),
+      trips_saved: w.counts.trip_saved ?? 0,
+      trips_compared: w.counts.trips_compared ?? 0,
     };
     for (const verdict of VERDICTS) row[`trip_checks_${verdict}`] = w.counts[`trip_check:${verdict}`] ?? 0;
     for (const tool of tools) row[tool.replace('agent_call:', 'agent_calls_')] = w.counts[tool] ?? 0;

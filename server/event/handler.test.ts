@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { toRows } from '../admin';
 import { readPeriod, recordEvent } from '../analytics';
 import { createMemoryStore } from '../store';
 import { createEventHandler } from './handler';
@@ -19,16 +20,33 @@ describe('event endpoint', () => {
 
     const today = new Date().toISOString().slice(0, 10);
     const stats = await readPeriod(store, today, today);
-    expect(stats.counts).toEqual({ 'trip_check:TRANSFER_POINTS': 1, price_check: 1 });
+    // A check from a page loaded before the cash flag existed had cash.
+    expect(stats.counts).toEqual({ 'trip_check:TRANSFER_POINTS': 1, trip_check_with_cash: 1, price_check: 1 });
     expect(stats.activeUsers).toBe(1);
   });
 
-  it('refuses anything outside the two events the browser sends', async () => {
+  it('tells checks with a cash position from those without, and counts saves and comparisons bare', async () => {
+    const store = createMemoryStore();
+    const handler = createEventHandler({ store });
+    await post(handler, { event: 'trip_check', verdict: 'PAY_CASH', id: ID, cash: true });
+    await post(handler, { event: 'trip_check', verdict: 'PAY_CASH', id: ID, cash: false });
+    expect((await post(handler, { event: 'trip_saved' })).status).toBe(204);
+    expect((await post(handler, { event: 'trips_compared' })).status).toBe(204);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const stats = await readPeriod(store, today, today);
+    expect(stats.counts).toEqual({ 'trip_check:PAY_CASH': 2, trip_check_with_cash: 1, trip_saved: 1, trips_compared: 1 });
+    const rows = toRows([stats]);
+    expect(rows[0]).toMatchObject({ trip_checks: 2, trip_checks_with_cash: 1, trips_saved: 1, trips_compared: 1 });
+  });
+
+  it('refuses anything outside the events the browser sends', async () => {
     const store = createMemoryStore();
     const handler = createEventHandler({ store });
     for (const body of [
       { event: 'trip_check', verdict: 'SOMETHING', id: ID },
       { event: 'trip_check', verdict: 'PAY_CASH', id: 'not-a-uuid' },
+      { event: 'trip_check', verdict: 'PAY_CASH', id: ID, cash: 'yes' },
       { event: 'page_view', id: ID },
       { event: 'price_report' },
       900,
@@ -54,7 +72,7 @@ describe('weekly active and returning users', () => {
 
   it('counts distinct ids across a week, and returning ones only from their second day', async () => {
     const store = createMemoryStore();
-    const check = { name: 'trip_check', verdict: 'PAY_CASH' } as const;
+    const check = { name: 'trip_check', verdict: 'PAY_CASH', cash: true } as const;
     await recordEvent(store, check, ID, day('2026-10-19'));
     await recordEvent(store, check, ID, day('2026-10-19'));
     await recordEvent(store, check, OTHER, day('2026-10-20'));
@@ -69,7 +87,7 @@ describe('weekly active and returning users', () => {
 
   it('keeps per-id day lists only for a limited time', async () => {
     const store = createMemoryStore();
-    await recordEvent(store, { name: 'trip_check', verdict: 'PAY_CASH' }, ID, day('2026-10-19'));
+    await recordEvent(store, { name: 'trip_check', verdict: 'PAY_CASH', cash: true }, ID, day('2026-10-19'));
     expect(store.ttl(`stats:iddays:${ID}`)).toBe(120 * 24 * 60 * 60);
   });
 

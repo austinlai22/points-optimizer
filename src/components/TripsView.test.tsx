@@ -146,6 +146,31 @@ describe('comparing saved trips', () => {
     expect(compareSection().getByText('Transfer to World of Hyatt')).toBeInTheDocument();
   });
 
+  it('converts an award to bank points with the transfer ratio of a bank you hold', () => {
+    // Hilton is 2 points per Amex point: a 60,000-point award takes 30,000.
+    // With no balance the card produces no option, so the fallback is used.
+    localStorage.setItem('cco:ownership', JSON.stringify({ amexgold: true }));
+    localStorage.setItem('cco:balances', JSON.stringify({}));
+    saveTrip('Hilton stay', trip(600, { selectedPartnerId: 'hilton', pointsRequired: 60000 }));
+    visit('/trips');
+    fireEvent.click(card('Hilton stay'));
+    expect(compareSection().getByText('2¢')).toBeInTheDocument();
+    expect(compareSection().getByText('30,000 pts')).toBeInTheDocument();
+  });
+
+  it("shows value per partner point when banks' ratios differ and none is held, and doesn't rank it", () => {
+    localStorage.setItem('cco:ownership', JSON.stringify({}));
+    saveTrip('Hilton stay', trip(600, { selectedPartnerId: 'hilton', pointsRequired: 60000 }));
+    saveTrip('Hyatt stay', trip(600, { selectedPartnerId: 'hyatt', pointsRequired: 50000 }));
+    visit('/trips');
+    fireEvent.click(card('Hilton stay'));
+    fireEvent.click(card('Hyatt stay'));
+    expect(compareSection().getByText('1¢')).toBeInTheDocument();
+    expect(compareSection().getByText(/per Hilton Honors point/)).toBeInTheDocument();
+    expect(compareSection().getByText('60,000 partner pts')).toBeInTheDocument();
+    expect(compareSection().queryByText('Highest value per point')).toBeNull();
+  });
+
   it('falls back to the recommendation saved with the trip', () => {
     localStorage.setItem('cco:ownership', JSON.stringify({}));
     localStorage.setItem(
@@ -172,6 +197,28 @@ describe('comparing saved trips', () => {
     fireEvent.click(within(card('Tokyo')).getByRole('button', { name: 'Open' }));
     expect(window.location.pathname).toBe('/app');
     expect(screen.getByLabelText(/trip cash price/i)).toHaveValue(1800);
+  });
+
+  it('asks before replacing an unsaved trip in Check a trip, and can save it first', () => {
+    localStorage.setItem('cco:tripOptimizer', JSON.stringify(trip(450)));
+    visit('/trips');
+    fireEvent.click(within(card('Tokyo')).getByRole('button', { name: /open/i }));
+    const dialog = screen.getByRole('alertdialog', { name: /replace the trip/i });
+    expect(dialog).toHaveTextContent('unsaved $450 trip');
+    expect(window.location.pathname).toBe('/trips');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save it first' }));
+    expect(window.location.pathname).toBe('/app');
+    expect(screen.getByLabelText(/trip cash price/i)).toHaveValue(1800);
+    expect(JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY)!).map((t: { name: string }) => t.name)).toContain('Trip, $450');
+  });
+
+  it("doesn't ask when the trip in Check a trip is already saved", () => {
+    localStorage.setItem('cco:tripOptimizer', JSON.stringify(trip(900)));
+    visit('/trips');
+    fireEvent.click(within(card('Tokyo')).getByRole('button', { name: /open/i }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(window.location.pathname).toBe('/app');
   });
 
   it('keeps the comparison across visits', () => {

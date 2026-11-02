@@ -25450,6 +25450,7 @@ async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date(
 	const day = utcDate(now);
 	const countsKey = `stats:day:${day}`;
 	await store.hincrby(countsKey, fieldFor(event), 1);
+	if (event.name === "trip_check" && event.cash) await store.hincrby(countsKey, "trip_check_with_cash", 1);
 	await store.expire(countsKey, COUNTS_TTL);
 	if (event.name !== "trip_check" || !anonId) return;
 	const activeKey = `stats:active:${day}`;

@@ -17,8 +17,8 @@ describe('admin scripts', () => {
   it('reports every metric per week', async () => {
     const store = createMemoryStore();
     const id = '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e';
-    await recordEvent(store, { name: 'trip_check', verdict: 'PAY_CASH' }, id, at('2026-10-13'));
-    await recordEvent(store, { name: 'trip_check', verdict: 'TRANSFER_POINTS' }, id, at('2026-10-20'));
+    await recordEvent(store, { name: 'trip_check', verdict: 'PAY_CASH', cash: true }, id, at('2026-10-13'));
+    await recordEvent(store, { name: 'trip_check', verdict: 'TRANSFER_POINTS', cash: true }, id, at('2026-10-20'));
     await recordEvent(store, { name: 'price_check' }, null, at('2026-10-20'));
     await recordEvent(store, { name: 'price_report' }, null, at('2026-10-21'));
     await recordEvent(store, { name: 'agent_call', tool: 'compute_cents_per_point' }, null, at('2026-10-22'));
