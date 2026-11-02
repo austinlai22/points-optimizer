@@ -121,7 +121,25 @@ export function describePointsOption(option: PointsOption): { title: string; det
 // or a card since removed).
 export interface TripSnapshot {
   headline: string;
-  option: { title: string; detail: string; cppCents: number | null; benchmarkRatio: number | null; pointsUsed: number } | null;
+  option: {
+    title: string;
+    detail: string;
+    cppCents: number | null;
+    benchmarkRatio: number | null;
+    pointsUsed: number;
+    // Cash still due on top of the points, and what the points are usually
+    // worth in cents. Null in trips saved before these were kept.
+    cashFees: number | null;
+    benchmarkCents: number | null;
+  } | null;
+}
+
+// How much better off using points leaves you than paying cash, in dollars:
+// the cash price, less the cash still due, less what the points are usually
+// worth. The one figure that weighs points and cash together; value per point
+// alone can't say how much a booking saves overall.
+export function savingsVsCash(tripCashPrice: number, cashFees: number, pointsUsed: number, benchmarkCents: number): number {
+  return tripCashPrice - cashFees - (pointsUsed * benchmarkCents) / 100;
 }
 
 export function snapshotOf(verdict: VerdictResult | null): TripSnapshot | null {
@@ -135,6 +153,8 @@ export function snapshotOf(verdict: VerdictResult | null): TripSnapshot | null {
           cppCents: best.cppCents,
           benchmarkRatio: Number.isFinite(best.benchmarkRatio) ? best.benchmarkRatio : null,
           pointsUsed: best.pointsUsed,
+          cashFees: best.cashFees,
+          benchmarkCents: best.benchmarkCents,
         }
       : null,
   };
@@ -156,6 +176,8 @@ function sanitizeSnapshot(stored: unknown): TripSnapshot | null {
             cppCents: num(o.cppCents),
             benchmarkRatio: num(o.benchmarkRatio),
             pointsUsed: num(o.pointsUsed) ?? 0,
+            cashFees: num(o.cashFees),
+            benchmarkCents: num(o.benchmarkCents),
           }
         : null,
   };
@@ -174,6 +196,8 @@ export interface EnteredValue {
   perPartnerPoint: boolean;
   // The partner's name, for "per Hilton Honors point".
   unit: string | null;
+  // Cash still due on top of the points: the award's taxes and fees.
+  cashFees: number;
 }
 
 // Value per point from the trip's own prices, for when no card can produce an
@@ -201,6 +225,7 @@ export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): Entere
       pointsUsed: points,
       perPartnerPoint: ratio === null,
       unit: ratio === null ? partner.name : null,
+      cashFees: trip.awardCashFees,
     });
   }
   if (trip.chaseTravelPoints > 0) {
@@ -211,6 +236,7 @@ export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): Entere
       pointsUsed: trip.chaseTravelPoints,
       perPartnerPoint: false,
       unit: null,
+      cashFees: 0,
     });
   }
   // A per-partner-point figure can't be compared with a per-bank-point one,

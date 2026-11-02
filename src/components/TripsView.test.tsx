@@ -130,7 +130,30 @@ describe('comparing saved trips', () => {
     // Both book in Chase Travel at the same rate, so neither wins on value.
     expect(compareSection().queryByText('Highest value per point')).toBeNull();
     expect(compareSection().getByText('Fewest points')).toBeInTheDocument();
-    expect(compareSection().getByText('Wins on 2 of 3')).toBeInTheDocument();
+    // Both save $0 at 1¢ a point in Chase Travel, so nobody wins on that either.
+    expect(compareSection().queryByText('Most saved')).toBeNull();
+    expect(compareSection().getByText('Wins on 2 of 4')).toBeInTheDocument();
+  });
+
+  it('weighs the cash still due: dollars saved, and the cash shown beside the points', () => {
+    // Two ways to fly the same $702 trip.
+    saveTrip('Option 1', trip(702, { selectedPartnerId: 'united', pointsRequired: 25000, awardCashFees: 121.5 }));
+    saveTrip('Option 2', trip(702, { selectedPartnerId: 'united', pointsRequired: 35000, awardCashFees: 51.2 }));
+    visit('/trips');
+    fireEvent.click(card('Option 1'));
+    fireEvent.click(card('Option 2'));
+    const section = compareSection();
+
+    // Value per point already nets out the cash: (702 - 121.50) / 25,000.
+    expect(section.getByText('2.32¢')).toBeInTheDocument();
+    expect(section.getByText('1.86¢')).toBeInTheDocument();
+    expect(section.getByText('25,000 pts', { exact: false })).toHaveTextContent('25,000 pts + $121.50');
+    expect(section.getByText('35,000 pts', { exact: false })).toHaveTextContent('35,000 pts + $51.20');
+    // $702 - $121.50 - 25,000 points at 1¢.
+    const saved = section.getByText('$330.50').closest('div')!;
+    expect(within(saved).getByText('Most saved')).toBeInTheDocument();
+    expect(section.getByText('$300.80')).toBeInTheDocument();
+    expect(section.getAllByText(/points valued at 1¢ each/)).toHaveLength(2);
   });
 
   it('shows what points would get even when the recommendation is to pay cash', () => {

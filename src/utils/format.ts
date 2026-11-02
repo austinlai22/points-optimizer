@@ -19,6 +19,19 @@ export function formatUSD(value: number): string {
   return usdFormatter.format(value);
 }
 
+const usdCentsFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+// Dollars, with cents only when there are any: $121.50, but $702.
+export function formatUSDExact(value: number): string {
+  const cents = Math.round(value * 100);
+  return cents % 100 === 0 ? usdFormatter.format(cents / 100) : usdCentsFormatter.format(cents / 100);
+}
+
 export function formatPoints(value: number): string {
   return pointsFormatter.format(value);
 }
