@@ -4,6 +4,12 @@ import type { ChaseCardType } from '../lib/verdict/types';
 // The verdict's extra inputs, and how to restore them from localStorage.
 // Kept apart from the components so those files export components only.
 
+export const TRIP_STORAGE_KEY = 'cco:tripOptimizer';
+// Cash and Chase card details belong to this browser, never the URL, so a
+// shared trip link can't carry someone's finances along with it.
+export const CASH_STORAGE_KEY = 'cco:cash';
+export const CHASE_STORAGE_KEY = 'cco:chase';
+
 // Raw strings, so "not entered yet" and a typed-in negative ("-") are both
 // representable while someone is still typing.
 export interface CashInputValues {

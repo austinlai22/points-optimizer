@@ -25,12 +25,17 @@ import type { BoostAnswer } from '../lib/reports/validate';
 import { CashCushionInputs } from './CashCushionInputs';
 import { ChaseTravelInputs } from './ChaseTravelInputs';
 import {
+  CASH_STORAGE_KEY,
+  CHASE_STORAGE_KEY,
   EMPTY_CASH_INPUTS,
   EMPTY_CHASE_INPUTS,
+  TRIP_STORAGE_KEY,
   sanitizeCashInputs,
   sanitizeChaseInputs,
 } from '../utils/verdictInputs';
-import { evaluateVerdict, inferChaseCardType, verdictHeadline } from '../lib/verdict';
+import { inferChaseCardType, verdictHeadline } from '../lib/verdict';
+import { DEFAULT_TRIP_INPUTS, evaluateTrip, sanitizeTripInputs, type TripInputs } from '../lib/trips';
+import { SaveTripControl } from './SaveTripControl';
 import type { VerdictResult } from '../lib/verdict/types';
 import { track } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
@@ -47,34 +52,6 @@ const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
 };
 const PARTNER_TYPE_ORDER: PartnerType[] = ['hotel', 'airline'];
 
-const TRIP_STORAGE_KEY = 'cco:tripOptimizer';
-// Cash and Chase card details belong to this browser, never the URL, so a
-// shared trip link can't carry someone's finances along with it.
-const CASH_STORAGE_KEY = 'cco:cash';
-const CHASE_STORAGE_KEY = 'cco:chase';
-
-interface TripInputs {
-  tripCashPrice: number;
-  selectedPartnerId: string;
-  pointsRequired: number;
-  partnerPointsHeld: number;
-  awardCashFees: number;
-  // A points price the user saw in Chase Travel for this trip.
-  chaseTravelPoints: number;
-}
-
-const DEFAULT_TRIP_INPUTS: TripInputs = {
-  tripCashPrice: 0,
-  selectedPartnerId: '',
-  pointsRequired: 0,
-  partnerPointsHeld: 0,
-  awardCashFees: 0,
-  chaseTravelPoints: 0,
-};
-
-function sanitizeStoredNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
-}
 
 // A shared link's query params take priority over anything saved locally
 // from a previous session — opening someone else's link should show THEIR
@@ -95,16 +72,7 @@ function loadInitialTripInputs(): TripInputs {
   }
   try {
     const stored = localStorage.getItem(TRIP_STORAGE_KEY);
-    if (!stored) return DEFAULT_TRIP_INPUTS;
-    const parsed = JSON.parse(stored);
-    return {
-      tripCashPrice: sanitizeStoredNumber(parsed.tripCashPrice),
-      selectedPartnerId: typeof parsed.selectedPartnerId === 'string' ? parsed.selectedPartnerId : '',
-      pointsRequired: sanitizeStoredNumber(parsed.pointsRequired),
-      partnerPointsHeld: sanitizeStoredNumber(parsed.partnerPointsHeld),
-      awardCashFees: sanitizeStoredNumber(parsed.awardCashFees),
-      chaseTravelPoints: sanitizeStoredNumber(parsed.chaseTravelPoints),
-    };
+    return stored ? sanitizeTripInputs(JSON.parse(stored)) : DEFAULT_TRIP_INPUTS;
   } catch {
     return DEFAULT_TRIP_INPUTS;
   }
@@ -291,50 +259,20 @@ export function TripOptimizerView() {
   const ownsChase = ownedCards.some((card) => card.issuer === 'chase');
   const inferredChaseCardType = useMemo(() => inferChaseCardType(ownedCards), [ownedCards]);
 
-  const cash = {
-    available: parseFiniteNumber(cashInputs.available),
-    monthlyLeftover: parseFiniteNumber(cashInputs.leftover),
-    monthlySpend: parseFiniteNumber(cashInputs.spend),
-  };
-  const cashComplete = cash.available !== null && cash.monthlyLeftover !== null && cash.monthlySpend !== null;
+  const cashComplete = [cashInputs.available, cashInputs.leftover, cashInputs.spend].every(
+    (v) => parseFiniteNumber(v) !== null,
+  );
+  const tripInputs: TripInputs = useMemo(
+    () => ({ tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints }),
+    [tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints],
+  );
 
-  // The shared verdict engine, fed the same inputs as the ranked
-  // paths below, so the verdict and the list can't disagree.
-  const verdict: VerdictResult | null = useMemo(() => {
-    if (!(tripCashPrice > 0) || !cashComplete) return null;
-    const legacyPoints = parseFiniteNumber(chaseInputs.legacyPoints);
-    try {
-      return evaluateVerdict({
-        tripCashPrice,
-        awardTaxes: awardCashFees,
-        ownedCards,
-        balances,
-        transferPartners,
-        award:
-          selectedPartnerId && pointsRequired > 0
-            ? { partnerId: selectedPartnerId, pointsRequired, partnerPointsHeld }
-            : undefined,
-        basis,
-        chase: {
-          cardType: chaseInputs.cardType || inferredChaseCardType,
-          reserveAppliedBeforeCutoff: chaseInputs.appliedBeforeCutoff ?? undefined,
-          legacyPoints: legacyPoints !== null && legacyPoints >= 0 ? legacyPoints : undefined,
-          travelPricePoints: ownsChase && chaseTravelPoints > 0 ? chaseTravelPoints : undefined,
-        },
-        cash: {
-          available: cash.available!,
-          monthlyLeftover: cash.monthlyLeftover!,
-          monthlySpend: Math.max(cash.monthlySpend!, 0),
-        },
-      });
-    } catch {
-      return null;
-    }
-  }, [
-    tripCashPrice, cashComplete, cash.available, cash.monthlyLeftover, cash.monthlySpend,
-    awardCashFees, ownedCards, balances, selectedPartnerId, pointsRequired, partnerPointsHeld,
-    basis, chaseInputs, inferredChaseCardType, ownsChase, chaseTravelPoints,
-  ]);
+  // The shared evaluation, fed the same inputs as the ranked paths below, so
+  // the verdict and the list can't disagree, nor this page and a comparison.
+  const verdict: VerdictResult | null = useMemo(
+    () => evaluateTrip(tripInputs, { ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs }),
+    [tripInputs, ownedCards, balances, basis, cashInputs, chaseInputs],
+  );
 
   // Pilot counts: a verdict counts once it has stayed put for a moment, so
   // typing "1", "12", "120" into a field isn't three verdicts.
@@ -641,6 +579,9 @@ export function TripOptimizerView() {
           </div>
 
           <div className="min-w-0">
+            {tripCashPrice > 0 && (
+              <SaveTripControl inputs={tripInputs} defaultName={selectedPartner ? `${selectedPartner.name}, ${formatUSD(tripCashPrice)}` : `Trip, ${formatUSD(tripCashPrice)}`} />
+            )}
             {verdict ? (
               <div id="recommendation" ref={verdictRef} className="scroll-mt-20">
                 <VerdictCard result={verdict} />

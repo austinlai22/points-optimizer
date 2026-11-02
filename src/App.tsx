@@ -4,6 +4,7 @@ import { PageShell } from './components/PageShell';
 import type { PageName } from './components/SiteHeader';
 import { PortfolioView } from './components/PortfolioView';
 import { TripOptimizerView } from './components/TripOptimizerView';
+import { TripsView } from './components/TripsView';
 import { navigate, scrollToSection, usePath } from './lib/router';
 import { Landing } from './pages/Landing';
 import { Privacy } from './pages/Privacy';
@@ -13,6 +14,7 @@ const PAGES: Record<string, { name: PageName; title: string }> = {
   '/': { name: 'home', title: 'PointCompass: points or cash? Know before you book.' },
   '/app': { name: 'check', title: 'Check a trip · PointCompass' },
   '/portfolio': { name: 'portfolio', title: 'Portfolio · PointCompass' },
+  '/trips': { name: 'trips', title: 'My trips · PointCompass' },
   '/privacy': { name: 'privacy', title: 'Privacy · PointCompass' },
   '/agents': { name: 'agents', title: 'For AI assistants · PointCompass' },
 };
@@ -43,6 +45,8 @@ function App() {
           <TripOptimizerView />
         ) : path === '/portfolio' ? (
           <PortfolioView />
+        ) : path === '/trips' ? (
+          <TripsView />
         ) : path === '/privacy' ? (
           <Privacy />
         ) : path === '/agents' ? (
