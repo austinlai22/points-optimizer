@@ -34,7 +34,7 @@ import {
   sanitizeChaseInputs,
 } from '../utils/verdictInputs';
 import { inferChaseCardType, verdictHeadline } from '../lib/verdict';
-import { DEFAULT_TRIP_INPUTS, evaluateTrip, sanitizeTripInputs, type TripInputs } from '../lib/trips';
+import { DEFAULT_TRIP_INPUTS, evaluateTrip, sameTripInputs, sanitizeTripInputs, setEditingTrip, type TripInputs } from '../lib/trips';
 import { SaveTripControl } from './SaveTripControl';
 import { track } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
@@ -57,6 +57,22 @@ const PARTNER_TYPE_ORDER: PartnerType[] = ['hotel', 'airline'];
 // scenario, not silently keep your own leftover inputs. Only trip
 // scenario fields go in the URL/localStorage here; portfolio balances are
 // deliberately never included, so sharing a link never leaks your points.
+function storedTripInputs(): TripInputs {
+  try {
+    const stored = localStorage.getItem(TRIP_STORAGE_KEY);
+    return stored ? sanitizeTripInputs(JSON.parse(stored)) : DEFAULT_TRIP_INPUTS;
+  } catch {
+    return DEFAULT_TRIP_INPUTS;
+  }
+}
+
+// Whether the trip came from a link that differs from this browser's own trip:
+// someone else's scenario, so it isn't an edit of a trip saved here. Reloading
+// your own page carries your own trip in the address bar, so that's not one.
+function isOtherTripLink(inputs: TripInputs): boolean {
+  return new URLSearchParams(window.location.search).has('price') && !sameTripInputs(inputs, storedTripInputs());
+}
+
 function loadInitialTripInputs(): TripInputs {
   const params = new URLSearchParams(window.location.search);
   if (params.has('price') || params.has('partner') || params.has('points') || params.has('held') || params.has('fees')) {
@@ -69,12 +85,7 @@ function loadInitialTripInputs(): TripInputs {
       chaseTravelPoints: parseNonNegativeNumber(params.get('ct') ?? ''),
     };
   }
-  try {
-    const stored = localStorage.getItem(TRIP_STORAGE_KEY);
-    return stored ? sanitizeTripInputs(JSON.parse(stored)) : DEFAULT_TRIP_INPUTS;
-  } catch {
-    return DEFAULT_TRIP_INPUTS;
-  }
+  return storedTripInputs();
 }
 
 function CompassIcon() {
@@ -187,6 +198,11 @@ function ChevronDownIcon() {
 export function TripOptimizerView() {
   const { balances, ownership, basis } = useCardBalances();
   const initialTripInputs = useMemo(loadInitialTripInputs, []);
+  // Worked out before the inputs are stored, on first render only.
+  const [openedOtherLink] = useState(() => isOtherTripLink(initialTripInputs));
+  useEffect(() => {
+    if (openedOtherLink) setEditingTrip(null);
+  }, [openedOtherLink]);
   const [tripCashPrice, setTripCashPrice] = useState(initialTripInputs.tripCashPrice);
   const [selectedPartnerId, setSelectedPartnerId] = useState(initialTripInputs.selectedPartnerId);
   // A single value, not keyed by card — only one brand is ever priced at a

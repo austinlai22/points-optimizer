@@ -227,12 +227,16 @@ export interface SavedTrip {
   id: string;
   name: string;
   savedOn: string; // YYYY-MM-DD
+  // Set when the trip has been edited and updated since it was first saved.
+  updatedOn: string | null;
   inputs: TripInputs;
   snapshot: TripSnapshot | null;
 }
 
 export const SAVED_TRIPS_KEY = 'cco:savedTrips';
 export const COMPARE_KEY = 'cco:compare';
+// The saved trip Check a trip is showing, so changes can update it in place.
+export const EDITING_KEY = 'cco:editingTrip';
 export const MAX_SAVED_TRIPS = 30;
 export const MAX_COMPARE = 5;
 const CHANGE_EVENT = 'cco:savedTripsChange';
@@ -264,6 +268,7 @@ function sanitizeSavedTrips(stored: unknown): SavedTrip[] {
       id: t.id as string,
       name: (t.name as string).slice(0, 60),
       savedOn: typeof t.savedOn === 'string' ? t.savedOn : '',
+      updatedOn: typeof t.updatedOn === 'string' ? t.updatedOn : null,
       inputs: sanitizeTripInputs(t.inputs),
       snapshot: sanitizeSnapshot(t.snapshot),
     }))
@@ -313,23 +318,63 @@ export function useCompareIds(): string[] {
   return ids.every((id) => trips.some((t) => t.id === id)) ? ids : ids.filter((id) => trips.some((t) => t.id === id));
 }
 
+const sanitizeId = (stored: unknown): string | null => (typeof stored === 'string' ? stored : null);
+
+// The saved trip being edited in Check a trip, if it still exists.
+export function useEditingTrip(): SavedTrip | null {
+  const id = useSyncExternalStore(subscribe, () => snapshot(EDITING_KEY, sanitizeId, null));
+  const trips = useSavedTrips();
+  return trips.find((t) => t.id === id) ?? null;
+}
+
+export function setEditingTrip(id: string | null) {
+  if (id === null) {
+    try {
+      localStorage.removeItem(EDITING_KEY);
+    } catch {
+      // Nothing stored to remove.
+    }
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  } else write(EDITING_KEY, id);
+}
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+// A new saved trip, which Check a trip then treats as the one being edited.
 export function saveTrip(name: string, inputs: TripInputs, verdict: VerdictResult | null = null): SavedTrip | null {
   const trips = read(SAVED_TRIPS_KEY, sanitizeSavedTrips, []);
   if (trips.length >= MAX_SAVED_TRIPS) return null;
   const trip: SavedTrip = {
     id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
     name: name.trim().slice(0, 60) || 'Untitled trip',
-    savedOn: new Date().toISOString().slice(0, 10),
+    savedOn: today(),
+    updatedOn: null,
     inputs: sanitizeTripInputs(inputs),
     snapshot: snapshotOf(verdict),
   };
   write(SAVED_TRIPS_KEY, [trip, ...trips]);
+  write(EDITING_KEY, trip.id);
   return trip;
+}
+
+// Replaces a saved trip's details with what's in Check a trip now, keeping its
+// name and its place in the list and in the comparison.
+export function updateTrip(id: string, inputs: TripInputs, verdict: VerdictResult | null = null): boolean {
+  const trips = read(SAVED_TRIPS_KEY, sanitizeSavedTrips, []);
+  if (!trips.some((t) => t.id === id)) return false;
+  write(
+    SAVED_TRIPS_KEY,
+    trips.map((t) =>
+      t.id === id ? { ...t, updatedOn: today(), inputs: sanitizeTripInputs(inputs), snapshot: snapshotOf(verdict) ?? t.snapshot } : t,
+    ),
+  );
+  return true;
 }
 
 export function deleteTrip(id: string) {
   write(SAVED_TRIPS_KEY, read(SAVED_TRIPS_KEY, sanitizeSavedTrips, []).filter((t) => t.id !== id));
   write(COMPARE_KEY, read(COMPARE_KEY, sanitizeIds, []).filter((x) => x !== id));
+  if (read(EDITING_KEY, sanitizeId, null) === id) setEditingTrip(null);
 }
 
 // Adds a trip to the comparison. False when it's already full.
@@ -353,21 +398,25 @@ export const sameTripInputs = (a: TripInputs, b: TripInputs) =>
   (Object.keys(a) as (keyof TripInputs)[]).every((key) => a[key] === b[key]);
 
 // What's in Check a trip now, if opening `trip` would lose it: a trip with a
-// price that isn't saved and isn't the one being opened.
-export function unsavedCurrentTrip(trip: SavedTrip): TripInputs | null {
+// price that isn't saved, or unsaved changes to the saved trip being edited
+// (`editing`), and isn't the trip being opened.
+export function unsavedCurrentTrip(trip: SavedTrip): { inputs: TripInputs; editing: SavedTrip | null } | null {
   const current = read(TRIP_STORAGE_KEY, sanitizeTripInputs, DEFAULT_TRIP_INPUTS);
   if (!(current.tripCashPrice > 0) || sameTripInputs(current, trip.inputs)) return null;
   const saved = read(SAVED_TRIPS_KEY, sanitizeSavedTrips, []);
-  return saved.some((t) => sameTripInputs(t.inputs, current)) ? null : current;
+  if (saved.some((t) => sameTripInputs(t.inputs, current))) return null;
+  const editingId = read(EDITING_KEY, sanitizeId, null);
+  return { inputs: current, editing: saved.find((t) => t.id === editingId) ?? null };
 }
 
-// Loads a saved trip into Check a trip, replacing what's there. Check
-// unsavedCurrentTrip first.
+// Loads a saved trip into Check a trip, replacing what's there, as the trip
+// being edited. Check unsavedCurrentTrip first.
 export function openTrip(trip: SavedTrip) {
   try {
     localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trip.inputs));
   } catch {
     // Without storage the trip can't be carried over; Check a trip opens empty.
   }
+  write(EDITING_KEY, trip.id);
   navigate('/app');
 }

@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import App from '../App';
-import { COMPARE_KEY, MAX_COMPARE, SAVED_TRIPS_KEY, saveTrip, type TripInputs } from '../lib/trips';
+import { COMPARE_KEY, EDITING_KEY, MAX_COMPARE, SAVED_TRIPS_KEY, saveTrip, type TripInputs } from '../lib/trips';
 
 const trip = (price: number, extra: Partial<TripInputs> = {}): TripInputs => ({
   tripCashPrice: price,
@@ -17,6 +17,11 @@ const trip = (price: number, extra: Partial<TripInputs> = {}): TripInputs => ({
 function visit(url: string) {
   window.history.replaceState(null, '', url);
   return render(<App />);
+}
+
+function cleanupAndVisit(url: string) {
+  cleanup();
+  return visit(url);
 }
 
 const compareSection = () => within(screen.getByRole('heading', { name: /^compare/i }).closest('section')!);
@@ -201,6 +206,7 @@ describe('comparing saved trips', () => {
 
   it('asks before replacing an unsaved trip in Check a trip, and can save it first', () => {
     localStorage.setItem('cco:tripOptimizer', JSON.stringify(trip(450)));
+    localStorage.removeItem(EDITING_KEY);
     visit('/trips');
     fireEvent.click(within(card('Tokyo')).getByRole('button', { name: /open/i }));
     const dialog = screen.getByRole('alertdialog', { name: /replace the trip/i });
@@ -240,3 +246,79 @@ describe('header', () => {
     expect(within(screen.getByRole('navigation', { name: 'About PointCompass' })).queryByRole('link', { name: /portfolio/i })).toBeNull();
   });
 });
+
+describe('editing a saved trip', () => {
+  const stored = () => JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY)!) as { name: string; updatedOn: string | null; inputs: TripInputs }[];
+
+  function openFromMyTrips(name: string) {
+    visit('/trips');
+    fireEvent.click(within(card(name)).getByRole('button', { name: /open/i }));
+  }
+
+  beforeEach(() => {
+    saveTrip('Lisbon', trip(900));
+    saveTrip('Tokyo', trip(1800));
+  });
+
+  it('updates the opened trip in place, keeping its name and adding no new trip', () => {
+    openFromMyTrips('Lisbon');
+    expect(screen.getByText(/saved as “Lisbon”/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '850' } });
+    expect(screen.getByText('“Lisbon”')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /update trip/i }));
+
+    expect(screen.getByRole('status')).toHaveTextContent('Updated “Lisbon”');
+    expect(stored()).toHaveLength(2);
+    expect(stored().find((t) => t.name === 'Lisbon')).toMatchObject({ inputs: { tripCashPrice: 850 }, updatedOn: expect.any(String) });
+  });
+
+  it('can save the changed trip as a new one, leaving the original as it was', () => {
+    openFromMyTrips('Lisbon');
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '700' } });
+    fireEvent.click(screen.getByRole('button', { name: /save as new trip/i }));
+    fireEvent.change(screen.getByLabelText(/name the new trip/i), { target: { value: 'Lisbon, cheaper' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(stored().map((t) => t.name)).toEqual(['Lisbon, cheaper', 'Tokyo', 'Lisbon']);
+    expect(stored().find((t) => t.name === 'Lisbon')!.inputs.tripCashPrice).toBe(900);
+    // Further changes now go to the new trip.
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '650' } });
+    expect(screen.getByText('“Lisbon, cheaper”')).toBeInTheDocument();
+  });
+
+  it('shows when a card was last updated', () => {
+    openFromMyTrips('Tokyo');
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '1700' } });
+    fireEvent.click(screen.getByRole('button', { name: /update trip/i }));
+    fireEvent.click(screen.getByRole('link', { name: /view my trips/i }));
+    expect(card('Tokyo')).toHaveTextContent(/Updated/);
+    expect(card('Tokyo')).toHaveTextContent('$1,700');
+  });
+
+  it('offers to update, not save as new, when changes would be lost', () => {
+    openFromMyTrips('Lisbon');
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '800' } });
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Your tools' })).getByRole('link', { name: /my trips/i }));
+    fireEvent.click(within(card('Tokyo')).getByRole('button', { name: /open/i }));
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent('unsaved changes to “Lisbon”');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Update it first' }));
+    expect(stored()).toHaveLength(2);
+    expect(stored().find((t) => t.name === 'Lisbon')!.inputs.tripCashPrice).toBe(800);
+  });
+
+  it("stops editing when someone else's trip link is opened", () => {
+    openFromMyTrips('Lisbon');
+    cleanupAndVisit('/app?price=333');
+    expect(screen.getByRole('button', { name: /save this trip/i })).toBeInTheDocument();
+    expect(screen.queryByText('“Lisbon”')).toBeNull();
+  });
+
+  it('keeps editing across a reload of your own page', () => {
+    openFromMyTrips('Lisbon');
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '875' } });
+    cleanupAndVisit(`/app${window.location.search}`);
+    expect(screen.getByRole('button', { name: /update trip/i })).toBeInTheDocument();
+  });
+});
+

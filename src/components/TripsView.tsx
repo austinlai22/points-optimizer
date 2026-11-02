@@ -13,6 +13,7 @@ import {
   openTrip,
   saveTrip,
   unsavedCurrentTrip,
+  updateTrip,
   partnerName,
   removeFromCompare,
   useCompareIds,
@@ -110,7 +111,9 @@ function TripCard({ trip, verdict, selected, onToggle, onOpen }: TripCardProps) 
           <p className="truncate font-display text-base font-medium text-navy-950" title={trip.name}>
             {trip.name}
           </p>
-          <p className="text-xs text-navy-950/45">Saved {formatSavedOn(trip.savedOn)}</p>
+          <p className="text-xs text-navy-950/45">
+            {trip.updatedOn ? `Updated ${formatSavedOn(trip.updatedOn)}` : `Saved ${formatSavedOn(trip.savedOn)}`}
+          </p>
         </div>
         <label className="relative flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center">
           <input
@@ -183,7 +186,7 @@ export function TripsView() {
   const [dragOver, setDragOver] = useState(false);
   const [notice, setNotice] = useState('');
   // A trip waiting to be opened while Check a trip holds an unsaved one.
-  const [pendingOpen, setPendingOpen] = useState<{ trip: SavedTrip; current: TripInputs } | null>(null);
+  const [pendingOpen, setPendingOpen] = useState<{ trip: SavedTrip; current: { inputs: TripInputs; editing: SavedTrip | null } } | null>(null);
 
   const requestOpen = (trip: SavedTrip) => {
     const current = unsavedCurrentTrip(trip);
@@ -193,9 +196,14 @@ export function TripsView() {
   const saveCurrentThenOpen = () => {
     if (!pendingOpen) return;
     const { trip, current } = pendingOpen;
-    const program = current.selectedPartnerId ? partnerName(current.selectedPartnerId) : null;
-    saveTrip(program ? `${program}, ${formatUSD(current.tripCashPrice)}` : `Trip, ${formatUSD(current.tripCashPrice)}`, current);
-    track({ event: 'trip_saved' });
+    // Changes to a saved trip update it; anything else is saved as new.
+    if (current.editing) updateTrip(current.editing.id, current.inputs);
+    else {
+      const { inputs } = current;
+      const program = inputs.selectedPartnerId ? partnerName(inputs.selectedPartnerId) : null;
+      saveTrip(program ? `${program}, ${formatUSD(inputs.tripCashPrice)}` : `Trip, ${formatUSD(inputs.tripCashPrice)}`, inputs);
+      track({ event: 'trip_saved' });
+    }
     openTrip(trip);
   };
 
@@ -352,11 +360,15 @@ export function TripsView() {
             Replace the trip in Check a trip?
           </p>
           <p className="mt-1 text-sm text-slate-50/70">
-            It has an unsaved {formatUSD(pendingOpen.current.tripCashPrice)} trip. Opening “{pendingOpen.trip.name}” will replace it.
+            {pendingOpen.current.editing?.id === pendingOpen.trip.id
+              ? `It has unsaved changes to “${pendingOpen.trip.name}”. Opening it again will undo them.`
+              : pendingOpen.current.editing
+                ? `It has unsaved changes to “${pendingOpen.current.editing.name}”. Opening “${pendingOpen.trip.name}” will replace them.`
+                : `It has an unsaved ${formatUSD(pendingOpen.current.inputs.tripCashPrice)} trip. Opening “${pendingOpen.trip.name}” will replace it.`}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" autoFocus onClick={saveCurrentThenOpen} className={`rounded-full bg-slate-50 px-4 text-sm font-semibold text-navy ${TAP_TARGET} ${FOCUS_RING}`}>
-              Save it first
+              {pendingOpen.current.editing ? 'Update it first' : 'Save it first'}
             </button>
             <button type="button" onClick={() => openTrip(pendingOpen.trip)} className={`rounded-full border border-slate-50/30 px-4 text-sm font-medium ${TAP_TARGET} ${FOCUS_RING}`}>
               Replace it
