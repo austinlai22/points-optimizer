@@ -130,8 +130,8 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
     ),
   },
   {
-    title: 'Add your cash position',
-    body: 'Three figures let PointCompass protect the savings you need for the month ahead.',
+    title: 'Add your cash position (optional)',
+    body: 'Three figures let PointCompass protect the savings you need for the month ahead. Skip them for an answer on value alone.',
     visual: (
       <div className="w-56 rounded-2xl bg-white p-4 shadow-card">
         <RunwayMeter payCash={example.runway.payCash} />
@@ -532,7 +532,7 @@ export function Landing() {
             <div className="relative max-w-lg">
               <h2 className="font-display text-3xl font-semibold text-slate-50 sm:text-4xl">Get an answer for your next trip.</h2>
               <p className="mt-3 text-slate-50/70">
-                Enter the trip and your cash position. No account or bank login needed.
+                Enter the trip, and your cash position if you like. No account or bank login needed.
               </p>
               <a
                 href="/app"

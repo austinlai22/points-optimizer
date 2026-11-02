@@ -38,7 +38,11 @@ describe('saving a trip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(screen.getByText(/saved as “Lisbon in May”/i)).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY)!)[0]).toMatchObject({ name: 'Lisbon in May', inputs: { tripCashPrice: 900 } });
+    expect(JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY)!)[0]).toMatchObject({
+      name: 'Lisbon in May',
+      inputs: { tripCashPrice: 900 },
+      snapshot: { headline: 'Pay cash', option: { title: 'Book in Chase Travel' } },
+    });
 
     fireEvent.click(screen.getByRole('link', { name: /view my trips/i }));
     expect(screen.getByRole('heading', { level: 1, name: 'My trips' })).toBeInTheDocument();
@@ -130,6 +134,37 @@ describe('comparing saved trips', () => {
     expect(compareSection().getByText('Pay cash')).toBeInTheDocument();
     expect(compareSection().getByText('Book in Chase Travel')).toBeInTheDocument();
     expect(compareSection().getByText('1¢')).toBeInTheDocument();
+  });
+
+  it('works out value per point from the prices entered when no card can', () => {
+    localStorage.setItem('cco:ownership', JSON.stringify({}));
+    saveTrip('Hyatt stay', trip(600, { selectedPartnerId: 'hyatt', pointsRequired: 30000 }));
+    visit('/trips');
+    fireEvent.click(card('Hyatt stay'));
+    expect(compareSection().getByText('2¢')).toBeInTheDocument();
+    expect(compareSection().getByText(/from the prices you entered/i)).toBeInTheDocument();
+    expect(compareSection().getByText('Transfer to World of Hyatt')).toBeInTheDocument();
+  });
+
+  it('falls back to the recommendation saved with the trip', () => {
+    localStorage.setItem('cco:ownership', JSON.stringify({}));
+    localStorage.setItem(
+      SAVED_TRIPS_KEY,
+      JSON.stringify([
+        {
+          id: 'old',
+          name: 'Saved elsewhere',
+          savedOn: '2026-10-01',
+          inputs: trip(900),
+          snapshot: { headline: 'Transfer points', option: { title: 'Transfer to United MileagePlus', detail: 'from Chase', cppCents: 1.8, benchmarkRatio: 1.5, pointsUsed: 50000 } },
+        },
+      ]),
+    );
+    visit('/trips');
+    fireEvent.click(card('Saved elsewhere'));
+    expect(compareSection().getByText('Transfer points')).toBeInTheDocument();
+    expect(compareSection().getByText(/as recommended when saved/i)).toBeInTheDocument();
+    expect(compareSection().getByText('1.8¢')).toBeInTheDocument();
   });
 
   it('opens a saved trip back in Check a trip', () => {

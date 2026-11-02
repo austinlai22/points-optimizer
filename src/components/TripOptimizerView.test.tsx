@@ -38,11 +38,20 @@ function verdictCard() {
 }
 
 describe('TripOptimizerView verdict', () => {
-  it('asks for the cash cushion before giving a verdict', () => {
+  it('gives a value-only recommendation without a cash position, and says so', () => {
     renderView();
+    expect(screen.getByText(/add the trip price to see it/i)).toBeInTheDocument();
     type(/trip cash price/i, '1000');
-    expect(document.getElementById('verdict-heading')).toBeNull();
-    expect(screen.getByText(/add your cash position to see it/i)).toBeInTheDocument();
+    expect(verdictCard().getByRole('heading', { name: 'Pay cash' })).toBeInTheDocument();
+    expect(verdictCard().getByText(/on value alone/i)).toBeInTheDocument();
+    expect(verdictCard().getByText(/no cash position was given/i, { selector: 'li' })).toBeInTheDocument();
+  });
+
+  it('puts the optional cash position after the trip and Chase Travel', () => {
+    renderView();
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(headings.indexOf('Your cash position (optional)')).toBeGreaterThan(headings.indexOf('Chase Travel'));
+    expect(headings.indexOf('Chase Travel')).toBeGreaterThan(headings.indexOf('The trip'));
   });
 
   it('says pay cash and keep points when cash is healthy and points only match their value', () => {

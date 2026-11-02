@@ -1,20 +1,57 @@
 import type { ReactNode } from 'react';
 import { formatCents, verdictHeadline } from '../lib/verdict';
-import type { PointsOption, VerdictResult } from '../lib/verdict/types';
-import { MAX_COMPARE, openTrip, removeFromCompare, type SavedTrip } from '../lib/trips';
-import { FOCUS_RING, ISSUER_LABELS, TAP_TARGET } from '../styles/constants';
+import type { VerdictResult } from '../lib/verdict/types';
+import { MAX_COMPARE, describePointsOption, openTrip, removeFromCompare, valueFromInputs, type SavedTrip } from '../lib/trips';
+import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 import { formatPoints, formatUSD } from '../utils/format';
 
 // Side by side, in the manner of a product comparison: one column per trip,
 // the same few facts in each, and a mark wherever a trip beats the others.
 
+// The best way to use points for one trip, from wherever it can be had.
+interface ColumnOption {
+  title: string;
+  detail: string;
+  cppCents: number | null;
+  // Against the points' usual value; null when only the trip's own prices
+  // are known.
+  benchmarkRatio: number | null;
+  pointsUsed: number;
+}
+
 interface Column {
   trip: SavedTrip;
-  verdict: VerdictResult | null;
-  // The best points option whatever the verdict. The verdict's own
-  // bestOption is empty when it says to pay cash, but the comparison still
-  // wants to show what points would get.
-  option: PointsOption | null;
+  headline: string | null;
+  option: ColumnOption | null;
+  // Where the figures came from: today's cards, the recommendation saved with
+  // the trip, or just the prices entered.
+  source: 'today' | 'saved' | 'entered' | 'none';
+}
+
+// Today's recommendation when your cards can produce a points option; else
+// the one saved with the trip; else value from the trip's own prices. The
+// verdict's own bestOption is empty when it says to pay cash, so the best
+// option is taken from the full list, to show what points would get.
+function columnFor(trip: SavedTrip, verdict: VerdictResult | null): Column {
+  const best = verdict?.options[0];
+  if (verdict && best) {
+    return {
+      trip,
+      headline: verdictHeadline(verdict),
+      option: {
+        ...describePointsOption(best),
+        cppCents: best.cppCents,
+        benchmarkRatio: Number.isFinite(best.benchmarkRatio) ? best.benchmarkRatio : null,
+        pointsUsed: best.pointsUsed,
+      },
+      source: 'today',
+    };
+  }
+  if (trip.snapshot?.option) return { trip, headline: trip.snapshot.headline, option: trip.snapshot.option, source: 'saved' };
+  const entered = valueFromInputs(trip.inputs);
+  const headline = verdict ? verdictHeadline(verdict) : (trip.snapshot?.headline ?? null);
+  if (entered) return { trip, headline, option: { ...entered, benchmarkRatio: null }, source: 'entered' };
+  return { trip, headline, option: null, source: 'none' };
 }
 
 type WinKey = 'value' | 'price' | 'points';
@@ -32,14 +69,6 @@ function winners(scores: (number | null)[]): Set<number> {
   const best = Math.max(...valid);
   const won = scores.flatMap((s, i) => (s !== null && Math.abs(s - best) < 1e-9 ? [i] : []));
   return won.length === valid.length ? new Set() : new Set(won);
-}
-
-function optionName(option: PointsOption): { title: string; detail: string } {
-  if (option.kind === 'transfer') {
-    return { title: `Transfer to ${option.partner?.name ?? 'partner'}`, detail: `from ${ISSUER_LABELS[option.issuer]}` };
-  }
-  if (option.kind === 'chaseTravel') return { title: 'Book in Chase Travel', detail: option.isEstimate ? 'estimated price' : 'price you entered' };
-  return { title: `${ISSUER_LABELS[option.issuer]} travel portal`, detail: 'book with points' };
 }
 
 function WinMark({ children }: { children: ReactNode }) {
@@ -64,13 +93,14 @@ export function TripComparison({
   verdicts: Map<string, VerdictResult | null>;
   dragOver: boolean;
 }) {
-  const columns: Column[] = trips.map((trip) => {
-    const verdict = verdicts.get(trip.id) ?? null;
-    return { trip, verdict, option: verdict?.options[0] ?? null };
-  });
+  const columns = trips.map((trip) => columnFor(trip, verdicts.get(trip.id) ?? null));
 
+  // Value is judged against each currency's usual value when every column
+  // knows it, so different banks' points compare fairly; otherwise on the
+  // cents per point shown.
+  const byRatio = columns.every((c) => c.option?.benchmarkRatio != null);
   const wins: Record<WinKey, Set<number>> = {
-    value: winners(columns.map((c) => c.option?.benchmarkRatio ?? null)),
+    value: winners(columns.map((c) => (byRatio ? (c.option?.benchmarkRatio ?? null) : (c.option?.cppCents ?? null)))),
     price: winners(columns.map((c) => -c.trip.inputs.tripCashPrice)),
     points: winners(columns.map((c) => (c.option && c.option.pointsUsed > 0 ? -c.option.pointsUsed : null))),
   };
@@ -138,12 +168,15 @@ export function TripComparison({
           )}
 
           {row('Recommendation', (c) =>
-            c.verdict ? (
-              <span className="rounded-full bg-gradient-to-br from-navy-950 to-navy px-4 py-2 font-display text-sm font-semibold text-slate-50">
-                {verdictHeadline(c.verdict)}
-              </span>
+            c.headline ? (
+              <>
+                <span className="rounded-full bg-gradient-to-br from-navy-950 to-navy px-4 py-2 font-display text-sm font-semibold text-slate-50">
+                  {c.headline}
+                </span>
+                {c.source === 'saved' && <span className="mt-2 text-xs text-navy-950/45">As recommended when saved</span>}
+              </>
             ) : (
-              <span className="text-sm text-navy-950/45">Add your cash position</span>
+              muted
             ),
           )}
 
@@ -153,9 +186,11 @@ export function TripComparison({
                 <span className={`font-display text-4xl font-semibold tracking-tight ${wins.value.has(i) ? 'text-teal' : 'text-navy-950'}`}>
                   {formatCents(c.option.cppCents)}
                 </span>
-                {Number.isFinite(c.option.benchmarkRatio) && (
-                  <span className="mt-1 text-xs text-navy-950/50">{c.option.benchmarkRatio.toFixed(2)}× the points’ usual value</span>
-                )}
+                <span className="mt-1 text-xs text-navy-950/50">
+                  {c.option.benchmarkRatio != null
+                    ? `${c.option.benchmarkRatio.toFixed(2)}× the points’ usual value`
+                    : 'from the prices you entered'}
+                </span>
                 {wins.value.has(i) && <WinMark>{WIN_LABELS.value}</WinMark>}
               </>
             ) : (
@@ -173,8 +208,8 @@ export function TripComparison({
           ))}
 
           {row('Best way with points', (c, i) => {
-            if (!c.option) return <span className="text-sm text-navy-950/45">{c.verdict ? 'None your points cover' : muted}</span>;
-            const { title, detail } = optionName(c.option);
+            if (!c.option) return <span className="text-sm text-navy-950/45">No points price entered</span>;
+            const { title, detail } = c.option;
             return (
               <>
                 <span className="text-base font-medium leading-snug text-navy-950">{title}</span>

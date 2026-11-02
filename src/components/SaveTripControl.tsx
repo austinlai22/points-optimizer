@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { linkHandler } from '../lib/router';
 import { MAX_SAVED_TRIPS, saveTrip, useSavedTrips, type TripInputs } from '../lib/trips';
+import type { VerdictResult } from '../lib/verdict/types';
 import { FIELD, FOCUS_RING, TAP_TARGET } from '../styles/constants';
 
-export function BookmarkIcon({ filled = false }: { filled?: boolean }) {
+export function HeartIcon({ filled = false }: { filled?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-      <path d="M6 3.5h12v17l-6-4-6 4z" />
+      <path d="M12 20.5s-7.5-4.6-9.3-9.4C1.4 7.6 3.6 4 7.2 4c2 0 3.5 1.1 4.8 2.8C13.3 5.1 14.8 4 16.8 4c3.6 0 5.8 3.6 4.5 7.1-1.8 4.8-9.3 9.4-9.3 9.4z" />
     </svg>
   );
 }
@@ -16,7 +17,7 @@ const sameInputs = (a: TripInputs, b: TripInputs) =>
 
 // Keep this trip for later, in this browser only. Separate from sharing a
 // price report: nothing here leaves the device.
-export function SaveTripControl({ inputs, defaultName }: { inputs: TripInputs; defaultName: string }) {
+export function SaveTripControl({ inputs, verdict, defaultName }: { inputs: TripInputs; verdict: VerdictResult | null; defaultName: string }) {
   const trips = useSavedTrips();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
@@ -25,7 +26,8 @@ export function SaveTripControl({ inputs, defaultName }: { inputs: TripInputs; d
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (saveTrip(name || defaultName, inputs)) setNaming(false);
+    // The recommendation is kept with the trip, to fall back on later.
+    if (saveTrip(name || defaultName, inputs, verdict)) setNaming(false);
   };
 
   const viewLink = (
@@ -39,7 +41,7 @@ export function SaveTripControl({ inputs, defaultName }: { inputs: TripInputs; d
       {existing && !naming ? (
         <>
           <span className="inline-flex items-center gap-1.5 font-medium text-navy-950/75">
-            <BookmarkIcon filled /> Saved as “{existing.name}”
+            <HeartIcon filled /> Saved as “{existing.name}”
           </span>
           {viewLink}
         </>
@@ -78,7 +80,7 @@ export function SaveTripControl({ inputs, defaultName }: { inputs: TripInputs; d
             }}
             className={`inline-flex items-center gap-2 rounded-full border border-navy/20 bg-white px-4 font-medium text-navy-950/80 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
           >
-            <BookmarkIcon /> Save this trip
+            <HeartIcon /> Save this trip
           </button>
           <span className="text-xs text-navy-950/50">Kept in this browser only, to look back at or compare.</span>
         </>

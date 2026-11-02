@@ -36,10 +36,9 @@ import {
 import { inferChaseCardType, verdictHeadline } from '../lib/verdict';
 import { DEFAULT_TRIP_INPUTS, evaluateTrip, sanitizeTripInputs, type TripInputs } from '../lib/trips';
 import { SaveTripControl } from './SaveTripControl';
-import type { VerdictResult } from '../lib/verdict/types';
 import { track } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
-import { formatUSD, parseFiniteNumber, parseNonNegativeNumber } from '../utils/format';
+import { formatUSD, parseNonNegativeNumber } from '../utils/format';
 import { DEFAULT_VALUATION_BASIS } from '../types';
 import type { CardConfig, Issuer, PartnerType, RedemptionPath, TransferPartner } from '../types';
 
@@ -259,9 +258,6 @@ export function TripOptimizerView() {
   const ownsChase = ownedCards.some((card) => card.issuer === 'chase');
   const inferredChaseCardType = useMemo(() => inferChaseCardType(ownedCards), [ownedCards]);
 
-  const cashComplete = [cashInputs.available, cashInputs.leftover, cashInputs.spend].every(
-    (v) => parseFiniteNumber(v) !== null,
-  );
   const tripInputs: TripInputs = useMemo(
     () => ({ tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints }),
     [tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints],
@@ -269,7 +265,7 @@ export function TripOptimizerView() {
 
   // The shared evaluation, fed the same inputs as the ranked paths below, so
   // the verdict and the list can't disagree, nor this page and a comparison.
-  const verdict: VerdictResult | null = useMemo(
+  const verdict = useMemo(
     () => evaluateTrip(tripInputs, { ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs }),
     [tripInputs, ownedCards, balances, basis, cashInputs, chaseInputs],
   );
@@ -384,10 +380,6 @@ export function TripOptimizerView() {
     </div>
   );
 
-  const missing = [
-    !(tripCashPrice > 0) && 'the trip price',
-    !cashComplete && 'your cash position',
-  ].filter(Boolean) as string[];
 
   return (
     <>
@@ -407,8 +399,8 @@ export function TripOptimizerView() {
         }
       >
         <p>
-          Find the best way to pay for your trip. Enter the price and your cash position for a
-          recommendation, and add an airline or hotel award price to compare transferring too.
+          Find the best way to pay for your trip. Enter the price for a recommendation, and add an
+          airline or hotel award price to compare transferring too. Your cash position is optional.
         </p>
       </PageIntro>
 
@@ -553,16 +545,9 @@ export function TripOptimizerView() {
               </div>
             </section>
 
-            <section className={`${CARD_SURFACE} p-6`}>
-              <StepHeading step={2} title="Your cash position">
-                These figures decide whether paying cash would leave you stretched.
-              </StepHeading>
-              <CashCushionInputs values={cashInputs} onChange={setCashInputs} />
-            </section>
-
             {ownsChase && (
               <section className={`${CARD_SURFACE} p-6`}>
-                <StepHeading step={3} title="Chase Travel">
+                <StepHeading step={2} title="Chase Travel">
                   Optional details that refine the Chase recommendation.
                 </StepHeading>
                 <ChaseTravelInputs
@@ -574,17 +559,25 @@ export function TripOptimizerView() {
             )}
 
             <section className={`${CARD_SURFACE} p-6`}>
+              <StepHeading step={ownsChase ? 3 : 2} title="Your cash position (optional)">
+                Add it to check whether paying cash would leave you stretched. Without it, the
+                recommendation is on value alone.
+              </StepHeading>
+              <CashCushionInputs values={cashInputs} onChange={setCashInputs} />
+            </section>
+
+            <section className={`${CARD_SURFACE} p-6`}>
               <ValuationBasisSelect />
             </section>
           </div>
 
           <div className="min-w-0">
             {tripCashPrice > 0 && (
-              <SaveTripControl inputs={tripInputs} defaultName={selectedPartner ? `${selectedPartner.name}, ${formatUSD(tripCashPrice)}` : `Trip, ${formatUSD(tripCashPrice)}`} />
+              <SaveTripControl inputs={tripInputs} verdict={verdict} defaultName={selectedPartner ? `${selectedPartner.name}, ${formatUSD(tripCashPrice)}` : `Trip, ${formatUSD(tripCashPrice)}`} />
             )}
             {verdict ? (
               <div id="recommendation" ref={verdictRef} className="scroll-mt-20">
-                <VerdictCard result={verdict} />
+                <VerdictCard result={verdict} cashConsidered={verdict.cashConsidered} />
                 {verdict.chaseTravel && (
                   <PriceCheck
                     key={selectedPartner?.id ?? 'none'}
@@ -605,7 +598,7 @@ export function TripOptimizerView() {
                 </div>
                 <p className="font-display text-lg text-navy-950">Your recommendation will appear here</p>
                 <p className="mx-auto mt-1 max-w-sm text-sm text-navy-950/55">
-                  Add {missing.join(' and ')} to see it.
+                  Add the trip price to see it.
                 </p>
               </div>
             )}

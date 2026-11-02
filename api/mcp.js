@@ -26537,6 +26537,11 @@ function computeRunway(cash, outlay) {
 		strainReasons
 	};
 }
+const CASH_NOT_GIVEN = {
+	available: Number.MAX_SAFE_INTEGER,
+	monthlyLeftover: 0,
+	monthlySpend: 1
+};
 //#endregion
 //#region src/lib/verdict/evaluate.ts
 const CLEARLY_BEATS = verdict_config_default.clearly_beats_benchmark_multiplier;
@@ -26971,11 +26976,7 @@ function recommendPayment(input, today) {
 		available: input.cash_position.available_usd,
 		monthlyLeftover: input.cash_position.monthly_leftover_usd,
 		monthlySpend: input.cash_position.monthly_spending_usd
-	} : {
-		available: Number.MAX_SAFE_INTEGER,
-		monthlyLeftover: 0,
-		monthlySpend: 1
-	};
+	} : CASH_NOT_GIVEN;
 	if (!input.cash_position) assumptions.push("No cash position was given, so paying cash is assumed not to strain the traveller. Supply cash_position to include that check.");
 	const result = evaluateVerdict({
 		tripCashPrice: input.trip_cash_price_usd,

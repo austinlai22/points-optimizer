@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import transferPartnersData from '../data/transferPartners.json';
-import { evaluateVerdict, inferChaseCardType } from './verdict';
-import type { VerdictResult } from './verdict/types';
+import { CASH_NOT_GIVEN, CASH_NOT_GIVEN_ASSUMPTION, evaluateVerdict, inferChaseCardType, verdictHeadline } from './verdict';
+import type { PointsOption, VerdictResult } from './verdict/types';
+import { ISSUER_LABELS } from '../utils/issuers';
 import type { CashInputValues, ChaseInputValues } from '../utils/verdictInputs';
 import { parseFiniteNumber } from '../utils/format';
 import { TRIP_STORAGE_KEY } from '../utils/verdictInputs';
@@ -53,18 +54,26 @@ export interface TripContext {
   chase: ChaseInputValues;
 }
 
+export interface TripVerdict extends VerdictResult {
+  // False when no complete cash position was given, so the recommendation is
+  // on value alone and the cash figures mean nothing.
+  cashConsidered: boolean;
+}
+
 // The recommendation for one trip. Check a trip and the comparison both use
 // this, so the same trip can't get two different answers. Null until there is
-// a price and a complete cash position.
-export function evaluateTrip(trip: TripInputs, ctx: TripContext): VerdictResult | null {
+// a price. The cash position is optional: without it, paying cash is assumed
+// not to strain, exactly as the agent tool does.
+export function evaluateTrip(trip: TripInputs, ctx: TripContext): TripVerdict | null {
+  if (!(trip.tripCashPrice > 0)) return null;
   const available = parseFiniteNumber(ctx.cash.available);
   const monthlyLeftover = parseFiniteNumber(ctx.cash.leftover);
   const monthlySpend = parseFiniteNumber(ctx.cash.spend);
-  if (!(trip.tripCashPrice > 0) || available === null || monthlyLeftover === null || monthlySpend === null) return null;
+  const cashConsidered = available !== null && monthlyLeftover !== null && monthlySpend !== null;
   const legacyPoints = parseFiniteNumber(ctx.chase.legacyPoints);
   const ownsChase = ctx.ownedCards.some((card) => card.issuer === 'chase');
   try {
-    return evaluateVerdict({
+    const result = evaluateVerdict({
       tripCashPrice: trip.tripCashPrice,
       awardTaxes: trip.awardCashFees,
       ownedCards: ctx.ownedCards,
@@ -81,8 +90,13 @@ export function evaluateTrip(trip: TripInputs, ctx: TripContext): VerdictResult 
         legacyPoints: legacyPoints !== null && legacyPoints >= 0 ? legacyPoints : undefined,
         travelPricePoints: ownsChase && trip.chaseTravelPoints > 0 ? trip.chaseTravelPoints : undefined,
       },
-      cash: { available, monthlyLeftover, monthlySpend: Math.max(monthlySpend, 0) },
+      cash: cashConsidered ? { available: available!, monthlyLeftover: monthlyLeftover!, monthlySpend: Math.max(monthlySpend!, 0) } : CASH_NOT_GIVEN,
     });
+    return {
+      ...result,
+      cashConsidered,
+      assumptions: cashConsidered ? result.assumptions : [CASH_NOT_GIVEN_ASSUMPTION, ...result.assumptions],
+    };
   } catch {
     return null;
   }
@@ -90,6 +104,85 @@ export function evaluateTrip(trip: TripInputs, ctx: TripContext): VerdictResult 
 
 export function partnerName(id: string): string | null {
   return transferPartners.find((p) => p.id === id)?.name ?? null;
+}
+
+// How a points option reads in a short space: "Transfer to World of Hyatt",
+// "from Chase".
+export function describePointsOption(option: PointsOption): { title: string; detail: string } {
+  if (option.kind === 'transfer') {
+    return { title: `Transfer to ${option.partner?.name ?? 'partner'}`, detail: `from ${ISSUER_LABELS[option.issuer]}` };
+  }
+  if (option.kind === 'chaseTravel') return { title: 'Book in Chase Travel', detail: option.isEstimate ? 'estimated price' : 'price you entered' };
+  return { title: `${ISSUER_LABELS[option.issuer]} travel portal`, detail: 'book with points' };
+}
+
+// What a saved trip remembers of the recommendation it got when saved, so it
+// can still be shown if today's cards can't produce one (a different device,
+// or a card since removed).
+export interface TripSnapshot {
+  headline: string;
+  option: { title: string; detail: string; cppCents: number | null; benchmarkRatio: number | null; pointsUsed: number } | null;
+}
+
+export function snapshotOf(verdict: VerdictResult | null): TripSnapshot | null {
+  if (!verdict) return null;
+  const best = verdict.options[0] ?? null;
+  return {
+    headline: verdictHeadline(verdict),
+    option: best
+      ? {
+          ...describePointsOption(best),
+          cppCents: best.cppCents,
+          benchmarkRatio: Number.isFinite(best.benchmarkRatio) ? best.benchmarkRatio : null,
+          pointsUsed: best.pointsUsed,
+        }
+      : null,
+  };
+}
+
+function sanitizeSnapshot(stored: unknown): TripSnapshot | null {
+  if (typeof stored !== 'object' || stored === null) return null;
+  const s = stored as Record<string, unknown>;
+  if (typeof s.headline !== 'string') return null;
+  const o = (typeof s.option === 'object' && s.option !== null ? s.option : null) as Record<string, unknown> | null;
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  return {
+    headline: s.headline.slice(0, 80),
+    option:
+      o && typeof o.title === 'string'
+        ? {
+            title: o.title.slice(0, 80),
+            detail: typeof o.detail === 'string' ? o.detail.slice(0, 80) : '',
+            cppCents: num(o.cppCents),
+            benchmarkRatio: num(o.benchmarkRatio),
+            pointsUsed: num(o.pointsUsed) ?? 0,
+          }
+        : null,
+  };
+}
+
+// Value per point from the trip's own prices, for when no card can produce an
+// option: the award (less its taxes) over its points, or the cash price over
+// the Chase Travel price. The higher of the two.
+export function valueFromInputs(trip: TripInputs): { cppCents: number; title: string; detail: string; pointsUsed: number } | null {
+  const candidates = [];
+  if (trip.selectedPartnerId && trip.pointsRequired > 0) {
+    candidates.push({
+      cppCents: ((trip.tripCashPrice - trip.awardCashFees) * 100) / trip.pointsRequired,
+      title: `Transfer to ${partnerName(trip.selectedPartnerId) ?? 'partner'}`,
+      detail: 'award price you entered',
+      pointsUsed: trip.pointsRequired,
+    });
+  }
+  if (trip.chaseTravelPoints > 0) {
+    candidates.push({
+      cppCents: (trip.tripCashPrice * 100) / trip.chaseTravelPoints,
+      title: 'Book in Chase Travel',
+      detail: 'price you entered',
+      pointsUsed: trip.chaseTravelPoints,
+    });
+  }
+  return candidates.sort((a, b) => b.cppCents - a.cppCents)[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,6 +194,7 @@ export interface SavedTrip {
   name: string;
   savedOn: string; // YYYY-MM-DD
   inputs: TripInputs;
+  snapshot: TripSnapshot | null;
 }
 
 export const SAVED_TRIPS_KEY = 'cco:savedTrips';
@@ -137,6 +231,7 @@ function sanitizeSavedTrips(stored: unknown): SavedTrip[] {
       name: (t.name as string).slice(0, 60),
       savedOn: typeof t.savedOn === 'string' ? t.savedOn : '',
       inputs: sanitizeTripInputs(t.inputs),
+      snapshot: sanitizeSnapshot(t.snapshot),
     }))
     .slice(0, MAX_SAVED_TRIPS);
 }
@@ -184,7 +279,7 @@ export function useCompareIds(): string[] {
   return ids.every((id) => trips.some((t) => t.id === id)) ? ids : ids.filter((id) => trips.some((t) => t.id === id));
 }
 
-export function saveTrip(name: string, inputs: TripInputs): SavedTrip | null {
+export function saveTrip(name: string, inputs: TripInputs, verdict: VerdictResult | null = null): SavedTrip | null {
   const trips = read(SAVED_TRIPS_KEY, sanitizeSavedTrips, []);
   if (trips.length >= MAX_SAVED_TRIPS) return null;
   const trip: SavedTrip = {
@@ -192,6 +287,7 @@ export function saveTrip(name: string, inputs: TripInputs): SavedTrip | null {
     name: name.trim().slice(0, 60) || 'Untitled trip',
     savedOn: new Date().toISOString().slice(0, 10),
     inputs: sanitizeTripInputs(inputs),
+    snapshot: snapshotOf(verdict),
   };
   write(SAVED_TRIPS_KEY, [trip, ...trips]);
   return trip;

@@ -9,6 +9,6 @@ export {
   nonBoostRateStatedFor,
   priceChaseTravel,
 } from './chaseTravel';
-export { computeRunway } from './runway';
+export { CASH_NOT_GIVEN, CASH_NOT_GIVEN_ASSUMPTION, computeRunway } from './runway';
 export { describeRunway, formatCents, formatMonths, verdictHeadline } from './labels';
 export type * from './types';

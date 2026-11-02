@@ -29,7 +29,9 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function VerdictCard({ result }: { result: VerdictResult }) {
+// cashConsidered is false when no cash position was given: the
+// recommendation is then on value alone, and the cash figures mean nothing.
+export function VerdictCard({ result, cashConsidered = true }: { result: VerdictResult; cashConsidered?: boolean }) {
   // Up to four options, best first, with the recommended one highlighted.
   const shown = result.options.slice(0, 4);
 
@@ -59,7 +61,14 @@ export function VerdictCard({ result }: { result: VerdictResult }) {
           )}
         </Panel>
         <Panel title="Your cash afterwards">
-          <RunwayMeter tone="dark" payCash={result.runway.payCash} usePoints={result.runway.usePoints} />
+          {cashConsidered ? (
+            <RunwayMeter tone="dark" payCash={result.runway.payCash} usePoints={result.runway.usePoints} />
+          ) : (
+            <p className="text-sm leading-relaxed text-slate-50/60">
+              Optional. Add your cash position to check whether paying cash would leave you
+              stretched. This recommendation is on value alone.
+            </p>
+          )}
         </Panel>
       </div>
 

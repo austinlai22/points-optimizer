@@ -2,7 +2,7 @@ import cardsData from '../../src/data/cards.json';
 import transferPartnersData from '../../src/data/transferPartners.json';
 import boostData from '../../src/data/chase-points-boost.json';
 import verdictConfig from '../../src/data/verdict-config.json';
-import { breakevenPoints, describeRunway, evaluateVerdict, listChaseCardTypes, nonBoostRateStatedFor, verdictHeadline } from '../../src/lib/verdict';
+import { CASH_NOT_GIVEN, breakevenPoints, describeRunway, evaluateVerdict, listChaseCardTypes, nonBoostRateStatedFor, verdictHeadline } from '../../src/lib/verdict';
 import { cardsForBankBalances } from '../../src/lib/verdict/byBank';
 import type { ChaseCardType, PointsOption } from '../../src/lib/verdict/types';
 import { CARD_TERMS_VERIFIED_ON } from '../../src/utils/freshness';
@@ -251,7 +251,7 @@ export function recommendPayment(input: RecommendInput, today?: string) {
         monthlyLeftover: input.cash_position.monthly_leftover_usd,
         monthlySpend: input.cash_position.monthly_spending_usd,
       }
-    : { available: Number.MAX_SAFE_INTEGER, monthlyLeftover: 0, monthlySpend: 1 };
+    : CASH_NOT_GIVEN;
   if (!input.cash_position) {
     assumptions.push('No cash position was given, so paying cash is assumed not to strain the traveller. Supply cash_position to include that check.');
   }

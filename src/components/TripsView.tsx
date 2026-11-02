@@ -29,7 +29,7 @@ import {
   sanitizeChaseInputs,
 } from '../utils/verdictInputs';
 import { PageIntro } from './PageShell';
-import { BookmarkIcon } from './SaveTripControl';
+import { HeartIcon } from './SaveTripControl';
 import { TripComparison } from './TripComparison';
 import type { CardConfig } from '../types';
 
@@ -39,6 +39,24 @@ const DRAG_TYPE = 'application/x-pointcompass-trip';
 function formatSavedOn(iso: string): string {
   if (!iso) return '';
   return new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Opens the trip in Check a trip: an arrow out of a box.
+function OpenIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+      <path d="M14 4h6v6M20 4l-9 9" />
+      <path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.8 12.2A1.5 1.5 0 0 0 8.8 20.5h6.4a1.5 1.5 0 0 0 1.5-1.3L17.5 7M10 11v6M14 11v6" />
+    </svg>
+  );
 }
 
 function CheckIcon() {
@@ -129,8 +147,8 @@ function TripCard({ trip, verdict, selected, onToggle }: TripCardProps) {
         {confirmingDelete ? (
           <>
             <span className="mr-auto text-navy-950/60">Delete this trip?</span>
-            <button type="button" onClick={() => deleteTrip(trip.id)} className={`rounded-full px-3 font-medium text-red hover:bg-red/5 ${TAP_TARGET} ${FOCUS_RING}`}>
-              Delete
+            <button type="button" onClick={() => deleteTrip(trip.id)} className={`inline-flex items-center gap-1.5 rounded-full px-3 font-medium text-red hover:bg-red/5 ${TAP_TARGET} ${FOCUS_RING}`}>
+              <TrashIcon /> Delete
             </button>
             <button type="button" onClick={() => setConfirmingDelete(false)} className={`rounded-full px-3 font-medium text-navy-950/60 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}>
               Keep
@@ -138,11 +156,11 @@ function TripCard({ trip, verdict, selected, onToggle }: TripCardProps) {
           </>
         ) : (
           <>
-            <button type="button" onClick={() => openTrip(trip)} className={`mr-auto rounded-full px-3 font-medium text-navy hover:bg-navy/5 ${TAP_TARGET} ${FOCUS_RING}`}>
-              Open
+            <button type="button" onClick={() => openTrip(trip)} className={`mr-auto inline-flex items-center gap-1.5 rounded-full px-3 font-medium text-navy hover:bg-navy/5 ${TAP_TARGET} ${FOCUS_RING}`}>
+              <OpenIcon /> Open
             </button>
-            <button type="button" onClick={() => setConfirmingDelete(true)} className={`rounded-full px-3 font-medium text-navy-950/50 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}>
-              Delete
+            <button type="button" onClick={() => setConfirmingDelete(true)} className={`inline-flex items-center gap-1.5 rounded-full px-3 font-medium text-navy-950/50 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}>
+              <TrashIcon /> Delete
             </button>
           </>
         )}
@@ -169,7 +187,7 @@ export function TripsView() {
     [trips, ownedCards, balances, basis, cashInputs, chaseInputs],
   );
   const compared = compareIds.map((id) => trips.find((t) => t.id === id)!).filter(Boolean);
-  const anyVerdict = trips.some((t) => verdicts.get(t.id));
+  const cashMissing = trips.some((t) => verdicts.get(t.id)?.cashConsidered === false);
 
   const add = (id: string) => {
     if (addToCompare(id)) setNotice('');
@@ -214,7 +232,7 @@ export function TripsView() {
         {trips.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-navy/20 bg-white px-6 py-14 text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-navy/10 text-navy">
-              <BookmarkIcon />
+              <HeartIcon />
             </div>
             <p className="font-display text-lg text-navy-950">No saved trips yet</p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-navy-950/55">
@@ -266,13 +284,13 @@ export function TripsView() {
                 {notice}
               </p>
 
-              {!anyVerdict && compared.length > 0 && (
-                <p className="mb-4 rounded-2xl border border-amber/30 bg-amber/5 px-4 py-3 text-sm text-navy-950/75">
-                  Add your cash position in{' '}
+              {cashMissing && compared.length > 0 && (
+                <p className="mb-4 text-sm text-navy-950/55">
+                  Recommendations are on value alone. Add your cash position in{' '}
                   <a href="/app" onClick={linkHandler('/app')} className={`rounded font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}>
                     Check a trip
                   </a>{' '}
-                  to see a recommendation for each trip.
+                  to also check whether paying cash would leave you stretched.
                 </p>
               )}
 

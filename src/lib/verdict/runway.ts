@@ -38,3 +38,11 @@ export function computeRunway(cash: CashInputs, outlay: number): RunwayResult {
     strainReasons,
   };
 }
+
+// Stands in when no cash position is given: so much cash that paying never
+// strains, which switches the strain check off. Callers say so in the
+// assumptions with CASH_NOT_GIVEN_ASSUMPTION rather than guessing.
+export const CASH_NOT_GIVEN: CashInputs = { available: Number.MAX_SAFE_INTEGER, monthlyLeftover: 0, monthlySpend: 1 };
+export const CASH_NOT_GIVEN_ASSUMPTION =
+  'No cash position was given, so paying cash is assumed not to leave you stretched. Add it to include that check.';
+
