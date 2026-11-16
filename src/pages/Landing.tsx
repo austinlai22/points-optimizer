@@ -170,8 +170,8 @@ const FAQ: { q: string; a: ReactNode }[] = [
     q: 'What information do you keep?',
     a: (
       <>
-        Nothing you enter leaves your browser: your cards, balances and cash figures stay on your
-        device. The{' '}
+        Your cards, balances and cash figures stay on your device. The optional AI features send
+        only what you type to them, plus PointCompass's own results, to Google Gemini. The{' '}
         <a href="/privacy" onClick={linkHandler('/privacy')} className={`rounded font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}>
           privacy page
         </a>{' '}
@@ -465,7 +465,41 @@ export function Landing() {
         </div>
       </Section>
 
-      <Section id="faq" tone="white">
+      <Section id="assistants" tone="white">
+        <SectionHeading
+          id="assistants"
+          eyebrow="Use it from your AI assistant"
+          title="Ask Claude. It checks with PointCompass."
+          intro="Add PointCompass as a connector, and your assistant answers points-or-cash questions with the same engine and sourced data as this site, instead of guessing."
+        />
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            { step: '1', title: 'Add the connector', body: 'In Claude, add a custom connector with the PointCompass address. It takes a minute and needs no account here.' },
+            { step: '2', title: 'Ask in your own words', body: '“I have 80,000 Chase points. Should I use them on a $900 flight to Lisbon?”' },
+            { step: '3', title: 'Get a sourced answer', body: 'Your assistant runs PointCompass’s calculation and shows the same recommendation, ratios and assumptions as this site.' },
+          ].map(({ step, title, body }, i) => (
+            <Reveal key={step} delay={i * 80}>
+              <div className={`${TILE} h-full p-7`}>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy font-mono text-sm text-slate-50">{step}</span>
+                <h3 className="mt-4 font-display text-lg font-semibold text-navy-950">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-navy-950/60">{body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+        <div className="mt-10 text-center">
+          <a
+            href="/agents"
+            onClick={linkHandler('/agents')}
+            className={PRIMARY_BUTTON}
+          >
+            Set it up
+          </a>
+          <p className="mt-3 text-sm text-navy-950/50">Works with Claude, and other assistants that support custom connectors.</p>
+        </div>
+      </Section>
+
+      <Section id="faq">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
           <div>
             <p className="text-sm font-semibold text-navy/70">FAQ</p>
@@ -495,7 +529,7 @@ export function Landing() {
         </div>
       </Section>
 
-      <Section id="numbers">
+      <Section id="numbers" tone="white">
         <SectionHeading
           id="numbers"
           eyebrow="About the numbers"

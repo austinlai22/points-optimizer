@@ -69,7 +69,7 @@ export function SiteFooter() {
           Chase, Capital One, American Express, Citi, Bank of America, Bilt, or any airline or hotel
           program it mentions. Figures are estimates based on the assumptions described in the app
           and are not financial advice. Please confirm prices and current terms before booking.
-          Information you enter on this website stays in your browser.
+          Your cards, balances and cash figures stay in your browser.
         </p>
       </div>
     </footer>

@@ -31,7 +31,16 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 // cashConsidered is false when no cash position was given: the
 // recommendation is then on value alone, and the cash figures mean nothing.
-export function VerdictCard({ result, cashConsidered = true }: { result: VerdictResult; cashConsidered?: boolean }) {
+export function VerdictCard({
+  result,
+  cashConsidered = true,
+  onExplain,
+}: {
+  result: VerdictResult;
+  cashConsidered?: boolean;
+  // Opens the assistant to explain this answer, when it's set up.
+  onExplain?: () => void;
+}) {
   // Up to four options, best first, with the recommended one highlighted.
   const shown = result.options.slice(0, 4);
 
@@ -42,6 +51,15 @@ export function VerdictCard({ result, cashConsidered = true }: { result: Verdict
         {verdictHeadline(result)}
       </h2>
       <p className="mt-3 max-w-2xl leading-relaxed text-slate-50/75">{result.reason}</p>
+      {onExplain && (
+        <button
+          type="button"
+          onClick={onExplain}
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-50/25 px-4 text-sm font-medium text-slate-50 transition-colors hover:bg-slate-50/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-50 motion-reduce:transition-none"
+        >
+          Explain this
+        </button>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         <Panel title="Value per point">

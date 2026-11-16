@@ -329,7 +329,7 @@ describe('editing a saved trip', () => {
     expect(screen.getByText('“Lisbon”')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /update trip/i }));
 
-    expect(screen.getByRole('status')).toHaveTextContent('Updated “Lisbon”');
+    expect(screen.getByText(/Updated “Lisbon”/)).toBeInTheDocument();
     expect(stored()).toHaveLength(2);
     expect(stored().find((t) => t.name === 'Lisbon')).toMatchObject({ inputs: { tripCashPrice: 850 }, updatedOn: expect.any(String) });
   });

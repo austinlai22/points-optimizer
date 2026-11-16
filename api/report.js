@@ -1782,6 +1782,7 @@ function utcDate(now) {
 function fieldFor(event) {
 	if (event.name === "trip_check") return `trip_check:${event.verdict}`;
 	if (event.name === "agent_call") return `agent_call:${event.tool}`;
+	if (event.name === "ai_call") return `ai_call:${event.mode}`;
 	return event.name;
 }
 async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date()) {

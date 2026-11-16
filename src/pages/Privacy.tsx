@@ -38,9 +38,10 @@ export function Privacy() {
         }
       >
         <p>
-          PointCompass keeps what you enter in your own browser. Sharing a Chase Travel price is
-          optional and anonymous, usage is counted without anything you type, and you will never
-          be asked for bank logins.
+          PointCompass keeps your cards, balances and cash figures in your own browser. Sharing a
+          Chase Travel price is optional and anonymous, the AI features are optional and never see
+          your balances or cash, usage is counted without anything you type, and you will never be
+          asked for bank logins.
         </p>
       </PageIntro>
 
@@ -59,6 +60,34 @@ export function Privacy() {
             Trips you save, including the names you give them and the recommendation each got, are
             kept the same way: in this browser only, never sent anywhere. Deleting a trip removes
             it.
+          </p>
+        </Block>
+
+        <Block title="AI features (optional)">
+          <p>
+            Two features use AI: describing a trip in your own words, and asking PointCompass
+            questions. Neither runs unless you use it.
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              <strong className="font-medium text-navy-950">Describing a trip</strong> uses the AI
+              built into your browser when it has one, so nothing leaves your device. Otherwise
+              what you type is sent to Google Gemini, and if that isn't available it's read by a
+              simple text reader on your device.
+            </li>
+            <li>
+              <strong className="font-medium text-navy-950">Asking PointCompass</strong> sends your
+              questions to Google Gemini. To answer, it runs PointCompass's calculations in your
+              browser and sends back their results: the trip details, the recommendation, the
+              points each option would spend, your saved trips' names and prices, and whether
+              paying cash would leave you stretched.
+            </li>
+          </ul>
+          <p>
+            Your balances and cash amounts are never sent. Google may use what is sent through its
+            free service to improve its products, so don't type anything you'd rather keep private.
+            PointCompass doesn't store or log what is sent; it only counts how often each feature
+            is used.
           </p>
         </Block>
 
@@ -89,7 +118,7 @@ export function Privacy() {
           <p>
             To learn whether PointCompass is useful, it counts page views (through Vercel Web
             Analytics), recommendations shown, which kind they were and whether a cash position was
-            given, Chase Travel price checks, trips saved, comparisons made, shared price reports,
+            given, Chase Travel price checks, trips saved, comparisons made, uses of the AI features, shared price reports,
             and calls from AI assistants using the agent tool. None of these include anything you
             typed, and a saved trip's name or details are never counted or sent.
           </p>

@@ -39,6 +39,7 @@ export interface WeekRow {
   price_reports_rejected: number;
   agent_calls: number;
   trips_saved: number;
+  ai_calls: number;
   trips_compared: number;
   [detail: string]: string | number;
 }
@@ -59,6 +60,7 @@ export function toRows(weeks: PeriodStats[]): WeekRow[] {
       price_reports_rejected: w.counts.price_report_rejected ?? 0,
       agent_calls: sumPrefix(w.counts, 'agent_call:'),
       trips_saved: w.counts.trip_saved ?? 0,
+      ai_calls: sumPrefix(w.counts, 'ai_call:'),
       trips_compared: w.counts.trips_compared ?? 0,
     };
     for (const verdict of VERDICTS) row[`trip_checks_${verdict}`] = w.counts[`trip_check:${verdict}`] ?? 0;

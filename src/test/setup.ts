@@ -5,8 +5,12 @@ import '@testing-library/jest-dom/vitest';
 // reduced motion, which would make any figure it renders a moving target
 // mid-assertion. Reporting reduced motion pins it to the final value — and
 // exercises a path real users with that preference actually get.
-beforeEach(() => {
+beforeEach(async () => {
   if (typeof window === 'undefined') return;
+  // No server in tests: the assistant counts as not set up unless a test
+  // says otherwise, so nothing tries the network.
+  const { setServerAiEnabled } = await import('../lib/ai/client');
+  setServerAiEnabled(false);
   window.matchMedia = (query: string) =>
     ({
       matches: query.includes('prefers-reduced-motion'),

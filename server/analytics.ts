@@ -17,7 +17,9 @@ export type UsageEvent =
   | { name: 'trips_compared' }
   | { name: 'price_report' }
   | { name: 'price_report_rejected' }
-  | { name: 'agent_call'; tool: string };
+  | { name: 'agent_call'; tool: string }
+  // A call to /api/ai, by kind ('parse' or 'chat'). Nothing about its content.
+  | { name: 'ai_call'; mode: 'parse' | 'chat' };
 
 export const VERDICTS: Verdict[] = [
   'PAY_CASH',
@@ -41,6 +43,7 @@ export function utcDate(now: Date): string {
 function fieldFor(event: UsageEvent): string {
   if (event.name === 'trip_check') return `trip_check:${event.verdict}`;
   if (event.name === 'agent_call') return `agent_call:${event.tool}`;
+  if (event.name === 'ai_call') return `ai_call:${event.mode}`;
   return event.name;
 }
 

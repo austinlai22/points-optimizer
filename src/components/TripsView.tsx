@@ -36,6 +36,7 @@ import {
 import { PageIntro } from './PageShell';
 import { HeartIcon } from './SaveTripControl';
 import { TripComparison } from './TripComparison';
+import { PointsPlan } from './PointsPlan';
 import type { CardConfig } from '../types';
 
 const cards = cardsData as CardConfig[];
@@ -345,6 +346,7 @@ export function TripsView() {
                 <TripComparison trips={compared} verdicts={verdicts} heldIssuers={heldIssuers} dragOver={dragOver} onOpen={requestOpen} />
               )}
             </section>
+            <PointsPlan trips={trips} verdicts={verdicts} ownedCards={ownedCards} balances={balances} />
           </>
         )}
       </div>

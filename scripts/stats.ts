@@ -32,6 +32,7 @@ if (args.includes('--csv')) {
       Rejected: r.price_reports_rejected,
       'Agent calls': r.agent_calls,
       'Trips saved': r.trips_saved,
+      'AI calls': r.ai_calls,
       Compared: r.trips_compared,
     })),
   );

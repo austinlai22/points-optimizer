@@ -36,6 +36,12 @@ import {
 import { inferChaseCardType, verdictHeadline } from '../lib/verdict';
 import { DEFAULT_TRIP_INPUTS, evaluateTrip, sameTripInputs, sanitizeTripInputs, setEditingTrip, type TripInputs } from '../lib/trips';
 import { SaveTripControl } from './SaveTripControl';
+import { DescribeTrip } from './DescribeTrip';
+import { AskPanel } from './AskPanel';
+import { useAiEnabled } from '../lib/ai/useAiEnabled';
+import { tripFromParsed, type ToolContext } from '../lib/ai/tools';
+import type { ParsedTrip } from '../lib/ai/protocol';
+import { useSavedTrips } from '../lib/trips';
 import { track } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
 import { formatUSD, parseNonNegativeNumber } from '../utils/format';
@@ -376,6 +382,32 @@ export function TripOptimizerView() {
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
   }, [tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints, basis]);
 
+  // Sets every trip field at once, from the plain-words reader or the
+  // assistant, without handleBrandChange clearing the award just entered.
+  const applyTrip = (trip: TripInputs) => {
+    setTripCashPrice(trip.tripCashPrice);
+    setSelectedPartnerId(trip.selectedPartnerId);
+    setPointsRequired(trip.pointsRequired);
+    setPartnerPointsHeld(trip.partnerPointsHeld);
+    setAwardCashFees(trip.awardCashFees);
+    setChaseTravelPoints(trip.chaseTravelPoints);
+  };
+  const fillFromWords = (parsed: ParsedTrip) => applyTrip(tripFromParsed(parsed, tripInputs));
+
+  const aiEnabled = useAiEnabled();
+  const savedTrips = useSavedTrips();
+  const [ask, setAsk] = useState<{ open: boolean; question: { text: string; id: number } | null }>({ open: false, question: null });
+  const openAsk = (text?: string) => setAsk({ open: true, question: text ? { text, id: Date.now() } : null });
+  const toolContext = (): ToolContext => ({
+    trip: { ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs },
+    savedTrips,
+    currentTrip: tripInputs,
+    fillTripForm: (trip) => {
+      // Only programs one of the held cards reaches can be chosen in the form.
+      applyTrip(availablePartners.some((p) => p.id === trip.selectedPartnerId) ? trip : { ...trip, selectedPartnerId: '', pointsRequired: 0, partnerPointsHeld: 0, awardCashFees: 0 });
+    },
+  });
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -412,14 +444,31 @@ export function TripOptimizerView() {
         title="Check a trip"
         visual={<TripIntroVisual />}
         actions={
-          (tripCashPrice > 0 || selectedPartnerId) && (
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className={`rounded-full border border-navy/20 px-4 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
-            >
-              {copyStatus === 'copied' ? 'Link copied' : 'Copy link to this trip'}
-            </button>
+          (aiEnabled || tripCashPrice > 0 || selectedPartnerId) && (
+            <>
+              {aiEnabled && (
+                <button
+                  type="button"
+                  onClick={() => openAsk()}
+                  className={`inline-flex items-center gap-2 rounded-full bg-navy px-5 text-sm font-semibold text-slate-50 transition-colors hover:bg-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                    <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" />
+                    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+                  </svg>
+                  Ask PointCompass
+                </button>
+              )}
+              {(tripCashPrice > 0 || selectedPartnerId) && (
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className={`rounded-full border border-navy/20 px-4 text-sm font-medium text-navy-950/70 transition-colors hover:border-navy/40 hover:text-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
+                >
+                  {copyStatus === 'copied' ? 'Link copied' : 'Copy link to this trip'}
+                </button>
+              )}
+            </>
           )
         }
       >
@@ -452,6 +501,7 @@ export function TripOptimizerView() {
           <div className="space-y-6">
             <section className={`${CARD_SURFACE} p-6`}>
               <StepHeading step={1} title="The trip" />
+              <DescribeTrip reachablePrograms={new Set(availablePartners.map((p) => p.id))} onFill={fillFromWords} />
               <div className="space-y-5">
                 <div>
                   <label htmlFor="trip-price" className={`mb-1.5 block ${LABEL}`}>
@@ -621,7 +671,11 @@ export function TripOptimizerView() {
             )}
             {verdict ? (
               <div id="recommendation" ref={verdictRef} className="scroll-mt-20">
-                <VerdictCard result={verdict} cashConsidered={verdict.cashConsidered} />
+                <VerdictCard
+                  result={verdict}
+                  cashConsidered={verdict.cashConsidered}
+                  onExplain={aiEnabled ? () => openAsk(`Explain why PointCompass recommends “${verdictHeadline(verdict)}” for this trip.`) : undefined}
+                />
                 {verdict.chaseTravel && (
                   <PriceCheck
                     key={selectedPartner?.id ?? 'none'}
@@ -675,6 +729,13 @@ export function TripOptimizerView() {
 
         <Methodology />
       </div>
+
+      <AskPanel
+        open={ask.open}
+        onClose={() => setAsk((a) => ({ ...a, open: false }))}
+        question={ask.question}
+        toolContext={toolContext}
+      />
 
       {/* On phones the answer sits below the inputs, so offer a way to it
           whenever it's off screen. */}
