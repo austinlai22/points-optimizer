@@ -129,7 +129,13 @@ export function createPointCompassServer(deps: McpDeps): McpServer {
           .object({
             program: z.string().min(2).max(80).describe('A program_id from list_transfer_partners, or its name.'),
             points_required: points.describe('The award price in that program’s points.'),
-            points_already_held: z.number().int().min(0).max(50_000_000).optional(),
+            points_already_held: z
+              .number()
+              .int()
+              .min(0)
+              .max(50_000_000)
+              .optional()
+              .describe("Points already in that program's account. Only the difference is transferred, but held points still count at what transferring them would cost, so they don't make a trip look free."),
           })
           .optional()
           .describe('An award price found with an airline or hotel program.'),

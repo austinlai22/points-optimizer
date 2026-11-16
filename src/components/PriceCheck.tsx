@@ -96,6 +96,12 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
   const [cabin, setCabin] = useState<Cabin | ''>('');
   const [hotelChain, setHotelChain] = useState(start.hotelChain);
   const [another, setAnother] = useState<AnotherFare | null>(null);
+  // Chase Travel's own cash price for the booking, which can differ from the
+  // trip price entered earlier (from the airline's site, say). Null follows
+  // the trip price until changed, so the report's two prices come from the
+  // same place.
+  const [chaseCash, setChaseCash] = useState<number | null>(null);
+  const reportCash = chaseCash ?? tripCashPrice;
   const [status, setStatus] = useState<{ kind: 'idle' | 'sending' | 'sent' | 'error'; message?: string }>({ kind: 'idle' });
 
   const isFlight = bookingType === 'flight';
@@ -114,7 +120,7 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
     airline: isFlight && airline ? airline : null,
     fare: isFlight && fare ? fare : null,
     hotel_chain: !isFlight && hotelChain ? hotelChain : null,
-    cash_price_usd: another ? another.cash : tripCashPrice,
+    cash_price_usd: another ? another.cash : reportCash,
     chase_points_price: another ? another.points : points,
     boost_shown: reportBoost ?? 'unsure',
   };
@@ -278,10 +284,19 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-navy-950/60">
-                  A few details make the price useful to others. Only these fields, the card type and
-                  the two prices are shared.
-                </p>
+                <>
+                  <p className="text-sm text-navy-950/60">
+                    A few details make the price useful to others. Only these fields, the card type and
+                    the two prices are shared.
+                  </p>
+                  <div className="max-w-xs">
+                    {numberField('report-cash', 'Cash price in Chase Travel', reportCash, (cash) => setChaseCash(cash))}
+                    <p className="mt-1.5 text-xs text-navy-950/50">
+                      The cash price Chase Travel shows for this same booking, so both prices come from
+                      one place. Starts from your trip price.
+                    </p>
+                  </div>
+                </>
               )}
 
               <div>

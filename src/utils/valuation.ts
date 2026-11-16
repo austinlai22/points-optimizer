@@ -343,11 +343,12 @@ interface ComputeRedemptionPathsArgs {
   // Hyatt points against a 30,000-point award means moving 10,000 — and if
   // you already hold the full price, nothing moves at all.
   //
-  // Those existing points are treated as costing nothing further, because
-  // this app has no basis for valuing a partner's currency: that would mean
-  // publishing a cents-per-point figure for all 35 of them, the subjective
-  // guesswork MAX_CEILING_RATIO exists to avoid. So read a path that leans on
-  // them as "what this trip costs you FROM HERE", not as its total worth.
+  // Those existing points aren't free: they're worth what it would cost to
+  // transfer the same amount from your card, so they're valued at your own
+  // points' rate through this path's ratio. That avoids publishing a value
+  // for each partner currency (the guesswork MAX_CEILING_RATIO exists to
+  // avoid) while stopping a cheap trip from looking free just because it
+  // spends partner points.
   partnerPointsHeld?: number;
 }
 
@@ -438,12 +439,13 @@ export function computeRedemptionPaths({
         const partnerPointsApplied = Math.min(partnerPointsHeld, partnerPointsRequired);
         const partnerPointsShortfall = partnerPointsRequired - partnerPointsApplied;
         const pointsUsed = partnerPointsShortfall / cardRatio;
+        const equivalentPoints = pointsUsed + partnerPointsApplied / cardRatio;
         // An award booking costs you BOTH the points (valued at their
         // opportunity cost) AND whatever cash you still hand over in taxes
         // and carrier surcharges — so the honest total is the sum. Without
         // this, a "cheap" award with $600 of surcharges would rank above a
         // portal booking that actually costs you less overall.
-        const cost = pointsUsed * issuerRate + awardCashFees;
+        const cost = equivalentPoints * issuerRate + awardCashFees;
 
         const ownBalance = balances[recommendedCard.id] ?? 0;
         // Cash fees are paid with money, not points, so they never affect
@@ -461,6 +463,7 @@ export function computeRedemptionPaths({
           partner,
           pointsUsed,
           partnerPointsApplied,
+          equivalentPoints,
           cashFees: awardCashFees,
           cost,
           sufficient,
@@ -507,6 +510,7 @@ export function computeRedemptionPaths({
       // A portal booking is paid in issuer points; airline and hotel balances
       // are no use at a travel portal.
       partnerPointsApplied: 0,
+      equivalentPoints: portalPointsUsed,
       cashFees: 0,
       cost: portalPointsUsed * issuerRate,
       sufficient: portalSufficient,

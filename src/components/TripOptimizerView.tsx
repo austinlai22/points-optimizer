@@ -550,8 +550,8 @@ export function TripOptimizerView() {
                         className={`${FIELD} bg-white ${TAP_TARGET} ${FOCUS_RING}`}
                       />
                       <p className="mt-1.5 text-xs text-navy-950/50">
-                        Only the difference is transferred. These points are treated as already
-                        spent, since this app does not assign a value to partner currencies.
+                        Only the difference is transferred. These points still count at what it
+                        would cost to transfer them from your card.
                       </p>
                     </div>
 

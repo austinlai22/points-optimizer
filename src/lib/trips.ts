@@ -131,6 +131,10 @@ export interface TripSnapshot {
     // worth in cents. Null in trips saved before these were kept.
     cashFees: number | null;
     benchmarkCents: number | null;
+    // Points including any already held with the partner, and whose points
+    // they are (the bank). Null in trips saved before these were kept.
+    equivalentPoints: number | null;
+    issuer: Issuer | null;
   } | null;
 }
 
@@ -155,6 +159,8 @@ export function snapshotOf(verdict: VerdictResult | null): TripSnapshot | null {
           pointsUsed: best.pointsUsed,
           cashFees: best.cashFees,
           benchmarkCents: best.benchmarkCents,
+          equivalentPoints: best.equivalentPoints,
+          issuer: best.issuer,
         }
       : null,
   };
@@ -178,6 +184,8 @@ function sanitizeSnapshot(stored: unknown): TripSnapshot | null {
             pointsUsed: num(o.pointsUsed) ?? 0,
             cashFees: num(o.cashFees),
             benchmarkCents: num(o.benchmarkCents),
+            equivalentPoints: num(o.equivalentPoints),
+            issuer: typeof o.issuer === 'string' ? (o.issuer as Issuer) : null,
           }
         : null,
   };
@@ -198,6 +206,8 @@ export interface EnteredValue {
   unit: string | null;
   // Cash still due on top of the points: the award's taxes and fees.
   cashFees: number;
+  // Whose points these are, when known: the bank whose ratio was used.
+  issuer: Issuer | null;
 }
 
 // Value per point from the trip's own prices, for when no card can produce an
@@ -213,9 +223,11 @@ export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): Entere
   const partner = transferPartners.find((p) => p.id === trip.selectedPartnerId);
   if (partner && trip.pointsRequired > 0) {
     const ratios = Object.entries(partner.ratiosByIssuer) as [Issuer, number][];
-    const held = ratios.filter(([issuer]) => heldIssuers.includes(issuer)).map(([, r]) => r);
+    const held = ratios.filter(([issuer]) => heldIssuers.includes(issuer)).sort((a, b) => b[1] - a[1]);
     const all = [...new Set(ratios.map(([, r]) => r))];
-    const ratio = held.length > 0 ? Math.max(...held) : all.length === 1 ? all[0] : null;
+    const ratio = held.length > 0 ? held[0][1] : all.length === 1 ? all[0] : null;
+    // Whose points: the held bank used, or the only bank there is.
+    const issuer = held.length > 0 ? held[0][0] : ratios.length === 1 ? ratios[0][0] : null;
     const valueBought = Math.max(0, trip.tripCashPrice - trip.awardCashFees);
     const points = ratio ? Math.ceil(trip.pointsRequired / ratio) : trip.pointsRequired;
     candidates.push({
@@ -226,6 +238,7 @@ export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): Entere
       perPartnerPoint: ratio === null,
       unit: ratio === null ? partner.name : null,
       cashFees: trip.awardCashFees,
+      issuer,
     });
   }
   if (trip.chaseTravelPoints > 0) {
@@ -237,6 +250,7 @@ export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): Entere
       perPartnerPoint: false,
       unit: null,
       cashFees: 0,
+      issuer: 'chase',
     });
   }
   // A per-partner-point figure can't be compared with a per-bank-point one,

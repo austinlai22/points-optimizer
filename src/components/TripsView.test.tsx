@@ -131,7 +131,7 @@ describe('comparing saved trips', () => {
     expect(compareSection().queryByText('Highest value per point')).toBeNull();
     expect(compareSection().getByText('Fewest points')).toBeInTheDocument();
     // Both save $0 at 1¢ a point in Chase Travel, so nobody wins on that either.
-    expect(compareSection().queryByText('Most saved')).toBeNull();
+    expect(compareSection().queryByText('Best saving')).toBeNull();
     expect(compareSection().getByText('Wins on 2 of 4')).toBeInTheDocument();
   });
 
@@ -151,12 +151,12 @@ describe('comparing saved trips', () => {
     expect(section.getByText('35,000 pts', { exact: false })).toHaveTextContent('35,000 pts + $51.20');
     // $702 - $121.50 - 25,000 points at 1¢.
     const saved = section.getByText('$330.50').closest('div')!;
-    expect(within(saved).getByText('Most saved')).toBeInTheDocument();
+    expect(within(saved).getByText('Best saving')).toBeInTheDocument();
     expect(section.getByText('$300.80')).toBeInTheDocument();
     expect(section.getAllByText(/points valued at 1¢ each/)).toHaveLength(2);
   });
 
-  it("doesn't count 'Most saved' for a trip that loses money against cash", () => {
+  it("doesn't count 'Best saving' for a trip that loses money against cash", () => {
     // Valued at their transfer value, points spent in Chase Travel at 1¢ cost
     // more than paying cash on both trips.
     localStorage.setItem('cco:basis', 'transfer');
@@ -164,9 +164,35 @@ describe('comparing saved trips', () => {
     fireEvent.click(card('Lisbon'));
     fireEvent.click(card('Tokyo'));
     expect(compareSection().getAllByText(/more$/)).toHaveLength(2);
-    expect(compareSection().queryByText('Most saved')).toBeNull();
+    expect(compareSection().queryByText('Best saving')).toBeNull();
     // Lisbon still wins on price and points, but not on savings.
     expect(compareSection().getByText('Wins on 2 of 4')).toBeInTheDocument();
+  });
+
+  it('ranks savings by the share of the price, so a pricier trip does not win just for being pricier', () => {
+    // $2,000 saved on $4,000 (50%) against $400 saved on $600 (67%), points at 1¢.
+    saveTrip('Long haul', trip(4000, { selectedPartnerId: 'united', pointsRequired: 200000 }));
+    saveTrip('Weekend', trip(600, { selectedPartnerId: 'united', pointsRequired: 20000 }));
+    visit('/trips');
+    fireEvent.click(card('Long haul'));
+    fireEvent.click(card('Weekend'));
+    expect(compareSection().getByText('$2,000')).toBeInTheDocument();
+    expect(compareSection().getByText('50% of the cash price')).toBeInTheDocument();
+    const weekend = compareSection().getByText('67% of the cash price').closest('div')!;
+    expect(within(weekend).getByText('Best saving')).toBeInTheDocument();
+  });
+
+  it("only compares points counts within one bank's currency", () => {
+    localStorage.setItem('cco:ownership', JSON.stringify({ csr: true, amexgold: true }));
+    localStorage.setItem('cco:balances', JSON.stringify({ csr: 200_000, amexgold: 200_000 }));
+    // One trip spends Chase points (United), the other Amex points (Delta).
+    saveTrip('Chase trip', trip(900, { selectedPartnerId: 'united', pointsRequired: 30000 }));
+    saveTrip('Amex trip', trip(900, { selectedPartnerId: 'delta', pointsRequired: 60000 }));
+    visit('/trips');
+    fireEvent.click(card('Chase trip'));
+    fireEvent.click(card('Amex trip'));
+    expect(compareSection().getByText('30,000 pts', { exact: false })).toBeInTheDocument();
+    expect(compareSection().queryByText('Fewest points')).toBeNull();
   });
 
   it('shows what points would get even when the recommendation is to pay cash', () => {

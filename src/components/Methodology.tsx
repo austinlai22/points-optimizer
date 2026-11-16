@@ -139,9 +139,10 @@ export function Methodology() {
             an award with large surcharges.
           </p>
           <p>
-            Points you already hold with an airline or hotel reduce what needs transferring. They
-            are treated as already spent, because this app does not assign a value to partner
-            currencies, so such an option shows what the trip costs from this point onward.
+            Points you already hold with an airline or hotel reduce what needs transferring, but
+            they aren't free: they're valued at what it would cost to transfer the same amount from
+            your card. So a cheap trip doesn't look like a bargain just because it uses points you
+            already have.
           </p>
         </Topic>
 

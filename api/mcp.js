@@ -26433,7 +26433,8 @@ function computeRedemptionPaths({ cards, transferPartners, balances, tripCashPri
 				const cardRatio = ratio * getPartnerRatioMultiplier(recommendedCard, partner.id);
 				const partnerPointsApplied = Math.min(partnerPointsHeld, partnerPointsRequired);
 				const pointsUsed = (partnerPointsRequired - partnerPointsApplied) / cardRatio;
-				const cost = pointsUsed * issuerRate + awardCashFees;
+				const equivalentPoints = pointsUsed + partnerPointsApplied / cardRatio;
+				const cost = equivalentPoints * issuerRate + awardCashFees;
 				const ownBalance = balances[recommendedCard.id] ?? 0;
 				const sufficient = pooledBalance >= pointsUsed;
 				const usesPooling = ownBalance < pointsUsed && sufficient;
@@ -26445,6 +26446,7 @@ function computeRedemptionPaths({ cards, transferPartners, balances, tripCashPri
 					partner,
 					pointsUsed,
 					partnerPointsApplied,
+					equivalentPoints,
 					cashFees: awardCashFees,
 					cost,
 					sufficient,
@@ -26466,6 +26468,7 @@ function computeRedemptionPaths({ cards, transferPartners, balances, tripCashPri
 			partner: null,
 			pointsUsed: portalPointsUsed,
 			partnerPointsApplied: 0,
+			equivalentPoints: portalPointsUsed,
 			cashFees: 0,
 			cost: portalPointsUsed * issuerRate,
 			sufficient: portalSufficient,
@@ -26642,7 +26645,7 @@ function buildReason(decision, payCash) {
 	if (option) {
 		const cashNote = code === "protectsCash" ? ` ${strainSentence(payCash)}.` : "";
 		if (option.kind === "transfer") {
-			if (option.cppCents === null) return `Book with ${option.partner.name} using the points you already hold. No transfer is needed.${cashNote}`;
+			if (option.pointsUsed === 0) return `Book with ${option.partner.name} using the ${formatPoints(option.partnerPointsApplied)} points you already hold. No transfer is needed, ${valueClause(option)}${cashNote}`;
 			return `Transfer ${formatPoints(option.pointsUsed)} ${ISSUER_LABELS[option.issuer]} points to ${option.partner.name}, ${valueClause(option)}${cashNote}`;
 		}
 		if (option.kind === "chaseTravel") return `Book in Chase Travel for ${formatPoints(option.pointsUsed)} points, ${valueClause(option)}${cashNote}`;
@@ -26702,7 +26705,7 @@ function evaluateVerdict(input) {
 		if (path.kind === "portal" && path.issuer === "chase") continue;
 		const benchmark = path.kind === "transfer" && path.issuer === "chase" ? chaseTransferBenchmark : benchmarkCents[path.issuer];
 		const valueBought = Math.max(0, path.kind === "transfer" ? tripCashPrice - awardTaxes : tripCashPrice);
-		const cppCents = path.pointsUsed > 0 ? valueBought * 100 / path.pointsUsed : null;
+		const cppCents = path.equivalentPoints > 0 ? valueBought * 100 / path.equivalentPoints : null;
 		options.push({
 			kind: path.kind,
 			issuer: path.issuer,
@@ -26710,6 +26713,7 @@ function evaluateVerdict(input) {
 			partner: path.partner,
 			pointsUsed: path.pointsUsed,
 			partnerPointsApplied: path.partnerPointsApplied,
+			equivalentPoints: path.equivalentPoints,
 			cashFees: path.cashFees,
 			cppCents,
 			benchmarkCents: benchmark,
@@ -26729,6 +26733,7 @@ function evaluateVerdict(input) {
 				partner: null,
 				pointsUsed: points,
 				partnerPointsApplied: 0,
+				equivalentPoints: points,
 				cashFees: 0,
 				cppCents,
 				benchmarkCents: chaseTravelBenchmark,
@@ -27140,7 +27145,7 @@ function createPointCompassServer(deps) {
 			award: object({
 				program: string().min(2).max(80).describe("A program_id from list_transfer_partners, or its name."),
 				points_required: points.describe("The award price in that program’s points."),
-				points_already_held: number$1().int().min(0).max(5e7).optional()
+				points_already_held: number$1().int().min(0).max(5e7).optional().describe("Points already in that program's account. Only the difference is transferred, but held points still count at what transferring them would cost, so they don't make a trip look free.")
 			}).optional().describe("An award price found with an airline or hotel program."),
 			cash_position: object({
 				available_usd: number$1().min(0).max(1e8),

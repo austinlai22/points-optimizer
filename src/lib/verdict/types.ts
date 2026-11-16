@@ -76,9 +76,12 @@ export interface PointsOption {
   pointsUsed: number;
   // Partner points already held that this option puts toward the award.
   partnerPointsApplied: number;
+  // pointsUsed plus held partner points converted to issuer points: what the
+  // booking is worth in your own points. Value per point is reckoned on it.
+  equivalentPoints: number;
   cashFees: number;
-  // Cents per issuer point spent. null when no issuer points are spent at
-  // all (the award is fully covered by partner points already held).
+  // Cents per equivalent point. null only when no points are involved at
+  // all.
   cppCents: number | null;
   benchmarkCents: number;
   // cppCents ÷ benchmarkCents: how many times the benchmark this option gets.

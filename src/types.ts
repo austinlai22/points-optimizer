@@ -132,6 +132,11 @@ export interface RedemptionPath {
   // points. When it equals the award price, nothing needs transferring at all
   // and pointsUsed is zero.
   partnerPointsApplied: number;
+  // pointsUsed plus the partner points applied, converted back to issuer
+  // points at this path's ratio: what the award is worth in your own
+  // points. Held partner points aren't free, they're points you could have
+  // transferred, so cost and value per point are reckoned on this.
+  equivalentPoints: number;
   // Out-of-pocket cash you still have to pay on top of the points — award
   // taxes and carrier-imposed surcharges. Only ever nonzero on transfer
   // paths: a portal booking is paid entirely in points at the trip's cash

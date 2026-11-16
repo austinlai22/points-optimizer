@@ -134,8 +134,8 @@ function buildReason(decision: Decision, payCash: RunwayResult): string {
   if (option) {
     const cashNote = code === 'protectsCash' ? ` ${strainSentence(payCash)}.` : '';
     if (option.kind === 'transfer') {
-      if (option.cppCents === null) {
-        return `Book with ${option.partner!.name} using the points you already hold. No transfer is needed.${cashNote}`;
+      if (option.pointsUsed === 0) {
+        return `Book with ${option.partner!.name} using the ${formatPoints(option.partnerPointsApplied)} points you already hold. No transfer is needed, ${valueClause(option)}${cashNote}`;
       }
       return `Transfer ${formatPoints(option.pointsUsed)} ${ISSUER_LABELS[option.issuer]} points to ${option.partner!.name}, ${valueClause(option)}${cashNote}`;
     }
@@ -268,7 +268,9 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
     // Never below zero: taxes at or above the cash price mean the points buy
     // nothing, not that they cost you value.
     const valueBought = Math.max(0, path.kind === 'transfer' ? tripCashPrice - awardTaxes : tripCashPrice);
-    const cppCents = path.pointsUsed > 0 ? (valueBought * 100) / path.pointsUsed : null;
+    // On the equivalent points, so points already held with the partner
+    // count at what they'd cost to transfer, not as free.
+    const cppCents = path.equivalentPoints > 0 ? (valueBought * 100) / path.equivalentPoints : null;
     options.push({
       kind: path.kind,
       issuer: path.issuer,
@@ -276,6 +278,7 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
       partner: path.partner,
       pointsUsed: path.pointsUsed,
       partnerPointsApplied: path.partnerPointsApplied,
+      equivalentPoints: path.equivalentPoints,
       cashFees: path.cashFees,
       cppCents,
       benchmarkCents: benchmark,
@@ -296,6 +299,7 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
         partner: null,
         pointsUsed: points,
         partnerPointsApplied: 0,
+        equivalentPoints: points,
         cashFees: 0,
         cppCents,
         benchmarkCents: chaseTravelBenchmark,

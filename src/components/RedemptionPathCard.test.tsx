@@ -41,6 +41,7 @@ function makePath(overrides: Partial<RedemptionPath> = {}): RedemptionPath {
     partner: hyatt,
     pointsUsed: 30_000,
     partnerPointsApplied: 0,
+    equivalentPoints: 30_000,
     cashFees: 0,
     cost: 300,
     sufficient: true,

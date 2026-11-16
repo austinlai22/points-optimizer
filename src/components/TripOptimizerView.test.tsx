@@ -82,6 +82,22 @@ describe('TripOptimizerView verdict', () => {
     expect(screen.getByLabelText(/chase card your points are on/i)).toBeInTheDocument();
   });
 
+  it("uses a shared link's valuation setting for the visit without saving it as yours", () => {
+    localStorage.setItem('cco:basis', 'guaranteed');
+    window.history.replaceState(null, '', '/app?price=900&basis=transfer');
+    localStorage.setItem('cco:ownership', JSON.stringify({ csr: true }));
+    render(
+      <CardBalancesProvider>
+        <TripOptimizerView />
+      </CardBalancesProvider>,
+    );
+    const choices = within(screen.getByRole('radiogroup'));
+    expect(choices.getByRole('radio', { checked: true })).toHaveTextContent(/transfer/i);
+    expect(localStorage.getItem('cco:basis')).toBe('guaranteed');
+    fireEvent.click(choices.getByRole('radio', { name: /cash-back floor/i }));
+    expect(localStorage.getItem('cco:basis')).toBe('cashBack');
+  });
+
   it('warns when the award fees are at least the cash price', () => {
     renderView();
     type(/trip cash price/i, '300');
@@ -277,6 +293,24 @@ describe('Chase Travel price check and sharing', () => {
     expect(screen.queryByRole('button', { name: 'Main Classic' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Other fare' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
+  });
+
+  it("shares Chase Travel's own cash price, starting from the trip price", async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 201 }));
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(priceCheck().getByRole('button', { name: 'No' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    expect(screen.getByLabelText(/cash price in chase travel/i)).toHaveValue(900);
+    type(/cash price in chase travel/i, '880');
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
+    type(/^from$/i, 'SFO');
+    type(/^to$/i, 'LGA');
+    pickMonth(nextMonth());
+    fireEvent.click(screen.getByRole('button', { name: 'Share price' }));
+    expect(sentBodies(fetchSpy)[0]).toMatchObject({ cash_price_usd: 880, chase_points_price: 45000 });
+    await screen.findByText(/shared anonymously/);
+    fetchSpy.mockRestore();
   });
 
   it('says what is still missing when sharing is blocked', () => {

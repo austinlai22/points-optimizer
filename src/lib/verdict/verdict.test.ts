@@ -366,3 +366,20 @@ describe('awards that cannot be used, and taxes above the price', () => {
     expect(result.verdict).toBe('PAY_CASH');
   });
 });
+
+describe('points already held with the partner', () => {
+  it('values them at what transferring them would cost, so a cheap trip is not a free win', () => {
+    const cheap = run({ tripCashPrice: 50, award: { partnerId: 'hyatt', pointsRequired: 30_000, partnerPointsHeld: 30_000 } });
+    expect(cheap.verdict).toBe('PAY_CASH');
+    const held = cheap.options.find((o) => o.kind === 'transfer')!;
+    expect(held.pointsUsed).toBe(0);
+    expect(held.equivalentPoints).toBe(30_000);
+    expect(held.cppCents).toBeCloseTo((50 * 100) / 30_000);
+  });
+
+  it('still says to use them when they are worth it', () => {
+    const good = run({ tripCashPrice: 900, award: { partnerId: 'hyatt', pointsRequired: 30_000, partnerPointsHeld: 30_000 } });
+    expect(good.verdict).toBe('TRANSFER_POINTS');
+    expect(good.reason).toMatch(/^Book with World of Hyatt using the 30,000 points you already hold\. No transfer is needed, which returns 3¢ per point/);
+  });
+});

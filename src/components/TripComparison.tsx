@@ -26,6 +26,10 @@ interface ColumnOption {
   // kept, or one with only its own prices to go on).
   cashFees: number | null;
   benchmarkCents: number | null;
+  // Points including any already held with the partner, and whose points
+  // they are. Null where not known.
+  equivalentPoints: number | null;
+  issuer: Issuer | null;
 }
 
 interface Column {
@@ -54,6 +58,8 @@ function columnFor(trip: SavedTrip, verdict: VerdictResult | null, heldIssuers: 
         pointsUsed: best.pointsUsed,
         cashFees: best.cashFees,
         benchmarkCents: best.benchmarkCents,
+        equivalentPoints: best.equivalentPoints,
+        issuer: best.issuer,
       },
       source: 'today',
     };
@@ -61,14 +67,14 @@ function columnFor(trip: SavedTrip, verdict: VerdictResult | null, heldIssuers: 
   if (trip.snapshot?.option) return { trip, headline: trip.snapshot.headline, option: trip.snapshot.option, source: 'saved' };
   const entered = valueFromInputs(trip.inputs, heldIssuers);
   const headline = verdict ? verdictHeadline(verdict) : (trip.snapshot?.headline ?? null);
-  if (entered) return { trip, headline, option: { ...entered, benchmarkRatio: null, benchmarkCents: null }, source: 'entered' };
+  if (entered) return { trip, headline, option: { ...entered, benchmarkRatio: null, benchmarkCents: null, equivalentPoints: entered.pointsUsed }, source: 'entered' };
   return { trip, headline, option: null, source: 'none' };
 }
 
 type WinKey = 'value' | 'savings' | 'price' | 'points';
 const WIN_LABELS: Record<WinKey, string> = {
   value: 'Highest value per point',
-  savings: 'Most saved',
+  savings: 'Best saving',
   price: 'Lowest cash price',
   points: 'Fewest points',
 };
@@ -119,9 +125,16 @@ export function TripComparison({
   // due together. Value per point is a rate; this is the overall result.
   const savings = columns.map((c) =>
     c.option && c.option.cashFees !== null && c.option.benchmarkCents !== null && !c.option.perPartnerPoint
-      ? savingsVsCash(c.trip.inputs.tripCashPrice, c.option.cashFees, c.option.pointsUsed, c.option.benchmarkCents)
+      ? savingsVsCash(c.trip.inputs.tripCashPrice, c.option.cashFees, c.option.equivalentPoints ?? c.option.pointsUsed, c.option.benchmarkCents)
       : null,
   );
+  // Ranked by the share of the price saved, so a pricier trip doesn't win
+  // just for being pricier; the dollars are shown alongside.
+  const savingsShare = savings.map((s, i) => (s === null ? null : s / columns[i].trip.inputs.tripCashPrice));
+  // Points counts only compare within one bank's currency: 30,000 Amex
+  // points and 30,000 Chase points aren't the same thing.
+  const currencies = columns.map((c) => (c.option && !c.option.perPartnerPoint ? c.option.issuer : null));
+  const oneCurrency = currencies.every((cur) => cur !== null && cur === currencies[0]);
   const wins: Record<WinKey, Set<number>> = {
     value: winners(
       columns.map((c) =>
@@ -130,8 +143,10 @@ export function TripComparison({
     ),
     price: winners(columns.map((c) => -c.trip.inputs.tripCashPrice)),
     // Only a trip that actually saves money can be "Most saved".
-    savings: new Set([...winners(savings)].filter((i) => (savings[i] ?? 0) > 0)),
-    points: winners(columns.map((c) => (c.option && c.option.pointsUsed > 0 && !c.option.perPartnerPoint ? -c.option.pointsUsed : null))),
+    savings: new Set([...winners(savingsShare)].filter((i) => (savings[i] ?? 0) > 0)),
+    points: oneCurrency
+      ? winners(columns.map((c) => (c.option && (c.option.equivalentPoints ?? c.option.pointsUsed) > 0 ? -(c.option.equivalentPoints ?? c.option.pointsUsed) : null)))
+      : new Set<number>(),
   };
   const winsFor = (i: number) => (Object.keys(wins) as WinKey[]).filter((k) => wins[k].has(i));
 
@@ -238,7 +253,10 @@ export function TripComparison({
                 <span className={`font-display text-3xl font-semibold tracking-tight ${wins.savings.has(i) ? 'text-teal' : 'text-navy-950'}`}>
                   {formatUSDExact(saved)}
                 </span>
-                <span className="mt-1 text-xs text-navy-950/50">vs paying cash, {valuedAt}</span>
+                <span className="mt-1 text-xs text-navy-950/70">
+                  {Math.round((saved / c.trip.inputs.tripCashPrice) * 100)}% of the cash price
+                </span>
+                <span className="mt-0.5 text-xs text-navy-950/50">vs paying cash, {valuedAt}</span>
                 {wins.savings.has(i) && <WinMark>{WIN_LABELS.savings}</WinMark>}
               </>
             ) : (
@@ -270,6 +288,9 @@ export function TripComparison({
                     {formatPoints(c.option.pointsUsed)} {c.option.perPartnerPoint ? 'partner pts' : 'pts'}
                     {c.option.cashFees ? <span className="text-navy-950/70"> + {formatUSDExact(c.option.cashFees)}</span> : null}
                   </span>
+                )}
+                {c.option.equivalentPoints !== null && c.option.equivalentPoints > c.option.pointsUsed + 0.5 && (
+                  <span className="mt-1 text-xs text-navy-950/50">plus partner points you already hold</span>
                 )}
                 {wins.points.has(i) && <WinMark>{WIN_LABELS.points}</WinMark>}
               </>

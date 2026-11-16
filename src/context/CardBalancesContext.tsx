@@ -17,7 +17,9 @@ function isValuationBasis(value: unknown): value is ValuationBasis {
 
 // Basis is the one piece of shared state that's also shareable via URL, so
 // its precedence lives here rather than in a view: a link someone sends you
-// should show THEIR basis, overriding whatever you last picked locally.
+// should show THEIR basis, overriding whatever you last picked locally — but
+// only for that visit: it isn't saved as your own setting, which changes
+// only when you pick one yourself.
 // Mirrors loadInitialTripInputs' URL > localStorage > default ordering in
 // TripOptimizerView.
 function loadInitialBasis(): ValuationBasis {
@@ -107,13 +109,15 @@ export function CardBalancesProvider({ children }: { children: ReactNode }) {
     }
   }, [ownership]);
 
-  useEffect(() => {
+  // Saved only when you choose it, never when a link supplies it.
+  const chooseBasis = (value: ValuationBasis) => {
+    setBasis(value);
     try {
-      localStorage.setItem(BASIS_STORAGE_KEY, basis);
+      localStorage.setItem(BASIS_STORAGE_KEY, value);
     } catch {
       // localStorage unavailable (private mode / quota) — basis still works in-memory.
     }
-  }, [basis]);
+  };
 
   const setBalance = (cardId: string, value: number) => {
     setBalances((prev) => ({ ...prev, [cardId]: value }));
@@ -129,7 +133,7 @@ export function CardBalancesProvider({ children }: { children: ReactNode }) {
 
   return (
     <CardBalancesContext.Provider
-      value={{ balances, setBalance, clearAllBalances, ownership, setOwned, basis, setBasis }}
+      value={{ balances, setBalance, clearAllBalances, ownership, setOwned, basis, setBasis: chooseBasis }}
     >
       {children}
     </CardBalancesContext.Provider>

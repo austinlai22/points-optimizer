@@ -837,8 +837,10 @@ describe('computeRedemptionPaths — points already held with the partner', () =
     const transferPath = paths.find((p) => p.kind === 'transfer');
     expect(transferPath?.pointsUsed).toBeCloseTo(10_000);
     expect(transferPath?.partnerPointsApplied).toBe(20_000);
-    // Only 10,000 points leave the Chase account, so the cost falls with them.
-    expect(transferPath?.cost).toBeCloseTo(10_000 * BASE_CPP);
+    // Only 10,000 points leave the Chase account, but the 20,000 already held
+    // aren't free: they count at what transferring them would cost.
+    expect(transferPath?.equivalentPoints).toBeCloseTo(30_000);
+    expect(transferPath?.cost).toBeCloseTo(30_000 * BASE_CPP);
   });
 
   it('needs no transfer at all once the balance covers the award', () => {
@@ -846,7 +848,8 @@ describe('computeRedemptionPaths — points already held with the partner', () =
     const transferPath = paths.find((p) => p.kind === 'transfer');
     expect(transferPath?.pointsUsed).toBe(0);
     expect(transferPath?.partnerPointsApplied).toBe(30_000);
-    expect(transferPath?.cost).toBe(0);
+    // Nothing moves, but the trip still uses 30,000 points' worth.
+    expect(transferPath?.cost).toBeCloseTo(30_000 * BASE_CPP);
   });
 
   it('never applies more partner points than the award costs', () => {
@@ -868,7 +871,14 @@ describe('computeRedemptionPaths — points already held with the partner', () =
     });
     const transferPath = paths.find((p) => p.kind === 'transfer');
     expect(transferPath?.pointsUsed).toBe(0);
-    expect(transferPath?.cost).toBeCloseTo(75);
+    expect(transferPath?.cost).toBeCloseTo(30_000 * BASE_CPP + 75);
+  });
+
+  it("doesn't let a cheap trip look free because it spends points already held", () => {
+    // A $50 stay for 30,000 Hyatt points already in the account: worth
+    // 30,000 Chase points, far more than $50, so it's a poor deal.
+    const paths = computeRedemptionPaths({ ...args, tripCashPrice: 50, partnerPointsHeld: 30_000 });
+    expect(paths.find((p) => p.kind === 'transfer')?.isPoorDeal).toBe(true);
   });
 
   it('measures held points in the partner currency, before any ratio', () => {
