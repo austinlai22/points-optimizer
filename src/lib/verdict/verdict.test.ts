@@ -346,3 +346,23 @@ describe('input validation', () => {
     expect(() => run({ cash: { ...HEALTHY, available: Number.NaN } })).toThrow(RangeError);
   });
 });
+
+describe('awards that cannot be used, and taxes above the price', () => {
+  it("says when no held card transfers to the award's program", () => {
+    const result = run({ award: { partnerId: 'delta', pointsRequired: 30_000 } });
+    expect(result.options.some((o) => o.partner?.id === 'delta')).toBe(false);
+    expect(result.assumptions).toContain("None of your cards transfer points to Delta SkyMiles, so its award price isn't one of the options.");
+  });
+
+  it('says when the balance is too small for the award', () => {
+    const result = run({ balances: { csr: 10_000 }, award: { partnerId: 'united', pointsRequired: 30_000 } });
+    expect(result.assumptions.some((a) => a.startsWith("Your points aren't enough to transfer for the 30,000-point United MileagePlus award"))).toBe(true);
+  });
+
+  it('values an award whose taxes exceed the price at zero, never below', () => {
+    const result = run({ tripCashPrice: 300, awardTaxes: 400, award: { partnerId: 'united', pointsRequired: 20_000 } });
+    const transfer = result.options.find((o) => o.kind === 'transfer')!;
+    expect(transfer.cppCents).toBe(0);
+    expect(result.verdict).toBe('PAY_CASH');
+  });
+});

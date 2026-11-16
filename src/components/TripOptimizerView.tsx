@@ -564,6 +564,11 @@ export function TripOptimizerView() {
                         Cash still payable when booking with points. Usually small, though some
                         airlines add large surcharges. Portal prices already include taxes.
                       </p>
+                      {tripCashPrice > 0 && awardCashFees >= tripCashPrice && (
+                        <p className="mt-1.5 text-xs font-medium text-amber" role="status">
+                          These fees are at least the trip's cash price, so this award saves nothing over paying cash.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

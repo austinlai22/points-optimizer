@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { SiteHeader } from './SiteHeader';
 import { TripOptimizerView } from './TripOptimizerView';
 import { CardBalancesProvider } from '../context/CardBalancesContext';
 
@@ -79,6 +80,29 @@ describe('TripOptimizerView verdict', () => {
     // A Chase partner keeps it open.
     type(/airline or hotel program/i, 'united');
     expect(screen.getByLabelText(/chase card your points are on/i)).toBeInTheDocument();
+  });
+
+  it('warns when the award fees are at least the cash price', () => {
+    renderView();
+    type(/trip cash price/i, '300');
+    type(/airline or hotel program/i, 'united');
+    type(/award price in points/i, '20000');
+    type(/taxes and fees on the award/i, '250');
+    expect(screen.queryByText(/at least the trip's cash price/i)).toBeNull();
+    type(/taxes and fees on the award/i, '300');
+    expect(screen.getByText(/at least the trip's cash price/i)).toBeInTheDocument();
+  });
+
+  it('ignores stored cards that no longer exist and balances that are not usable numbers', () => {
+    renderView({ owned: { csr: true, retiredcard: true } as Record<string, boolean>, balances: { csr: -5, retiredcard: 1000 } as Record<string, number> });
+    window.history.replaceState(null, '', '/');
+    cleanup();
+    render(
+      <CardBalancesProvider>
+        <SiteHeader current="home" />
+      </CardBalancesProvider>,
+    );
+    expect(within(screen.getByRole('navigation', { name: 'Your tools' })).getByRole('link', { name: /Portfolio\s*1$/ })).toBeInTheDocument();
   });
 
   it('puts the optional cash position after the trip and Chase Travel', () => {
@@ -253,6 +277,16 @@ describe('Chase Travel price check and sharing', () => {
     expect(screen.queryByRole('button', { name: 'Main Classic' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Other fare' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Premium economy' })).toBeInTheDocument();
+  });
+
+  it('says what is still missing when sharing is blocked', () => {
+    withRecommendation();
+    type(/chase travel price in points/i, '45000');
+    fireEvent.click(priceCheck().getByRole('button', { name: 'Yes' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /share this price anonymously/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'One way' }));
+    expect(screen.getByRole('button', { name: 'Share price' })).toBeDisabled();
+    expect(screen.getByText(/origin must be a 3-letter airport or city code/i)).toBeInTheDocument();
   });
 
   it('will not share a flight until it says one way or round trip', () => {

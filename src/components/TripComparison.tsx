@@ -129,7 +129,8 @@ export function TripComparison({
       ),
     ),
     price: winners(columns.map((c) => -c.trip.inputs.tripCashPrice)),
-    savings: winners(savings),
+    // Only a trip that actually saves money can be "Most saved".
+    savings: new Set([...winners(savings)].filter((i) => (savings[i] ?? 0) > 0)),
     points: winners(columns.map((c) => (c.option && c.option.pointsUsed > 0 && !c.option.perPartnerPoint ? -c.option.pointsUsed : null))),
   };
   const winsFor = (i: number) => (Object.keys(wins) as WinKey[]).filter((k) => wins[k].has(i));

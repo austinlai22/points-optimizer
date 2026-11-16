@@ -156,6 +156,19 @@ describe('comparing saved trips', () => {
     expect(section.getAllByText(/points valued at 1¢ each/)).toHaveLength(2);
   });
 
+  it("doesn't count 'Most saved' for a trip that loses money against cash", () => {
+    // Valued at their transfer value, points spent in Chase Travel at 1¢ cost
+    // more than paying cash on both trips.
+    localStorage.setItem('cco:basis', 'transfer');
+    visit('/trips');
+    fireEvent.click(card('Lisbon'));
+    fireEvent.click(card('Tokyo'));
+    expect(compareSection().getAllByText(/more$/)).toHaveLength(2);
+    expect(compareSection().queryByText('Most saved')).toBeNull();
+    // Lisbon still wins on price and points, but not on savings.
+    expect(compareSection().getByText('Wins on 2 of 4')).toBeInTheDocument();
+  });
+
   it('shows what points would get even when the recommendation is to pay cash', () => {
     visit('/trips');
     fireEvent.click(card('Lisbon'));

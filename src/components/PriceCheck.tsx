@@ -54,9 +54,10 @@ function daysIn(yyyyMm: string): number {
   return new Date(Number(yyyyMm.slice(0, 4)), Number(yyyyMm.slice(5, 7)), 0).getDate();
 }
 
+// The UTC month, matching the date validation and the server use, so the
+// month picker never offers a month the server would refuse.
 function thisMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return new Date().toISOString().slice(0, 7);
 }
 
 function startingChoices(program: TransferPartner | null | undefined) {
@@ -439,6 +440,10 @@ export function PriceCheck({ verdict, tripCashPrice, points, onPointsChange, boo
               )}
 
               {isFlight && !tripType && <p className="text-sm text-navy-950/60">Choose one way or round trip to share.</p>}
+              {/* Anything else still missing, so a disabled button never goes unexplained. */}
+              {!check.ok && check.reason === 'invalid' && tripType !== '' && reportBoost !== null && (
+                <p className="text-sm text-navy-950/60">{check.errors[0]}</p>
+              )}
               {reportBoost === null && (
                 <p className="text-sm text-navy-950/60">
                   {another ? 'Answer the Points Boost question to share.' : 'Answer the Points Boost question above to share.'}

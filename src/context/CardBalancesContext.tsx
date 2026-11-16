@@ -39,8 +39,14 @@ function loadInitialBalances(): Record<string, number> {
   try {
     const stored = localStorage.getItem(BALANCES_STORAGE_KEY);
     if (!stored) return defaults;
-    const parsed = JSON.parse(stored);
-    return { ...defaults, ...parsed };
+    const parsed = JSON.parse(stored) as Record<string, unknown>;
+    // Only cards that still exist, with a usable balance: a card since removed
+    // or a corrupted value falls back to the default.
+    for (const id of Object.keys(defaults)) {
+      const v = parsed[id];
+      if (typeof v === 'number' && Number.isFinite(v) && v >= 0) defaults[id] = v;
+    }
+    return defaults;
   } catch {
     return defaults;
   }
@@ -48,7 +54,7 @@ function loadInitialBalances(): Record<string, number> {
 
 // Nobody holds all twelve of these cards, so defaulting them all to "owned"
 // made every new visitor start from a portfolio they'd have to dismantle.
-// Start empty and let people opt in instead. The spread below means anyone
+// Start empty and let people opt in instead. Copying stored values below means anyone
 // who already made a choice keeps it — stored values always win over this
 // default — and a card added to cards.json later stays off until claimed
 // rather than silently appearing in someone's portfolio.
@@ -58,8 +64,11 @@ function loadInitialOwnership(): Record<string, boolean> {
   try {
     const stored = localStorage.getItem(OWNERSHIP_STORAGE_KEY);
     if (!stored) return defaults;
-    const parsed = JSON.parse(stored);
-    return { ...defaults, ...parsed };
+    const parsed = JSON.parse(stored) as Record<string, unknown>;
+    // Only cards that still exist, so one since removed can't linger in
+    // counts or lists.
+    for (const id of Object.keys(defaults)) if (parsed[id] === true) defaults[id] = true;
+    return defaults;
   } catch {
     return defaults;
   }

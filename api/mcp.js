@@ -26322,6 +26322,12 @@ new Intl.NumberFormat("en-US", {
 function formatUSD(value) {
 	return usdFormatter.format(value);
 }
+new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 2
+});
 function formatPoints(value) {
 	return pointsFormatter.format(value);
 }
@@ -26695,7 +26701,7 @@ function evaluateVerdict(input) {
 	for (const path of paths) {
 		if (path.kind === "portal" && path.issuer === "chase") continue;
 		const benchmark = path.kind === "transfer" && path.issuer === "chase" ? chaseTransferBenchmark : benchmarkCents[path.issuer];
-		const valueBought = path.kind === "transfer" ? tripCashPrice - awardTaxes : tripCashPrice;
+		const valueBought = Math.max(0, path.kind === "transfer" ? tripCashPrice - awardTaxes : tripCashPrice);
 		const cppCents = path.pointsUsed > 0 ? valueBought * 100 / path.pointsUsed : null;
 		options.push({
 			kind: path.kind,
@@ -26767,6 +26773,12 @@ function evaluateVerdict(input) {
 		else if (chaseCardType === "reserve" && chase.reserveAppliedBeforeCutoff === void 0 && today < LEGACY_EXPIRES_ON) assumptions.push("The 1.5¢ legacy rate isn't counted, because it wasn't said whether this Sapphire Reserve was applied for before June 23, 2025. Answer that to include it.");
 		else if (chaseCardType === "reserve" && chase.reserveAppliedBeforeCutoff && today >= LEGACY_EXPIRES_ON) assumptions.push("The Sapphire Reserve legacy rate of 1.5¢ ended on October 26, 2027.");
 		else if (chaseCardType === "preferred") assumptions.push("No Sapphire Preferred legacy rate is applied, because Chase has not confirmed one.");
+	}
+	if (award && !options.some((o) => o.kind === "transfer" && o.partner?.id === award.partnerId)) {
+		const partner = transferPartners.find((p) => p.id === award.partnerId);
+		const name = partner?.name ?? "that program";
+		const reachable = partner !== void 0 && ownedCards.some((c) => c.transferEligible && partner.ratiosByIssuer[c.issuer] !== void 0);
+		assumptions.push(reachable ? `Your points aren't enough to transfer for the ${formatPoints(award.pointsRequired)}-point ${name} award, so it isn't one of the options.` : `None of your cards transfer points to ${name}, so its award price isn't one of the options.`);
 	}
 	if (award && awardTaxes === 0 && options.some((o) => o.kind === "transfer")) assumptions.push("Taxes and fees on the award are assumed to be $0. Enter them if the airline or hotel charges any.");
 	if (payCash.strained || decision.code === "protectsCash") assumptions.push(`Cash is treated as stretched if paying would leave less than ${formatMonths(verdict_config_default.strain.min_months_of_buffer)} of your usual spending, or if the trip costs more than ${verdict_config_default.strain.negative_leftover_max_share_of_cash * 100}% of your cash while your spending exceeds your income. These thresholds are this app's own rule of thumb.`);

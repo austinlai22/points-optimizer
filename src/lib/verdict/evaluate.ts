@@ -265,7 +265,9 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
         : benchmarkCents[path.issuer]!;
     // Award taxes are cash you pay either way, so they don't count as value
     // the points bought. Portal prices already include taxes.
-    const valueBought = path.kind === 'transfer' ? tripCashPrice - awardTaxes : tripCashPrice;
+    // Never below zero: taxes at or above the cash price mean the points buy
+    // nothing, not that they cost you value.
+    const valueBought = Math.max(0, path.kind === 'transfer' ? tripCashPrice - awardTaxes : tripCashPrice);
     const cppCents = path.pointsUsed > 0 ? (valueBought * 100) / path.pointsUsed : null;
     options.push({
       kind: path.kind,
@@ -374,6 +376,18 @@ export function evaluateVerdict(input: VerdictInput): VerdictResult {
     }
   }
 
+  // An award price that can't become an option is said so, not dropped
+  // silently: no held card transfers to that program, or not enough points.
+  if (award && !options.some((o) => o.kind === 'transfer' && o.partner?.id === award.partnerId)) {
+    const partner = transferPartners.find((p) => p.id === award.partnerId);
+    const name = partner?.name ?? 'that program';
+    const reachable = partner !== undefined && ownedCards.some((c) => c.transferEligible && partner.ratiosByIssuer[c.issuer] !== undefined);
+    assumptions.push(
+      reachable
+        ? `Your points aren't enough to transfer for the ${formatPoints(award.pointsRequired)}-point ${name} award, so it isn't one of the options.`
+        : `None of your cards transfer points to ${name}, so its award price isn't one of the options.`,
+    );
+  }
   if (award && awardTaxes === 0 && options.some((o) => o.kind === 'transfer')) {
     assumptions.push('Taxes and fees on the award are assumed to be $0. Enter them if the airline or hotel charges any.');
   }

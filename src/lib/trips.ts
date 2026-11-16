@@ -216,7 +216,7 @@ export function valueFromInputs(trip: TripInputs, heldIssuers: Issuer[]): Entere
     const held = ratios.filter(([issuer]) => heldIssuers.includes(issuer)).map(([, r]) => r);
     const all = [...new Set(ratios.map(([, r]) => r))];
     const ratio = held.length > 0 ? Math.max(...held) : all.length === 1 ? all[0] : null;
-    const valueBought = trip.tripCashPrice - trip.awardCashFees;
+    const valueBought = Math.max(0, trip.tripCashPrice - trip.awardCashFees);
     const points = ratio ? Math.ceil(trip.pointsRequired / ratio) : trip.pointsRequired;
     candidates.push({
       cppCents: (valueBought * 100) / points,
