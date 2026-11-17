@@ -54,14 +54,20 @@ function validMessages(raw: unknown): ChatMessage[] | null {
   return out;
 }
 
-// A model's JSON reply: some wrap it in a code fence despite being asked not to.
+// A model's JSON reply. Some wrap it in a code fence or add a sentence around
+// it despite being asked not to, so the first object found is used.
 function parseJson(text: string): unknown {
   const trimmed = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return null;
+  for (const candidate of [trimmed, trimmed.slice(trimmed.indexOf('{'), trimmed.lastIndexOf('}') + 1)]) {
+    try {
+      const value = JSON.parse(candidate);
+      // A one-item list holding the object is read as the object.
+      return Array.isArray(value) && value.length === 1 ? value[0] : value;
+    } catch {
+      // Try the next reading.
+    }
   }
+  return null;
 }
 
 export function createAiHandler(deps: AiDeps) {
@@ -76,7 +82,10 @@ export function createAiHandler(deps: AiDeps) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: instructions }] },
         contents,
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 1024 },
+        // Room for the model's own reasoning as well as the reply: newer
+        // Gemini models count it against this limit, and a reply cut off
+        // mid-way can't be read.
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 },
       }),
     });
     if (response.status === 429) return { error: 'busy' as const };
@@ -106,6 +115,7 @@ export function createAiHandler(deps: AiDeps) {
       }
 
       const mode = body.mode;
+      const reading = mode === 'parse';
       let contents: { role: string; parts: { text: string }[] }[];
       let instructions: string;
       if (mode === 'parse') {
@@ -130,15 +140,19 @@ export function createAiHandler(deps: AiDeps) {
         await recordEvent(deps.store, { name: 'ai_call', mode }, null, now());
       }
 
-      const result = await callGemini(instructions, contents);
-      if ('error' in result) {
-        return result.error === 'busy'
-          ? json({ error: 'The assistant is busy right now. Try again in a minute, or use the form.' }, 429)
-          : json({ error: 'The assistant is unavailable right now. The form still works.' }, 502);
+      // One more try when the reply can't be read, which happens now and
+      // then; a busy or failed call isn't retried, to stay inside the quota.
+      let reply: ReturnType<typeof parseAiReply> = null;
+      for (let attempt = 0; attempt < 2 && !reply; attempt++) {
+        const result = await callGemini(instructions, contents);
+        if ('error' in result) {
+          return result.error === 'busy'
+            ? json({ error: 'The assistant is busy right now. Try again in a minute, or use the form.' }, 429)
+            : json({ error: 'The assistant is unavailable right now. The form still works.' }, 502);
+        }
+        if (reading) return json({ trip: sanitizeParsedTrip(result.value) });
+        reply = parseAiReply(result.value);
       }
-
-      if (mode === 'parse') return json({ trip: sanitizeParsedTrip(result.value) });
-      const reply = parseAiReply(result.value);
       return reply ? json({ reply }) : json({ error: "The assistant's reply couldn't be read. Try asking again." }, 502);
     },
   };

@@ -59,6 +59,25 @@ describe('AI endpoint', () => {
     expect((await unknown.post({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] })).status).toBe(502);
   });
 
+  it('reads a reply wrapped in extra words, and tries once more when one cannot be read', async () => {
+    const wrapped = setup({ fetchImpl: gemini('Sure! {"type":"answer","text":"Pay cash."} Hope that helps.') });
+    expect(await (await wrapped.post({ mode: 'chat', messages: [{ role: 'user', text: 'Should I?' }] })).json()).toEqual({ reply: { type: 'answer', text: 'Pay cash.' } });
+
+    // A cut-off reply, then a good one.
+    const replies = ['{"type":"answer","text":"Pay ca', JSON.stringify({ type: 'answer', text: 'Pay cash.' })];
+    const flaky = vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: replies.shift() }] } }] }), { status: 200 }));
+    const retried = setup({ fetchImpl: flaky });
+    expect((await retried.post({ mode: 'chat', messages: [{ role: 'user', text: 'Should I?' }] })).status).toBe(200);
+    expect(flaky).toHaveBeenCalledTimes(2);
+    // Counted as one use, not two.
+    expect((await readPeriod(retried.store, '2026-11-16', '2026-11-16')).counts['ai_call:chat']).toBe(1);
+
+    // Twice unreadable: refused, after two tries and no more.
+    const broken = vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'not json' }] } }] }), { status: 200 }));
+    expect((await setup({ fetchImpl: broken }).post({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] })).status).toBe(502);
+    expect(broken).toHaveBeenCalledTimes(2);
+  });
+
   it('limits each sender per hour and everyone per day, and passes on Gemini being busy', async () => {
     const { post } = setup({ dailyLimit: 2 });
     const ask = () => post({ mode: 'parse', text: '$900' });
