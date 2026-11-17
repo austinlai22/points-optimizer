@@ -34,6 +34,7 @@ import {
   sanitizeChaseInputs,
 } from '../utils/verdictInputs';
 import { PageIntro } from './PageShell';
+import { tripsForClaude } from '../lib/ai/handoff';
 import { HeartIcon } from './SaveTripControl';
 import { TripComparison } from './TripComparison';
 import { PointsPlan } from './PointsPlan';
@@ -186,6 +187,16 @@ export function TripsView() {
   const [chaseInputs] = usePersistentState(CHASE_STORAGE_KEY, EMPTY_CHASE_INPUTS, sanitizeChaseInputs);
   const [dragOver, setDragOver] = useState(false);
   const [notice, setNotice] = useState('');
+  const [copied, setCopied] = useState(false);
+  const copyForClaude = async () => {
+    try {
+      await navigator.clipboard.writeText(tripsForClaude(trips));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setNotice("Couldn't copy here. Your browser may not allow it on this page.");
+    }
+  };
   // A trip waiting to be opened while Check a trip holds an unsaved one.
   const [pendingOpen, setPendingOpen] = useState<{ trip: SavedTrip; current: { inputs: TripInputs; editing: SavedTrip | null } } | null>(null);
 
@@ -289,7 +300,17 @@ export function TripsView() {
                 <h2 id="saved-heading" className="font-display text-xl font-medium text-navy-950">
                   Saved trips <span className="font-mono text-base text-navy-950/40">{trips.length}</span>
                 </h2>
-                <p className="hidden text-sm text-navy-950/50 sm:block">Click a trip or drag it into the comparison.</p>
+                <div className="flex items-center gap-4">
+                  <p className="hidden text-sm text-navy-950/50 lg:block">Click a trip or drag it into the comparison.</p>
+                  <button
+                    type="button"
+                    onClick={copyForClaude}
+                    title="Copies each trip's prices and a link back, never your balances"
+                    className={`shrink-0 rounded-full border border-navy/15 px-4 text-sm font-semibold text-navy-950/80 hover:border-navy/30 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}
+                  >
+                    {copied ? 'Copied' : 'Copy my trips for Claude'}
+                  </button>
+                </div>
               </div>
               {/* A strip, so the comparison below stays in view while dragging. */}
               <ul className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 pt-1 sm:-mx-6 sm:px-6">

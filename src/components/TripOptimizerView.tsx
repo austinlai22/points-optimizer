@@ -37,7 +37,9 @@ import { inferChaseCardType, verdictHeadline } from '../lib/verdict';
 import { DEFAULT_TRIP_INPUTS, evaluateTrip, sameTripInputs, sanitizeTripInputs, setEditingTrip, type TripInputs } from '../lib/trips';
 import { SaveTripControl } from './SaveTripControl';
 import { DescribeTrip } from './DescribeTrip';
+import { tripFromLocation, tripParams } from '../lib/tripLink';
 import { AskPanel } from './AskPanel';
+import { WhatIfPanel } from './WhatIfPanel';
 import { useAiEnabled } from '../lib/ai/useAiEnabled';
 import { tripFromParsed, type Proposal, type ToolContext } from '../lib/ai/tools';
 import type { ParsedTrip } from '../lib/ai/protocol';
@@ -76,22 +78,11 @@ function storedTripInputs(): TripInputs {
 // someone else's scenario, so it isn't an edit of a trip saved here. Reloading
 // your own page carries your own trip in the address bar, so that's not one.
 function isOtherTripLink(inputs: TripInputs): boolean {
-  return new URLSearchParams(window.location.search).has('price') && !sameTripInputs(inputs, storedTripInputs());
+  return tripFromLocation(window.location) !== null && !sameTripInputs(inputs, storedTripInputs());
 }
 
 function loadInitialTripInputs(): TripInputs {
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('price') || params.has('partner') || params.has('points') || params.has('held') || params.has('fees')) {
-    return {
-      tripCashPrice: parseNonNegativeNumber(params.get('price') ?? ''),
-      selectedPartnerId: params.get('partner') ?? '',
-      pointsRequired: parseNonNegativeNumber(params.get('points') ?? ''),
-      partnerPointsHeld: parseNonNegativeNumber(params.get('held') ?? ''),
-      awardCashFees: parseNonNegativeNumber(params.get('fees') ?? ''),
-      chaseTravelPoints: parseNonNegativeNumber(params.get('ct') ?? ''),
-    };
-  }
-  return storedTripInputs();
+  return tripFromLocation(window.location) ?? storedTripInputs();
 }
 
 function CompassIcon() {
@@ -366,13 +357,7 @@ export function TripOptimizerView() {
       // localStorage unavailable (private mode / quota) — inputs still work in-memory.
     }
 
-    const params = new URLSearchParams();
-    if (tripCashPrice > 0) params.set('price', String(tripCashPrice));
-    if (selectedPartnerId) params.set('partner', selectedPartnerId);
-    if (pointsRequired > 0) params.set('points', String(pointsRequired));
-    if (partnerPointsHeld > 0) params.set('held', String(partnerPointsHeld));
-    if (awardCashFees > 0) params.set('fees', String(awardCashFees));
-    if (chaseTravelPoints > 0) params.set('ct', String(chaseTravelPoints));
+    const params = tripParams({ tripCashPrice, selectedPartnerId, pointsRequired, partnerPointsHeld, awardCashFees, chaseTravelPoints });
     // Basis lives in shared context (Portfolio uses it too) but is
     // serialized here alongside the other trip inputs, so one copied link
     // reproduces the whole scenario. Omitted at the default, matching how
@@ -711,6 +696,7 @@ export function TripOptimizerView() {
                     onBoostChange={setBoostShown}
                   />
                 )}
+                <WhatIfPanel key={ownedCards.map((c) => c.id).join()} trip={tripInputs} ctx={{ ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs }} />
               </div>
             ) : (
               <div className="mb-8 rounded-3xl border border-dashed border-navy/20 bg-white px-6 py-12 text-center">

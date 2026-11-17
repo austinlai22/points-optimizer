@@ -18,6 +18,7 @@ const TOOL_LABELS: Record<string, string> = {
   current_trip: 'Looked at the trip in the form',
   list_saved_trips: 'Looked at your saved trips',
   plan_points: 'Planned your points across saved trips',
+  what_if: 'Tried a what-if with other cards or points',
   list_transfer_partners: 'Looked up transfer partners',
   cents_per_point: 'Worked out a value per point',
 };

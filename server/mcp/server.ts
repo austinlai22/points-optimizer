@@ -117,7 +117,7 @@ export function createPointCompassServer(deps: McpDeps): McpServer {
     'recommend_payment',
     {
       title: 'Recommend how to pay for a trip',
-      description: `Recommend paying cash, transferring points, booking in Chase Travel or another bank's portal, or waiting, for one trip. The same engine as pointcompass.vercel.app, with its reasons and assumptions. Supply a cash position to include the check on whether paying cash would leave the traveller short. ${LIMITS}`,
+      description: `Recommend paying cash, transferring points, booking in Chase Travel or another bank's portal, or waiting, for one trip. The same engine as pointcompass.vercel.app, with its reasons and assumptions. Supply a cash position to include the check on whether paying cash would leave the traveller short. The result's open_in_app is a link that opens this trip in PointCompass, checked there against the cards the traveller saved in the app; it carries no balances or cash. Offer it. ${LIMITS}`,
       inputSchema: z.object({
         trip_cash_price_usd: usd.describe('What the trip costs in cash.'),
         balances: z.partialRecord(z.enum(BANKS), z.number().int().min(0).max(50_000_000)).describe('Points held at each bank, e.g. {"chase": 80000, "amex": 45000}.'),

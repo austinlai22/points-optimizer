@@ -3,6 +3,8 @@ import { formatCents, verdictHeadline } from '../verdict';
 import type { PointsOption } from '../verdict/types';
 import { describePointsOption, evaluateTrip, MAX_COMPARE, partnerName, type SavedTrip, type TripContext, type TripInputs, type TripVerdict } from '../trips';
 import { planPoints } from '../planPoints';
+import { isNoWhatIf, runWhatIf, type WhatIf } from '../whatIf';
+import cardsData from '../../data/cards.json';
 import { ISSUER_LABELS } from '../../utils/issuers';
 import { formatUSD, formatUSDExact } from '../../utils/format';
 import type { Issuer, TransferPartner } from '../../types';
@@ -14,6 +16,7 @@ import { sanitizeParsedTrip, type ParsedTrip } from './protocol';
 // spend, yes; points held or dollars in the bank, never.
 
 const transferPartners = transferPartnersData as TransferPartner[];
+const CARD_IDS = new Set((cardsData as { id: string }[]).map((c) => c.id));
 
 // A change the assistant suggests. Nothing happens until the person taps
 // Apply on its card.
@@ -170,6 +173,25 @@ export function runTool(name: string, args: Record<string, unknown>, ctx: ToolCo
         total_saved_usd: Math.round(plan.totalSavings),
         points_spent_by_bank: Object.fromEntries(Object.entries(plan.pointsUsed).map(([i, n]) => [ISSUER_LABELS[i as Issuer], Math.round(n!)])),
         note: 'Savings are against paying cash, with points at their usual value. Points held with a partner are counted per trip as entered.',
+      };
+    }
+    case 'what_if': {
+      if (!ctx.currentTrip || !(ctx.currentTrip.tripCashPrice > 0)) return { error: 'No trip is in the form yet.' };
+      const ids = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && CARD_IDS.has(x)) : []);
+      const extra: Partial<Record<Issuer, number>> = {};
+      if (typeof args.extra_points === 'object' && args.extra_points !== null) {
+        for (const [bank, n] of Object.entries(args.extra_points)) {
+          if (bank in ISSUER_LABELS && typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 10_000_000) extra[bank as Issuer] = Math.round(n);
+        }
+      }
+      const w: WhatIf = { addCards: ids(args.add_cards), removeCards: ids(args.remove_cards), extraPoints: extra };
+      if (isNoWhatIf(w)) return { error: 'Give cards to add or remove, or points to add, using the ids listed.' };
+      const r = runWhatIf(ctx.currentTrip, ctx.trip, w);
+      return {
+        now: shareableResult(ctx.currentTrip, r.now),
+        what_if: shareableResult(ctx.currentTrip, r.whatIf),
+        recommendation_changes: r.changed,
+        notes: r.notes,
       };
     }
     case 'list_transfer_partners': {

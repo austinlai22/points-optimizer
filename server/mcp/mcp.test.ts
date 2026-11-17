@@ -116,6 +116,8 @@ describe('agent tools match the web app', () => {
     expect(agent.reason).toBe(web.reason);
     expect(agent.chase_travel?.breakeven_points).toBe(web.chaseTravel?.breakevenPoints);
     expect(factsWithoutSource(agent)).toEqual([]);
+    // A link to the trip in the app, after "#", with no balances or cash.
+    expect(agent.open_in_app).toBe('https://pointcompass.vercel.app/app#price=900&partner=united&points=60000&fees=90');
   });
 
   it('says plainly when no cash position was given', () => {

@@ -1,3 +1,4 @@
+import cardsData from '../../data/cards.json';
 import transferPartnersData from '../../data/transferPartners.json';
 import type { TransferPartner } from '../../types';
 
@@ -11,6 +12,7 @@ const transferPartners = transferPartnersData as TransferPartner[];
 // "id: name" for every program, so the model answers with ids we know.
 export const PROGRAM_LIST = transferPartners.map((p) => `${p.id}: ${p.name}`).join('\n');
 const PROGRAM_IDS = new Set(transferPartners.map((p) => p.id));
+const CARD_LIST = (cardsData as { id: string; name: string }[]).map((c) => `${c.id}: ${c.name}`).join('\n');
 
 // A trip as read from someone's own words. Any field can be missing.
 export interface ParsedTrip {
@@ -119,6 +121,12 @@ export const TOOL_SPECS: ToolSpec[] = [
     args: '{}',
   },
   {
+    name: 'what_if',
+    description:
+      "Runs the trip in the form again as if the person had other cards or points, and compares it with now. add_cards and remove_cards take card ids from the list below; extra_points adds points at a bank (below zero takes them away). Changes nothing.",
+    args: '{"add_cards": [card id], "remove_cards": [card id], "extra_points": {"chase" | "capitalOne" | "amex" | "citi" | "bilt" | "bankOfAmerica": number}}',
+  },
+  {
     name: 'list_transfer_partners',
     description: "Lists the airline and hotel programs a bank's points transfer to, with ratios.",
     args: '{"bank": "chase" | "capitalOne" | "amex" | "citi" | "bilt" | "bankOfAmerica"}',
@@ -152,7 +160,10 @@ Tools:
 ${TOOL_SPECS.map((t) => `${t.name}: ${t.description} Args: ${t.args}`).join('\n')}
 
 Programs (id: name):
-${PROGRAM_LIST}`;
+${PROGRAM_LIST}
+
+Cards (id: name):
+${CARD_LIST}`;
 
 export type AiReply =
   | { type: 'tool'; tool: string; args: Record<string, unknown> }

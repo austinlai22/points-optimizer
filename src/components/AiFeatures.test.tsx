@@ -150,6 +150,42 @@ describe('asking PointCompass', () => {
   });
 });
 
+describe('trips handed between PointCompass and Claude', () => {
+  it('opens a trip from a link with it after "#"', () => {
+    visit('/app#price=900&partner=united&points=60000&fees=85');
+    expect(screen.getByLabelText(/trip cash price/i)).toHaveValue(900);
+    expect(screen.getByLabelText(/award price in points/i)).toHaveValue(60000);
+  });
+
+  it('copies saved trips as text for Claude, without balances', async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    saveTrip('Lisbon', trip(600, { selectedPartnerId: 'united', pointsRequired: 30000, partnerPointsHeld: 7777 }));
+    visit('/trips');
+    fireEvent.click(screen.getByRole('button', { name: 'Copy my trips for Claude' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    const text = (writeText.mock.calls[0] as unknown as [string])[0];
+    expect(text).toContain('1. Lisbon: $600 cash, or 30,000 United MileagePlus points. Open in PointCompass: https://pointcompass.vercel.app/app#price=600&partner=united&points=30000');
+    expect(text).not.toContain(String(BALANCE));
+    expect(text).not.toContain('7777');
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
+});
+
+describe('what if', () => {
+  it('runs the trip with other cards or points, leaving the Portfolio alone', () => {
+    localStorage.setItem('cco:balances', JSON.stringify({ csr: 10000 }));
+    visit('/app?price=900&partner=united&points=50000');
+    fireEvent.click(screen.getByText('What if…'));
+    fireEvent.change(screen.getByLabelText('Chase points'), { target: { value: '40000' } });
+    expect(screen.getByText('The answer changes')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Capital One Venture X'));
+    expect(screen.getByText('(added)')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('cco:balances')!)).toMatchObject({ csr: 10000, venturex: 0 });
+    expect(JSON.parse(localStorage.getItem('cco:ownership')!).venturex).toBeFalsy();
+  });
+});
+
 describe('planning points across saved trips', () => {
   it('shows where points save the most within your balance', () => {
     localStorage.setItem('cco:balances', JSON.stringify({ csr: 60000 }));

@@ -25646,6 +25646,45 @@ var cards_default = [
 	}
 ];
 //#endregion
+//#region src/utils/format.ts
+const usdFormatter = new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	maximumFractionDigits: 0
+});
+const pointsFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 4
+});
+function formatUSD(value) {
+	return usdFormatter.format(value);
+}
+new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 2
+});
+function formatPoints(value) {
+	return pointsFormatter.format(value);
+}
+function tripParams(t, { held = true } = {}) {
+	const params = new URLSearchParams();
+	if (t.tripCashPrice > 0) params.set("price", String(t.tripCashPrice));
+	if (t.selectedPartnerId) params.set("partner", t.selectedPartnerId);
+	if (t.pointsRequired > 0) params.set("points", String(t.pointsRequired));
+	if (held && t.partnerPointsHeld > 0) params.set("held", String(t.partnerPointsHeld));
+	if (t.awardCashFees > 0) params.set("fees", String(t.awardCashFees));
+	if (t.chaseTravelPoints > 0) params.set("ct", String(t.chaseTravelPoints));
+	return params;
+}
+function tripLink(t, options = {}) {
+	return `${options.origin ?? "https://pointcompass.vercel.app"}/app#${tripParams(t, options).toString()}`;
+}
+//#endregion
 //#region src/data/transferPartners.json
 var transferPartners_default = [
 	{
@@ -26306,32 +26345,6 @@ var verdict_config_default = {
 //#endregion
 //#region src/types.ts
 const DEFAULT_VALUATION_BASIS = "guaranteed";
-//#endregion
-//#region src/utils/format.ts
-const usdFormatter = new Intl.NumberFormat("en-US", {
-	style: "currency",
-	currency: "USD",
-	maximumFractionDigits: 0
-});
-const pointsFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-new Intl.NumberFormat("en-US", {
-	style: "currency",
-	currency: "USD",
-	minimumFractionDigits: 2,
-	maximumFractionDigits: 4
-});
-function formatUSD(value) {
-	return usdFormatter.format(value);
-}
-new Intl.NumberFormat("en-US", {
-	style: "currency",
-	currency: "USD",
-	minimumFractionDigits: 2,
-	maximumFractionDigits: 2
-});
-function formatPoints(value) {
-	return pointsFormatter.format(value);
-}
 //#endregion
 //#region src/utils/issuers.ts
 const ISSUER_LABELS = {
@@ -27052,6 +27065,14 @@ function recommendPayment(input, today) {
 			...standardRateBasis(result.chaseTravel.cardType)
 		} : null,
 		assumptions: [...assumptions, ...result.assumptions],
+		open_in_app: tripLink({
+			tripCashPrice: input.trip_cash_price_usd,
+			selectedPartnerId: partner?.id ?? "",
+			pointsRequired: partner ? input.award.points_required : 0,
+			partnerPointsHeld: partner ? input.award.points_already_held ?? 0 : 0,
+			awardCashFees: input.award_taxes_usd ?? 0,
+			chaseTravelPoints: input.chase_travel_points_price ?? 0
+		}),
 		rules_of_thumb: {
 			clearly_beats_usual_value_by: `${Math.round((verdict_config_default.clearly_beats_benchmark_multiplier - 1) * 100)}%`,
 			is_estimate: true,
@@ -27135,7 +27156,7 @@ function createPointCompassServer(deps) {
 	}, ({ card_type }) => run(deps, "points_boost_rules", () => pointsBoostRules(card_type)));
 	server.registerTool("recommend_payment", {
 		title: "Recommend how to pay for a trip",
-		description: `Recommend paying cash, transferring points, booking in Chase Travel or another bank's portal, or waiting, for one trip. The same engine as pointcompass.vercel.app, with its reasons and assumptions. Supply a cash position to include the check on whether paying cash would leave the traveller short. ${LIMITS}`,
+		description: `Recommend paying cash, transferring points, booking in Chase Travel or another bank's portal, or waiting, for one trip. The same engine as pointcompass.vercel.app, with its reasons and assumptions. Supply a cash position to include the check on whether paying cash would leave the traveller short. The result's open_in_app is a link that opens this trip in PointCompass, checked there against the cards the traveller saved in the app; it carries no balances or cash. Offer it. ${LIMITS}`,
 		inputSchema: object({
 			trip_cash_price_usd: usd.describe("What the trip costs in cash."),
 			balances: partialRecord(_enum(BANKS), number$1().int().min(0).max(5e7)).describe("Points held at each bank, e.g. {\"chase\": 80000, \"amex\": 45000}."),

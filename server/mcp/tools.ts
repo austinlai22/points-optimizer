@@ -1,4 +1,5 @@
 import cardsData from '../../src/data/cards.json';
+import { tripLink } from '../../src/lib/tripLink';
 import transferPartnersData from '../../src/data/transferPartners.json';
 import boostData from '../../src/data/chase-points-boost.json';
 import verdictConfig from '../../src/data/verdict-config.json';
@@ -295,6 +296,15 @@ export function recommendPayment(input: RecommendInput, today?: string) {
         }
       : null,
     assumptions: [...assumptions, ...result.assumptions],
+    // The trip only, after "#" so it isn't sent to the server when opened.
+    open_in_app: tripLink({
+      tripCashPrice: input.trip_cash_price_usd,
+      selectedPartnerId: partner?.id ?? '',
+      pointsRequired: partner ? input.award!.points_required : 0,
+      partnerPointsHeld: partner ? (input.award!.points_already_held ?? 0) : 0,
+      awardCashFees: input.award_taxes_usd ?? 0,
+      chaseTravelPoints: input.chase_travel_points_price ?? 0,
+    }),
     rules_of_thumb: {
       clearly_beats_usual_value_by: `${Math.round((verdictConfig.clearly_beats_benchmark_multiplier - 1) * 100)}%`,
       is_estimate: true,

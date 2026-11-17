@@ -96,6 +96,14 @@ describe("the assistant's tools", () => {
     expect(proposals).toHaveLength(3);
   });
 
+  it('try a what-if without revealing balances', () => {
+    const result = runTool('what_if', { add_cards: ['venturex', 'not-a-card'], extra_points: { chase: 50000, nope: 5 } }, context()) as Record<string, unknown>;
+    expect(result).toHaveProperty('recommendation_changes');
+    expect(result).toHaveProperty('what_if.options');
+    expect(leaks(result)).toEqual([]);
+    expect(runTool('what_if', { add_cards: ['not-a-card'] }, context())).toHaveProperty('error');
+  });
+
   it('work out a value per point, never below zero', () => {
     expect(runTool('cents_per_point', { cash_price_usd: 702, points: 25000, taxes_usd: 121.5 }, context())).toMatchObject({ cents_per_point: 2.322 });
     expect(runTool('cents_per_point', { cash_price_usd: 100, points: 10000, taxes_usd: 200 }, context())).toMatchObject({ cents_per_point: 0 });
