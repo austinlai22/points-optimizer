@@ -721,6 +721,22 @@ function rateLimitKey(scope, address, secret, now) {
 async function allow(store, scope, request, { limit, windowSeconds, secret, now = /* @__PURE__ */ new Date() }) {
 	return await store.incr(rateLimitKey(scope, clientAddress(request), secret, now), windowSeconds) <= limit;
 }
+//#endregion
+//#region server/ai/handler.ts
+const DEFAULT_MODELS = [
+	"gemini-3.5-flash-lite",
+	"gemini-3.1-flash-lite",
+	"gemini-3.6-flash"
+];
+function modelsFrom(value) {
+	const list = (value ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+	return list.length ? list : DEFAULT_MODELS;
+}
+const COOLDOWN = {
+	busy: 60,
+	failed: 30,
+	missing: 600
+};
 const CALLS_PER_HOUR = 60;
 const MAX_BODY = 8e4;
 const ALLOWED_ORIGINS = /* @__PURE__ */ new Set([
@@ -760,23 +776,43 @@ function parseJson(text) {
 function createAiHandler(deps) {
 	const fetchImpl = deps.fetchImpl ?? fetch;
 	const now = deps.now ?? (() => /* @__PURE__ */ new Date());
-	async function callGemini(instructions, contents) {
-		const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(deps.model)}:generateContent?key=${encodeURIComponent(deps.apiKey)}`;
-		const response = await fetchImpl(url, {
+	const coolingUntil = /* @__PURE__ */ new Map();
+	const noThinking = /* @__PURE__ */ new Set();
+	async function callGemini(model, instructions, contents, thinking, timeoutMs) {
+		const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(deps.apiKey)}`;
+		const send = () => fetchImpl(url, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
+			signal: AbortSignal.timeout(timeoutMs),
 			body: JSON.stringify({
 				system_instruction: { parts: [{ text: instructions }] },
 				contents,
 				generationConfig: {
 					responseMimeType: "application/json",
-					maxOutputTokens: 4096
+					maxOutputTokens: 4096,
+					...noThinking.has(model) ? {} : { thinkingConfig: { thinkingLevel: thinking } }
 				}
 			})
 		});
+		let response;
+		try {
+			response = await send();
+			if (response.status === 400 && !noThinking.has(model) && /thinking/i.test(await response.clone().text())) {
+				noThinking.add(model);
+				response = await send();
+			}
+		} catch {
+			return { error: "failed" };
+		}
 		if (response.status === 429) return { error: "busy" };
-		if (!response.ok) return { error: "failed" };
-		return { value: parseJson((await response.json().catch(() => null))?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "") };
+		if (response.status === 404) return { error: "missing" };
+		if (!response.ok) return { error: response.status === 503 ? "busy" : "failed" };
+		return { value: parseJson((await response.json().catch(() => null))?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? "").join("") ?? "") };
+	}
+	function modelOrder() {
+		const t = now().getTime();
+		const ready = deps.models.filter((m) => (coolingUntil.get(m) ?? 0) <= t);
+		return [...ready, ...deps.models.filter((m) => !ready.includes(m))];
 	}
 	return { async fetch(request) {
 		const enabled = Boolean(deps.apiKey);
@@ -826,14 +862,25 @@ function createAiHandler(deps) {
 				mode
 			}, null, now());
 		}
-		let reply = null;
-		for (let attempt = 0; attempt < 2 && !reply; attempt++) {
-			const result = await callGemini(instructions, contents);
-			if ("error" in result) return result.error === "busy" ? json({ error: "The assistant is busy right now. Try again in a minute, or use the form." }, 429) : json({ error: "The assistant is unavailable right now. The form still works." }, 502);
+		const thinking = reading ? "MINIMAL" : "LOW";
+		const order = modelOrder();
+		let lastError = null;
+		let unreadable = 0;
+		for (let i = 0; i < order.length;) {
+			const result = await callGemini(order[i], instructions, contents, thinking, (deps.timeoutMs ?? 2e4) / (reading ? 2 : 1));
+			if ("error" in result) {
+				coolingUntil.set(order[i], now().getTime() + COOLDOWN[result.error] * 1e3);
+				lastError = result.error;
+				i++;
+				continue;
+			}
 			if (reading) return json({ trip: sanitizeParsedTrip(result.value) });
-			reply = parseAiReply(result.value);
+			const reply = parseAiReply(result.value);
+			if (reply) return json({ reply });
+			if (++unreadable >= 2) break;
 		}
-		return reply ? json({ reply }) : json({ error: "The assistant's reply couldn't be read. Try asking again." }, 502);
+		if (unreadable) return json({ error: "The assistant's reply couldn't be read. Try asking again." }, 502);
+		return lastError === "busy" ? json({ error: "The assistant is busy right now. Try again in a minute, or use the form." }, 429) : json({ error: "The assistant is unavailable right now. The form still works." }, 502);
 	} };
 }
 //#endregion
@@ -943,7 +990,7 @@ function storeFromEnv(env) {
 var ai_default = createAiHandler({
 	store: storeFromEnv(process.env),
 	apiKey: process.env.GEMINI_API_KEY || void 0,
-	model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+	models: modelsFrom(process.env.GEMINI_MODEL),
 	secret: process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
 	dailyLimit: Number(process.env.AI_DAILY_LIMIT) || 400
 });

@@ -21,16 +21,32 @@ import type { Store } from '../store';
 export interface AiDeps {
   store: Store | null;
   apiKey: string | undefined;
-  model: string;
+  // Tried in order: when one is busy or down, the next answers.
+  models: string[];
   secret: string;
   // A ceiling on calls per UTC day across everyone, to stay inside the free
   // tier's quota.
   dailyLimit: number;
   fetchImpl?: typeof fetch;
   now?: () => Date;
+  // How long to wait for one model before trying the next. Reading a trip
+  // gets half: the page can read it without AI if need be.
+  timeoutMs?: number;
 }
 
-export const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
+// The model that has answered well so far first, then an older light one,
+// then a fuller one. Each has its own free-tier quota.
+export const DEFAULT_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash'];
+
+// "a, b" from an env var, or the default chain.
+export function modelsFrom(value: string | undefined): string[] {
+  const list = (value ?? '').split(',').map((m) => m.trim()).filter(Boolean);
+  return list.length ? list : DEFAULT_MODELS;
+}
+
+// How long a model is passed over after it fails, in seconds.
+const COOLDOWN = { busy: 60, failed: 30, missing: 600 } as const;
+type CallError = keyof typeof COOLDOWN;
 const CALLS_PER_HOUR = 60;
 const MAX_BODY = 80_000;
 // Browsers send Origin; a page on another site is turned away.
@@ -74,25 +90,63 @@ export function createAiHandler(deps: AiDeps) {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const now = deps.now ?? (() => new Date());
 
-  async function callGemini(instructions: string, contents: { role: string; parts: { text: string }[] }[]) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(deps.model)}:generateContent?key=${encodeURIComponent(deps.apiKey!)}`;
-    const response = await fetchImpl(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: instructions }] },
-        contents,
-        // Room for the model's own reasoning as well as the reply: newer
-        // Gemini models count it against this limit, and a reply cut off
-        // mid-way can't be read.
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 },
-      }),
-    });
-    if (response.status === 429) return { error: 'busy' as const };
-    if (!response.ok) return { error: 'failed' as const };
-    const body = (await response.json().catch(() => null)) as { candidates?: { content?: { parts?: { text?: string }[] } }[] } | null;
-    const text = body?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+  // Kept for as long as the function stays warm, which is enough to skip a
+  // model that just failed without a store round trip on every call.
+  const coolingUntil = new Map<string, number>();
+  // Models that turned down a thinking setting: asked without one from then on.
+  const noThinking = new Set<string>();
+
+  type Result = { error: CallError } | { value: unknown };
+
+  async function callGemini(model: string, instructions: string, contents: { role: string; parts: { text: string }[] }[], thinking: 'MINIMAL' | 'LOW', timeoutMs: number): Promise<Result> {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(deps.apiKey!)}`;
+    const send = () =>
+      fetchImpl(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs),
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: instructions }] },
+          contents,
+          // Little thinking: reading a trip or picking a tool doesn't need
+          // much, and it's most of the wait. The token limit leaves room for
+          // what thinking there is, since a reply cut off can't be read.
+          generationConfig: {
+            responseMimeType: 'application/json',
+            maxOutputTokens: 4096,
+            ...(noThinking.has(model) ? {} : { thinkingConfig: { thinkingLevel: thinking } }),
+          },
+        }),
+      });
+    let response: Response;
+    try {
+      response = await send();
+      if (response.status === 400 && !noThinking.has(model) && /thinking/i.test(await response.clone().text())) {
+        noThinking.add(model);
+        response = await send();
+      }
+    } catch {
+      // Timed out or couldn't connect.
+      return { error: 'failed' };
+    }
+    if (response.status === 429) return { error: 'busy' };
+    if (response.status === 404) return { error: 'missing' };
+    if (!response.ok) return { error: response.status === 503 ? 'busy' : 'failed' };
+    const body = (await response.json().catch(() => null)) as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] } | null;
+    const text =
+      body?.candidates?.[0]?.content?.parts
+        ?.filter((p) => !p.thought)
+        .map((p) => p.text ?? '')
+        .join('') ?? '';
     return { value: parseJson(text) };
+  }
+
+  // Models not resting after a failure, in order; resting ones after them,
+  // in case nothing else is left.
+  function modelOrder(): string[] {
+    const t = now().getTime();
+    const ready = deps.models.filter((m) => (coolingUntil.get(m) ?? 0) <= t);
+    return [...ready, ...deps.models.filter((m) => !ready.includes(m))];
   }
 
   return {
@@ -140,20 +194,30 @@ export function createAiHandler(deps: AiDeps) {
         await recordEvent(deps.store, { name: 'ai_call', mode }, null, now());
       }
 
-      // One more try when the reply can't be read, which happens now and
-      // then; a busy or failed call isn't retried, to stay inside the quota.
-      let reply: ReturnType<typeof parseAiReply> = null;
-      for (let attempt = 0; attempt < 2 && !reply; attempt++) {
-        const result = await callGemini(instructions, contents);
+      // Each model in turn until one answers. A reply that can't be read
+      // gets one more try, from the same model; a busy or failed model is
+      // rested and the next one asked.
+      const thinking = reading ? 'MINIMAL' : 'LOW';
+      const order = modelOrder();
+      let lastError: CallError | null = null;
+      let unreadable = 0;
+      for (let i = 0; i < order.length; ) {
+        const result = await callGemini(order[i], instructions, contents, thinking, (deps.timeoutMs ?? 20_000) / (reading ? 2 : 1));
         if ('error' in result) {
-          return result.error === 'busy'
-            ? json({ error: 'The assistant is busy right now. Try again in a minute, or use the form.' }, 429)
-            : json({ error: 'The assistant is unavailable right now. The form still works.' }, 502);
+          coolingUntil.set(order[i], now().getTime() + COOLDOWN[result.error] * 1000);
+          lastError = result.error;
+          i++;
+          continue;
         }
         if (reading) return json({ trip: sanitizeParsedTrip(result.value) });
-        reply = parseAiReply(result.value);
+        const reply = parseAiReply(result.value);
+        if (reply) return json({ reply });
+        if (++unreadable >= 2) break;
       }
-      return reply ? json({ reply }) : json({ error: "The assistant's reply couldn't be read. Try asking again." }, 502);
+      if (unreadable) return json({ error: "The assistant's reply couldn't be read. Try asking again." }, 502);
+      return lastError === 'busy'
+        ? json({ error: 'The assistant is busy right now. Try again in a minute, or use the form.' }, 429)
+        : json({ error: 'The assistant is unavailable right now. The form still works.' }, 502);
     },
   };
 }

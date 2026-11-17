@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readPeriod } from '../analytics';
 import { createMemoryStore } from '../store';
-import { createAiHandler } from './handler';
+import { createAiHandler, DEFAULT_MODELS, modelsFrom } from './handler';
 
 const NOW = new Date('2026-11-16T12:00:00Z');
 
@@ -11,9 +11,9 @@ function gemini(reply: unknown, status = 200) {
   );
 }
 
-function setup({ apiKey = 'test-key', fetchImpl = gemini({ type: 'answer', text: 'Hi' }), dailyLimit = 400 } = {}) {
+function setup({ apiKey = 'test-key', fetchImpl = gemini({ type: 'answer', text: 'Hi' }), dailyLimit = 400, models = ['gemini-test'] } = {}) {
   const store = createMemoryStore();
-  const handler = createAiHandler({ store, apiKey, model: 'gemini-test', secret: 's', dailyLimit, fetchImpl: fetchImpl as unknown as typeof fetch, now: () => NOW });
+  const handler = createAiHandler({ store, apiKey, models, secret: 's', dailyLimit, fetchImpl: fetchImpl as unknown as typeof fetch, now: () => NOW });
   const post = (body: unknown, headers: Record<string, string> = {}) =>
     handler.fetch(new Request('https://x/api/ai', { method: 'POST', body: JSON.stringify(body), headers: { 'x-forwarded-for': '1.2.3.4', ...headers } }));
   return { store, handler, post, fetchImpl };
@@ -95,5 +95,78 @@ describe('AI endpoint', () => {
     const stats = await readPeriod(store, '2026-11-16', '2026-11-16');
     expect(stats.counts['ai_call:chat']).toBe(1);
     expect(JSON.stringify([...store.dump()])).not.toContain('Lisbon');
+  });
+
+  it('asks for little thinking, and drops the setting for a model that refuses it', async () => {
+    const { post, fetchImpl } = setup();
+    await post({ mode: 'parse', text: '$900' });
+    await post({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] });
+    const configs = fetchImpl.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string).generationConfig);
+    expect(configs.map((c) => c.thinkingConfig)).toEqual([{ thinkingLevel: 'MINIMAL' }, { thinkingLevel: 'LOW' }]);
+
+    const refusing = vi.fn(async (_url: string, init: RequestInit) =>
+      JSON.parse(init.body as string).generationConfig.thinkingConfig
+        ? new Response('{"error":{"message":"Thinking level is not supported for this model."}}', { status: 400 })
+        : new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"type":"answer","text":"Hi"}' }] } }] }), { status: 200 }),
+    );
+    const r = setup({ fetchImpl: refusing as never });
+    expect((await r.post({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] })).status).toBe(200);
+    expect((await r.post({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] })).status).toBe(200);
+    // Asked with it once, then never again.
+    expect(refusing).toHaveBeenCalledTimes(3);
+  });
+
+  it("leaves out the model's thoughts when reading its reply", async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Thinking about {it}', thought: true }, { text: '{"type":"answer","text":"Pay cash."}' }] } }] }), { status: 200 }),
+    );
+    expect(await (await setup({ fetchImpl }).post({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] })).json()).toEqual({ reply: { type: 'answer', text: 'Pay cash.' } });
+  });
+
+  it('falls back to the next model when one is busy, down or slow, and rests it for a while', async () => {
+    let t = NOW.getTime();
+    const status: Record<string, number> = { first: 429, second: 503, third: 200 };
+    const fetchImpl = vi.fn(async (url: string) => {
+      const model = /models\/([^:]+):/.exec(url)![1];
+      if (status[model] !== 200) return new Response('{}', { status: status[model] });
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: `{"type":"answer","text":"from ${model}"}` }] } }] }), { status: 200 });
+    });
+    const store = createMemoryStore();
+    const handler = createAiHandler({ store, apiKey: 'k', models: ['first', 'second', 'third'], secret: 's', dailyLimit: 400, fetchImpl: fetchImpl as never, now: () => new Date(t) });
+    const ask = async () => (await handler.fetch(new Request('https://x/api/ai', { method: 'POST', body: JSON.stringify({ mode: 'chat', messages: [{ role: 'user', text: 'hi' }] }) }))).json();
+    const models = () => fetchImpl.mock.calls.map(([url]) => /models\/([^:]+):/.exec(url as string)![1]);
+
+    expect(await ask()).toEqual({ reply: { type: 'answer', text: 'from third' } });
+    expect(models()).toEqual(['first', 'second', 'third']);
+
+    // Within the rest, the failed models are skipped.
+    fetchImpl.mockClear();
+    status.first = 200;
+    t += 20_000;
+    expect(await ask()).toEqual({ reply: { type: 'answer', text: 'from third' } });
+    expect(models()).toEqual(['third']);
+
+    // After it, the first is tried again.
+    fetchImpl.mockClear();
+    t += 61_000;
+    expect(await ask()).toEqual({ reply: { type: 'answer', text: 'from first' } });
+
+    // Every model failing is passed on as busy, after one try each.
+    fetchImpl.mockClear();
+    status.first = 429;
+    status.third = 429;
+    const all = await handler.fetch(new Request('https://x/api/ai', { method: 'POST', body: JSON.stringify({ mode: 'parse', text: '$900' }) }));
+    expect(all.status).toBe(429);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+
+    // A model that doesn't answer in time counts as failed.
+    const hanging = vi.fn((_url: string, init: RequestInit) => new Promise<Response>((_, reject) => init.signal!.addEventListener('abort', () => reject(new Error('timeout')))));
+    const slow = createAiHandler({ store: null, apiKey: 'k', models: ['only'], secret: 's', dailyLimit: 400, fetchImpl: hanging as never, timeoutMs: 10 });
+    expect((await slow.fetch(new Request('https://x/api/ai', { method: 'POST', body: JSON.stringify({ mode: 'parse', text: '$900' }) }))).status).toBe(502);
+  });
+
+  it('reads the model list from settings', () => {
+    expect(modelsFrom(undefined)).toEqual(DEFAULT_MODELS);
+    expect(modelsFrom('a, b ,')).toEqual(['a', 'b']);
   });
 });
