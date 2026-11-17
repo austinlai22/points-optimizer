@@ -3,7 +3,8 @@ import cardsData from '../../data/cards.json';
 import type { CardConfig } from '../../types';
 import { evaluateTrip, type SavedTrip, type TripInputs } from '../trips';
 import { EMPTY_CHASE_INPUTS } from '../../utils/verdictInputs';
-import { runTool, type ToolContext } from './tools';
+import { runTool, type Proposal, type ToolContext } from './tools';
+import { parseAiReply } from './protocol';
 
 const cards = cardsData as CardConfig[];
 const trip = (price: number, extra: Partial<TripInputs> = {}): TripInputs => ({
@@ -63,13 +64,51 @@ describe("the assistant's tools", () => {
     expect(plan.plan.map((p) => p.trip)).toEqual(['Lisbon', 'Tokyo']);
   });
 
-  it('refuse to fill in a form that is not on the page, and unknown tools', () => {
-    expect(runTool('fill_trip_form', { trip_cash_price_usd: 500 }, context())).toHaveProperty('error');
+  it('refuse to suggest a form that is not on the page, and unknown tools', () => {
+    expect(runTool('propose_trip', { trip_cash_price_usd: 500 }, context())).toHaveProperty('error');
     expect(runTool('rm_rf', {}, context())).toHaveProperty('error');
+  });
+
+  it('only suggest changes, collecting them for the person to apply', () => {
+    const saved: SavedTrip[] = [
+      { id: 'a', name: 'Lisbon', savedOn: '', updatedOn: null, snapshot: null, inputs: trip(600) },
+      { id: 'b', name: 'Tokyo', savedOn: '', updatedOn: null, snapshot: null, inputs: trip(1500) },
+    ];
+    const proposals: Proposal[] = [];
+    const ctx = { ...context(saved), reachablePrograms: new Set(['united']), proposals };
+
+    const result = runTool('propose_trip', { trip_cash_price_usd: 700, program: 'united', award_points: 30000, based_on: '$700 or 30k United' }, ctx);
+    expect(result).toMatchObject({ proposed: true });
+    expect(leaks(result)).toEqual([]);
+    // A second trip suggestion replaces the first.
+    runTool('propose_trip', { trip_cash_price_usd: 800, program: 'united', award_points: 30000 }, ctx);
+    runTool('propose_save_trip', { name: 'Lisbon in May', based_on: 'save it' }, ctx);
+    runTool('propose_compare', { trip_names: ['lisbon', 'Tokyo'] }, ctx);
+    expect(proposals.map((p) => p.kind)).toEqual(['trip', 'save', 'compare']);
+    expect(proposals[0]).toMatchObject({ summary: '$800 cash, or 30,000 United MileagePlus points', basedOn: 'what you asked' });
+    expect(proposals[1]).toMatchObject({ name: 'Lisbon in May', trip: { tripCashPrice: 800 } });
+    expect(proposals[2]).toMatchObject({ tripIds: ['a', 'b'] });
+
+    // What can't be applied is refused up front.
+    expect(runTool('propose_trip', { trip_cash_price_usd: 700, program: 'delta', award_points: 30000 }, ctx)).toHaveProperty('error');
+    expect(runTool('propose_trip', { program: 'united', award_points: 30000 }, { ...ctx, currentTrip: null })).toHaveProperty('error');
+    expect(runTool('propose_compare', { trip_names: ['Paris'] }, ctx)).toHaveProperty('error');
+    expect(proposals).toHaveLength(3);
   });
 
   it('work out a value per point, never below zero', () => {
     expect(runTool('cents_per_point', { cash_price_usd: 702, points: 25000, taxes_usd: 121.5 }, context())).toMatchObject({ cents_per_point: 2.322 });
     expect(runTool('cents_per_point', { cash_price_usd: 100, points: 10000, taxes_usd: 200 }, context())).toMatchObject({ cents_per_point: 0 });
+  });
+});
+
+describe("the assistant's replies", () => {
+  it('may offer a few short replies to tap', () => {
+    expect(parseAiReply({ type: 'answer', text: 'What does it cost in cash?', options: ['$500', ' $500 ', '', 7, 'x'.repeat(90), 'b', 'c', 'd'] })).toEqual({
+      type: 'answer',
+      text: 'What does it cost in cash?',
+      options: ['$500', 'x'.repeat(60), 'b', 'c'],
+    });
+    expect(parseAiReply({ type: 'answer', text: 'Pay cash.', options: 'nope' })).toEqual({ type: 'answer', text: 'Pay cash.' });
   });
 });

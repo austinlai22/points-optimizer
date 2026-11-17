@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AiError, chatStep } from '../lib/ai/client';
 import type { ChatMessage } from '../lib/ai/protocol';
-import { runTool, type ToolContext } from '../lib/ai/tools';
+import { runTool, type Proposal, type ToolContext } from '../lib/ai/tools';
 import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 
 // "Ask PointCompass": a conversation where Google Gemini does the talking and
@@ -12,7 +12,9 @@ import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
 
 const TOOL_LABELS: Record<string, string> = {
   check_trip: 'Checked a trip with PointCompass',
-  fill_trip_form: 'Filled in the trip form',
+  propose_trip: 'Suggested a trip for the form',
+  propose_save_trip: 'Suggested saving a trip',
+  propose_compare: 'Suggested a comparison',
   current_trip: 'Looked at the trip in the form',
   list_saved_trips: 'Looked at your saved trips',
   plan_points: 'Planned your points across saved trips',
@@ -22,22 +24,31 @@ const TOOL_LABELS: Record<string, string> = {
 
 const MAX_TOOL_STEPS = 6;
 
-interface Shown {
-  kind: 'user' | 'assistant' | 'tool' | 'error';
-  text: string;
-}
+type Shown =
+  | { kind: 'user' | 'tool' | 'error'; text: string }
+  | { kind: 'assistant'; text: string; options?: string[] }
+  | { kind: 'proposal'; proposal: Proposal; state: 'open' | 'applied' | 'dismissed'; problem?: string };
+
+const APPLY_LABEL: Record<Proposal['kind'], { action: string; done: string }> = {
+  trip: { action: 'Apply', done: 'Filled in the form' },
+  save: { action: 'Save', done: 'Saved to My trips' },
+  compare: { action: 'Compare', done: 'Added to the comparison in My trips' },
+};
 
 export function AskPanel({
   open,
   onClose,
   question,
   toolContext,
+  onApply,
 }: {
   open: boolean;
   onClose: () => void;
   // A question to ask as soon as the panel opens, e.g. from "Explain this".
   question: { text: string; id: number } | null;
   toolContext: () => ToolContext;
+  // Makes a suggested change. Returns a problem to show, or null when done.
+  onApply: (p: Proposal) => string | null;
 }) {
   const [transcript, setTranscript] = useState<ChatMessage[]>([]);
   const [shown, setShown] = useState<Shown[]>([]);
@@ -46,6 +57,9 @@ export function AskPanel({
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const askedRef = useRef<number | null>(null);
+  // What the person did with suggestions since their last message, so the
+  // assistant knows without being told twice.
+  const decisionsRef = useRef<string[]>([]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end' });
@@ -62,21 +76,28 @@ export function AskPanel({
   const ask = async (text: string) => {
     if (!text.trim() || busy) return;
     setBusy(true);
-    let messages: ChatMessage[] = [...transcript, { role: 'user', text: text.trim() }];
+    const decisions = decisionsRef.current.length ? `(Since your last reply they ${decisionsRef.current.join('; ')}.)\n` : '';
+    decisionsRef.current = [];
+    let messages: ChatMessage[] = [...transcript, { role: 'user', text: decisions + text.trim() }];
     setShown((s) => [...s, { kind: 'user', text: text.trim() }]);
+    const proposals: Proposal[] = [];
     try {
       for (let step = 0; step <= MAX_TOOL_STEPS; step++) {
         const reply = await chatStep(messages);
         if (reply.type === 'answer') {
           messages = [...messages, { role: 'model', text: JSON.stringify(reply) }];
-          setShown((s) => [...s, { kind: 'assistant', text: reply.text }]);
+          setShown((s) => [
+            ...s,
+            { kind: 'assistant', text: reply.text, options: reply.options },
+            ...proposals.map((proposal): Shown => ({ kind: 'proposal', proposal, state: 'open' })),
+          ]);
           break;
         }
         if (step === MAX_TOOL_STEPS) {
           setShown((s) => [...s, { kind: 'error', text: "The assistant couldn't finish that. Try asking more simply." }]);
           break;
         }
-        const result = runTool(reply.tool, reply.args, toolContext());
+        const result = runTool(reply.tool, reply.args, { ...toolContext(), proposals });
         messages = [
           ...messages,
           { role: 'model', text: JSON.stringify(reply) },
@@ -102,6 +123,17 @@ export function AskPanel({
     // ask is stable enough for this: it only runs once per question id.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, question]);
+
+  const decide = (index: number, apply: boolean) => {
+    const item = shown[index];
+    if (item?.kind !== 'proposal' || item.state !== 'open') return;
+    const problem = apply ? onApply(item.proposal) : null;
+    if (!problem) decisionsRef.current.push(`${apply ? 'applied' : 'dismissed'} “${item.proposal.summary}”`);
+    setShown((s) => s.map((m, i) => (i === index && m.kind === 'proposal' ? { ...m, state: problem ? 'open' : apply ? 'applied' : 'dismissed', problem: problem ?? undefined } : m)));
+  };
+
+  const last = shown.length ? shown[shown.length - 1] : null;
+  const quickReplies = !busy && last?.kind === 'assistant' ? (last.options ?? []) : [];
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -151,6 +183,28 @@ export function AskPanel({
               <p key={i} className="mr-8 whitespace-pre-line rounded-2xl rounded-bl-md bg-navy-100 px-4 py-2.5 text-sm text-navy-950">
                 {m.text}
               </p>
+            ) : m.kind === 'proposal' ? (
+              <div key={i} role="group" aria-label="Suggested change" className="mr-8 rounded-2xl border border-navy/15 bg-white px-4 py-3 text-sm">
+                <p className="font-semibold text-navy-950">{m.proposal.summary}</p>
+                <p className="mt-1 text-xs text-navy-950/55">Based on what you told me: “{m.proposal.basedOn}”</p>
+                {m.problem && (
+                  <p role="alert" className="mt-2 text-xs text-amber">
+                    {m.problem}
+                  </p>
+                )}
+                {m.state === 'open' ? (
+                  <div className="mt-2.5 flex gap-2">
+                    <button type="button" onClick={() => decide(i, true)} className={`rounded-full bg-navy px-4 text-sm font-semibold text-slate-50 hover:bg-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}>
+                      {APPLY_LABEL[m.proposal.kind].action}
+                    </button>
+                    <button type="button" onClick={() => decide(i, false)} className={`rounded-full px-4 text-sm font-semibold text-navy-950/60 hover:bg-navy/5 hover:text-navy-950 ${TAP_TARGET} ${FOCUS_RING}`}>
+                      Dismiss
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs font-semibold text-navy-950/60">{m.state === 'applied' ? APPLY_LABEL[m.proposal.kind].done : 'Dismissed'}</p>
+                )}
+              </div>
             ) : m.kind === 'tool' ? (
               <p key={i} className="flex items-center gap-2 text-xs text-navy-950/50">
                 <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden="true" />
@@ -161,6 +215,20 @@ export function AskPanel({
                 {m.text}
               </p>
             ),
+          )}
+          {quickReplies.length > 0 && (
+            <div className="mr-8 flex flex-wrap gap-2" aria-label="Quick replies">
+              {quickReplies.map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => void ask(o)}
+                  className={`rounded-full border border-navy/20 px-3.5 text-sm text-navy-950 hover:border-navy/40 hover:bg-navy/5 ${TAP_TARGET} ${FOCUS_RING}`}
+                >
+                  {o}
+                </button>
+              ))}
+            </div>
           )}
           {busy && <p className="text-xs text-navy-950/45">Thinking…</p>}
           <div ref={endRef} />

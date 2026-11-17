@@ -1,9 +1,10 @@
 import transferPartnersData from '../../data/transferPartners.json';
 import { formatCents, verdictHeadline } from '../verdict';
 import type { PointsOption } from '../verdict/types';
-import { describePointsOption, evaluateTrip, partnerName, type SavedTrip, type TripContext, type TripInputs, type TripVerdict } from '../trips';
+import { describePointsOption, evaluateTrip, MAX_COMPARE, partnerName, type SavedTrip, type TripContext, type TripInputs, type TripVerdict } from '../trips';
 import { planPoints } from '../planPoints';
 import { ISSUER_LABELS } from '../../utils/issuers';
+import { formatUSD, formatUSDExact } from '../../utils/format';
 import type { Issuer, TransferPartner } from '../../types';
 import { sanitizeParsedTrip, type ParsedTrip } from './protocol';
 
@@ -14,12 +15,34 @@ import { sanitizeParsedTrip, type ParsedTrip } from './protocol';
 
 const transferPartners = transferPartnersData as TransferPartner[];
 
+// A change the assistant suggests. Nothing happens until the person taps
+// Apply on its card.
+export type Proposal =
+  | { kind: 'trip'; trip: TripInputs; summary: string; basedOn: string }
+  | { kind: 'save'; name: string; trip: TripInputs; summary: string; basedOn: string }
+  | { kind: 'compare'; tripIds: string[]; summary: string; basedOn: string };
+
 export interface ToolContext {
   trip: TripContext;
   savedTrips: SavedTrip[];
   currentTrip: TripInputs | null;
-  // Present on Check a trip: fills in its form.
-  fillTripForm?: (inputs: TripInputs) => void;
+  // Present on Check a trip: the programs its form can show.
+  reachablePrograms?: Set<string>;
+  // Where suggestions go, for the panel to show as cards.
+  proposals?: Proposal[];
+}
+
+const basedOn = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 200) : 'what you asked');
+
+// "$900 cash, or 60,000 United MileagePlus points + $85", for a card.
+export function describeTrip(t: TripInputs): string {
+  const parts = [`${formatUSD(t.tripCashPrice)} cash`];
+  const program = t.selectedPartnerId ? partnerName(t.selectedPartnerId) : null;
+  if (program && t.pointsRequired > 0) {
+    parts.push(`${Math.round(t.pointsRequired).toLocaleString('en-US')} ${program} points${t.awardCashFees > 0 ? ` + ${formatUSDExact(t.awardCashFees)}` : ''}`);
+  }
+  if (t.chaseTravelPoints > 0) parts.push(`${Math.round(t.chaseTravelPoints).toLocaleString('en-US')} points in Chase Travel`);
+  return parts.join(', or ');
 }
 
 export function tripFromParsed(p: ParsedTrip, base: TripInputs | null = null): TripInputs {
@@ -79,11 +102,40 @@ export function runTool(name: string, args: Record<string, unknown>, ctx: ToolCo
       const trip = tripFromParsed(sanitizeParsedTrip(args));
       return shareableResult(trip, evaluateTrip(trip, ctx.trip));
     }
-    case 'fill_trip_form': {
-      if (!ctx.fillTripForm) return { error: 'The trip form is on Check a trip, not this page.' };
-      const trip = tripFromParsed(sanitizeParsedTrip(args), ctx.currentTrip);
-      ctx.fillTripForm(trip);
-      return { done: true, now_showing: shareableResult(trip, evaluateTrip(trip, ctx.trip)) };
+    case 'propose_trip': {
+      if (!ctx.reachablePrograms || !ctx.proposals) return { error: 'The trip form is on Check a trip, not this page.' };
+      const parsed = sanitizeParsedTrip(args);
+      if (parsed.program && !ctx.reachablePrograms.has(parsed.program)) {
+        return { error: `None of their cards transfer to ${partnerName(parsed.program)}, so the form can't show that award.` };
+      }
+      const trip = tripFromParsed(parsed, ctx.currentTrip);
+      if (!(trip.tripCashPrice > 0)) return { error: 'Needs the trip cash price. Ask for it.' };
+      // One trip suggestion at a time: a newer one replaces the last.
+      const others = ctx.proposals.filter((p) => p.kind !== 'trip');
+      ctx.proposals.splice(0, ctx.proposals.length, ...others, { kind: 'trip', trip, summary: describeTrip(trip), basedOn: basedOn(args.based_on) });
+      return { proposed: true, waiting_for: 'the person to tap Apply', would_show: shareableResult(trip, evaluateTrip(trip, ctx.trip)) };
+    }
+    case 'propose_save_trip': {
+      if (!ctx.proposals) return { error: 'Trips can only be saved from Check a trip.' };
+      const pending = [...ctx.proposals].reverse().find((p) => p.kind === 'trip');
+      const trip = pending?.trip ?? ctx.currentTrip;
+      if (!trip || !(trip.tripCashPrice > 0)) return { error: 'There is no trip to save yet.' };
+      const name = typeof args.name === 'string' && args.name.trim() ? args.name.trim().slice(0, 60) : 'Untitled trip';
+      ctx.proposals.push({ kind: 'save', name, trip, summary: `Save “${name}”: ${describeTrip(trip)}`, basedOn: basedOn(args.based_on) });
+      return { proposed: true, waiting_for: 'the person to tap Apply' };
+    }
+    case 'propose_compare': {
+      if (!ctx.proposals) return { error: 'Trips can only be compared from Check a trip.' };
+      const names = Array.isArray(args.trip_names) ? args.trip_names.filter((n): n is string => typeof n === 'string') : [];
+      const found = names.map((n) => ctx.savedTrips.find((t) => t.name.trim().toLowerCase() === n.trim().toLowerCase()));
+      const missing = names.filter((_, i) => !found[i]);
+      if (missing.length) return { error: `No saved trip is called ${missing.map((n) => `“${n}”`).join(', ')}. Use list_saved_trips for the names.` };
+      const ids = [...new Set(found.map((t) => t!.id))];
+      if (ids.length === 0) return { error: 'Name at least one saved trip.' };
+      if (ids.length > MAX_COMPARE) return { error: `Up to ${MAX_COMPARE} trips can be compared at once.` };
+      const shown = ids.map((id) => ctx.savedTrips.find((t) => t.id === id)!.name);
+      ctx.proposals.push({ kind: 'compare', tripIds: ids, summary: `Compare ${shown.join(', ')}`, basedOn: basedOn(args.based_on) });
+      return { proposed: true, waiting_for: 'the person to tap Apply' };
     }
     case 'current_trip': {
       if (!ctx.currentTrip || !(ctx.currentTrip.tripCashPrice > 0)) return { error: 'No trip is in the form yet.' };

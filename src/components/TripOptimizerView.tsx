@@ -39,9 +39,9 @@ import { SaveTripControl } from './SaveTripControl';
 import { DescribeTrip } from './DescribeTrip';
 import { AskPanel } from './AskPanel';
 import { useAiEnabled } from '../lib/ai/useAiEnabled';
-import { tripFromParsed, type ToolContext } from '../lib/ai/tools';
+import { tripFromParsed, type Proposal, type ToolContext } from '../lib/ai/tools';
 import type { ParsedTrip } from '../lib/ai/protocol';
-import { useSavedTrips } from '../lib/trips';
+import { addToCompare, MAX_COMPARE, MAX_SAVED_TRIPS, saveTrip, useCompareIds, useEditingTrip, useSavedTrips } from '../lib/trips';
 import { track } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
 import { formatUSD, parseNonNegativeNumber } from '../utils/format';
@@ -396,17 +396,40 @@ export function TripOptimizerView() {
 
   const aiEnabled = useAiEnabled();
   const savedTrips = useSavedTrips();
+  const compareIds = useCompareIds();
+  const editingTrip = useEditingTrip();
   const [ask, setAsk] = useState<{ open: boolean; question: { text: string; id: number } | null }>({ open: false, question: null });
   const openAsk = (text?: string) => setAsk({ open: true, question: text ? { text, id: Date.now() } : null });
   const toolContext = (): ToolContext => ({
     trip: { ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs },
     savedTrips,
     currentTrip: tripInputs,
-    fillTripForm: (trip) => {
-      // Only programs one of the held cards reaches can be chosen in the form.
-      applyTrip(availablePartners.some((p) => p.id === trip.selectedPartnerId) ? trip : { ...trip, selectedPartnerId: '', pointsRequired: 0, partnerPointsHeld: 0, awardCashFees: 0 });
-    },
+    reachablePrograms: new Set(availablePartners.map((p) => p.id)),
   });
+  // A change the assistant suggested, once the person taps Apply.
+  const applyProposal = (p: Proposal): string | null => {
+    if (p.kind === 'trip') {
+      // Only programs one of the held cards reaches can be chosen in the form.
+      applyTrip(availablePartners.some((x) => x.id === p.trip.selectedPartnerId) ? p.trip : { ...p.trip, selectedPartnerId: '', pointsRequired: 0, partnerPointsHeld: 0, awardCashFees: 0 });
+      return null;
+    }
+    if (p.kind === 'save') {
+      const editingBefore = editingTrip?.id ?? null;
+      if (!saveTrip(p.name, p.trip, evaluateTrip(p.trip, toolContext().trip))) return `You have ${MAX_SAVED_TRIPS} saved trips, the most there can be. Delete one in My trips first.`;
+      // Saving makes it the trip being edited only if it's the one in the form.
+      if (!sameTripInputs(p.trip, tripInputs)) setEditingTrip(editingBefore);
+      track({ event: 'trip_saved' });
+      return null;
+    }
+    const known = new Set(savedTrips.map((t) => t.id));
+    const ids = p.tripIds.filter((id) => known.has(id));
+    if (ids.length === 0) return 'Those trips are no longer saved.';
+    const room = MAX_COMPARE - compareIds.filter((id) => !ids.includes(id)).length;
+    if (ids.length > room) return `The comparison holds ${MAX_COMPARE} trips. Remove some in My trips first.`;
+    ids.forEach(addToCompare);
+    if (compareIds.length < 2 && new Set([...compareIds, ...ids]).size >= 2) track({ event: 'trips_compared' });
+    return null;
+  };
 
   const handleCopyLink = async () => {
     try {
@@ -735,6 +758,7 @@ export function TripOptimizerView() {
         onClose={() => setAsk((a) => ({ ...a, open: false }))}
         question={ask.question}
         toolContext={toolContext}
+        onApply={applyProposal}
       />
 
       {/* On phones the answer sits below the inputs, so offer a way to it

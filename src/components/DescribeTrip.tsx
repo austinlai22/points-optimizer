@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { readTripText, type ReadVia } from '../lib/ai/client';
 import { isEmptyTrip, type ParsedTrip } from '../lib/ai/protocol';
+import { readingChecks, type ReadingChecks } from '../lib/ai/checks';
 import { partnerName } from '../lib/trips';
 import { FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
 
@@ -20,7 +21,7 @@ export function DescribeTrip({
   onFill: (trip: ParsedTrip) => void;
 }) {
   const [text, setText] = useState('');
-  const [status, setStatus] = useState<{ kind: 'idle' | 'reading' | 'done' | 'empty'; note?: string }>({ kind: 'idle' });
+  const [status, setStatus] = useState<{ kind: 'idle' | 'reading' | 'done' | 'empty'; note?: string; checks?: ReadingChecks }>({ kind: 'idle' });
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -41,7 +42,8 @@ export function DescribeTrip({
       trip.partner_points_held = null;
     }
     onFill(trip);
-    setStatus({ kind: 'done', note: `Filled in below. ${note} Check the figures.` });
+    const checks = readingChecks(trip);
+    setStatus({ kind: 'done', note: `Filled in below. ${note}${checks.warnings.length ? '' : ' Check the figures.'}`, checks });
   };
 
   return (
@@ -81,6 +83,21 @@ export function DescribeTrip({
       <p className="mt-2 text-xs text-navy-950/50" role="status">
         {status.note ?? 'Uses the AI in your browser when it has one, otherwise Google Gemini. Only what you type here is sent, never your balances or cash.'}
       </p>
+      {status.checks && status.checks.read.length > 0 && (
+        <p className="mt-1.5 text-xs text-navy-950/70">
+          <span className="font-semibold">Read:</span> {status.checks.read.join(' · ')}
+        </p>
+      )}
+      {status.checks && status.checks.warnings.length > 0 && (
+        <ul className="mt-1.5 space-y-1 text-xs text-amber" aria-label="Worth checking">
+          {status.checks.warnings.map((w) => (
+            <li key={w} className="flex gap-1.5">
+              <span aria-hidden="true">!</span>
+              <span>{w}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </form>
   );
 }

@@ -48,6 +48,15 @@ describe('describing a trip in your own words', () => {
     expect(screen.getByText(/none of your cards in portfolio transfer to delta skymiles/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/airline or hotel program/i)).toHaveValue('');
   });
+
+  it('says what it read and flags figures that look off', async () => {
+    visit('/app');
+    fireEvent.change(screen.getByLabelText(/describe your trip/i), { target: { value: '$900 cash or 6k United miles + $85' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Fill in' }));
+    expect(await screen.findByText('6,000 United MileagePlus points + $85', { exact: false })).toBeInTheDocument();
+    const warnings = within(screen.getByRole('list', { name: 'Worth checking' }));
+    expect(warnings.getByText(/far above usual.*6,000 may be missing a zero/)).toBeInTheDocument();
+  });
 });
 
 describe('asking PointCompass', () => {
@@ -58,32 +67,71 @@ describe('asking PointCompass', () => {
     expect(screen.queryByRole('button', { name: /explain this/i })).toBeNull();
   });
 
-  it('runs the tools in the browser, fills in the form, and never sends balances', async () => {
+  it('runs the tools in the browser, changes the form only on Apply, and never sends balances', async () => {
     setServerAiEnabled(true);
     const replies = [
-      { reply: { type: 'tool', tool: 'fill_trip_form', args: { trip_cash_price_usd: 700, program: 'united', award_points: 30000 } } },
-      { reply: { type: 'answer', text: 'Done: transferring 30,000 Chase points to United beats paying cash.' } },
+      { reply: { type: 'tool', tool: 'propose_trip', args: { trip_cash_price_usd: 700, program: 'united', award_points: 30000, based_on: '$700 or 30k United miles' } } },
+      { reply: { type: 'tool', tool: 'propose_save_trip', args: { name: 'Lisbon in May', based_on: 'save it as Lisbon in May' } } },
+      { reply: { type: 'answer', text: 'Transferring 30,000 Chase points to United beats paying cash. Tap Apply to fill it in.' } },
+      { reply: { type: 'answer', text: 'Anything else?' } },
     ];
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
 
     visit('/app');
+    fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '500' } });
     fireEvent.click(await screen.findByRole('button', { name: /ask pointcompass/i }));
     const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
-    fireEvent.change(panel.getByLabelText('Your question'), { target: { value: 'Set up $700 or 30k United miles' } });
+    fireEvent.change(panel.getByLabelText('Your question'), { target: { value: 'Set up $700 or 30k United miles and save it as Lisbon in May' } });
     fireEvent.click(panel.getByRole('button', { name: 'Ask' }));
 
     expect(await panel.findByText(/beats paying cash/)).toBeInTheDocument();
-    expect(panel.getByText('Filled in the trip form')).toBeInTheDocument();
+    expect(panel.getByText('Suggested a trip for the form')).toBeInTheDocument();
+    // Suggested, not done.
+    expect(screen.getByLabelText(/trip cash price/i)).toHaveValue(500);
+    const [tripCard, saveCard] = panel.getAllByRole('group', { name: 'Suggested change' });
+    expect(within(tripCard).getByText('$700 cash, or 30,000 United MileagePlus points')).toBeInTheDocument();
+    expect(within(tripCard).getByText(/based on what you told me: “\$700 or 30k united miles”/i)).toBeInTheDocument();
+
+    fireEvent.click(within(tripCard).getByRole('button', { name: 'Apply' }));
     expect(screen.getByLabelText(/trip cash price/i)).toHaveValue(700);
     expect(screen.getByLabelText(/airline or hotel program/i)).toHaveValue('united');
+    expect(within(tripCard).getByText('Filled in the form')).toBeInTheDocument();
+
+    fireEvent.click(within(saveCard).getByRole('button', { name: 'Dismiss' }));
+    expect(within(saveCard).getByText('Dismissed')).toBeInTheDocument();
+    expect(localStorage.getItem('cco:savedTrips') ?? '[]').not.toContain('Lisbon in May');
+
+    // The next message tells the assistant what was applied.
+    fireEvent.change(panel.getByLabelText('Your question'), { target: { value: 'Thanks' } });
+    fireEvent.click(panel.getByRole('button', { name: 'Ask' }));
+    expect(await panel.findByText('Anything else?')).toBeInTheDocument();
 
     const bodies = fetchSpy.mock.calls.map(([, init]) => String((init as RequestInit).body));
-    expect(bodies).toHaveLength(2);
-    expect(bodies[1]).toContain('TOOL_RESULT fill_trip_form');
+    expect(bodies).toHaveLength(4);
+    expect(bodies[1]).toContain('TOOL_RESULT propose_trip');
+    expect(bodies[3]).toMatch(/they applied “\$700 cash, or 30,000 United MileagePlus points”; dismissed “Save/);
     for (const body of bodies) {
       expect(body).not.toContain(String(BALANCE));
       expect(body).not.toContain('123,457');
     }
+    fetchSpy.mockRestore();
+  });
+
+  it('offers quick replies that send themselves', async () => {
+    setServerAiEnabled(true);
+    const replies = [
+      { reply: { type: 'answer', text: 'What does the trip cost in cash?', options: ['About $500', 'About $900'] } },
+      { reply: { type: 'answer', text: 'Got it.' } },
+    ];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
+    visit('/app');
+    fireEvent.click(await screen.findByRole('button', { name: /ask pointcompass/i }));
+    const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
+    fireEvent.click(panel.getByRole('button', { name: 'Should I use points for this trip?' }));
+    fireEvent.click(await panel.findByRole('button', { name: 'About $900' }));
+    expect(await panel.findByText('Got it.')).toBeInTheDocument();
+    expect(panel.queryByRole('button', { name: 'About $900' })).toBeNull();
+    expect(JSON.parse(String((fetchSpy.mock.calls[1][1] as RequestInit).body)).messages.at(-1).text).toBe('About $900');
     fetchSpy.mockRestore();
   });
 
