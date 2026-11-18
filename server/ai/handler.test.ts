@@ -63,6 +63,13 @@ describe('AI endpoint', () => {
     const wrapped = setup({ fetchImpl: gemini('Sure! {"type":"answer","text":"Pay cash."} Hope that helps.') });
     expect(await (await wrapped.post({ mode: 'chat', messages: [{ role: 'user', text: 'Should I?' }] })).json()).toEqual({ reply: { type: 'answer', text: 'Pay cash.' } });
 
+    // Two tools asked for at once, as a list or one after another: the first is used.
+    const tool = (name: string) => ({ type: 'tool', tool: name, args: { name: 'Lisbon {May}' } });
+    for (const text of [JSON.stringify([tool('propose_trip'), tool('propose_save_trip')]), `${JSON.stringify(tool('propose_trip'))}\n${JSON.stringify(tool('propose_save_trip'))}`]) {
+      const two = setup({ fetchImpl: gemini(text) });
+      expect(await (await two.post({ mode: 'chat', messages: [{ role: 'user', text: 'Set up and save' }] })).json()).toEqual({ reply: tool('propose_trip') });
+    }
+
     // A cut-off reply, then a good one.
     const replies = ['{"type":"answer","text":"Pay ca', JSON.stringify({ type: 'answer', text: 'Pay cash.' })];
     const flaky = vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: replies.shift() }] } }] }), { status: 200 }));

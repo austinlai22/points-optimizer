@@ -108,7 +108,10 @@ export function AskPanel({
           { role: 'model', text: JSON.stringify(reply) },
           { role: 'user', text: `TOOL_RESULT ${reply.tool}: ${JSON.stringify(result)}` },
         ];
-        setShown((s) => [...s, { kind: 'tool', text: TOOL_LABELS[reply.tool] ?? reply.tool }]);
+        // A suggestion that was turned down (say, a program their cards can't
+        // reach) isn't shown as made.
+        const refused = reply.tool.startsWith('propose_') && typeof result === 'object' && result !== null && 'error' in result;
+        setShown((s) => [...s, { kind: 'tool', text: refused ? 'Checked whether that change is possible' : (TOOL_LABELS[reply.tool] ?? reply.tool) }]);
       }
       setTranscript(messages);
     } catch (e) {

@@ -175,6 +175,25 @@ describe('asking PointCompass', () => {
     fetchSpy.mockRestore();
   });
 
+  it("doesn't show a turned-down suggestion as made", async () => {
+    setServerAiEnabled(true);
+    const replies = [
+      { reply: { type: 'tool', tool: 'propose_trip', args: { trip_cash_price_usd: 900, program: 'ana', award_points: 75000 } } },
+      { reply: { type: 'answer', text: "None of your cards transfer to ANA." } },
+    ];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
+    visit('/app');
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
+    const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
+    fireEvent.change(panel.getByLabelText('Your question'), { target: { value: 'Tokyo with ANA, $900 or 75k' } });
+    fireEvent.click(panel.getByRole('button', { name: 'Ask' }));
+    expect(await panel.findByText(/transfer to ANA/)).toBeInTheDocument();
+    expect(panel.getByText('Checked whether that change is possible')).toBeInTheDocument();
+    expect(panel.queryByText('Suggested a trip for the form')).toBeNull();
+    expect(panel.queryByRole('group', { name: 'Suggested change' })).toBeNull();
+    fetchSpy.mockRestore();
+  });
+
   it('offers quick replies that send themselves', async () => {
     setServerAiEnabled(true);
     const replies = [

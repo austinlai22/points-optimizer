@@ -70,15 +70,35 @@ function validMessages(raw: unknown): ChatMessage[] | null {
   return out;
 }
 
+// The first complete {...} in some text, minding braces inside strings.
+function firstObject(text: string): string | null {
+  const start = text.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inString) {
+      if (c === '\\') i++;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return text.slice(start, i + 1);
+  }
+  return null;
+}
+
 // A model's JSON reply. Some wrap it in a code fence or add a sentence around
-// it despite being asked not to, so the first object found is used.
+// it despite being asked not to, and some ask for two tools at once, as a
+// list or one object after another. The first object is used: the browser
+// asks again for the next step.
 function parseJson(text: string): unknown {
   const trimmed = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  for (const candidate of [trimmed, trimmed.slice(trimmed.indexOf('{'), trimmed.lastIndexOf('}') + 1)]) {
+  for (const candidate of [trimmed, firstObject(trimmed)]) {
+    if (candidate === null) continue;
     try {
       const value = JSON.parse(candidate);
-      // A one-item list holding the object is read as the object.
-      return Array.isArray(value) && value.length === 1 ? value[0] : value;
+      return Array.isArray(value) ? (value[0] ?? null) : value;
     } catch {
       // Try the next reading.
     }

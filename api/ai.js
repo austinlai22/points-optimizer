@@ -944,12 +944,31 @@ function validMessages(raw) {
 	if (total > LIMITS.totalChars || out[out.length - 1].role !== "user") return null;
 	return out;
 }
+function firstObject(text) {
+	const start = text.indexOf("{");
+	if (start < 0) return null;
+	let depth = 0;
+	let inString = false;
+	for (let i = start; i < text.length; i++) {
+		const c = text[i];
+		if (inString) {
+			if (c === "\\") i++;
+			else if (c === "\"") inString = false;
+		} else if (c === "\"") inString = true;
+		else if (c === "{") depth++;
+		else if (c === "}" && --depth === 0) return text.slice(start, i + 1);
+	}
+	return null;
+}
 function parseJson(text) {
 	const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-	for (const candidate of [trimmed, trimmed.slice(trimmed.indexOf("{"), trimmed.lastIndexOf("}") + 1)]) try {
-		const value = JSON.parse(candidate);
-		return Array.isArray(value) && value.length === 1 ? value[0] : value;
-	} catch {}
+	for (const candidate of [trimmed, firstObject(trimmed)]) {
+		if (candidate === null) continue;
+		try {
+			const value = JSON.parse(candidate);
+			return Array.isArray(value) ? value[0] ?? null : value;
+		} catch {}
+	}
 	return null;
 }
 function createAiHandler(deps) {
