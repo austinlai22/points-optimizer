@@ -20,6 +20,46 @@ const rows = toRows(await weeklyStats(store, weeks));
 if (args.includes('--csv')) {
   process.stdout.write(toCsv(rows));
 } else {
+  // Where people drop off, week by week: visits, then starting a trip, then
+  // a recommendation, then saving one or asking the assistant.
+  console.log('Funnel');
+  console.table(
+    rows.map((r) => ({
+      'Week of': r.week_starting,
+      Visits: r.visits,
+      'Started a trip': r.trips_started,
+      'Got a recommendation': r.trip_checks,
+      'Saved a trip': r.trips_saved,
+      'Asked the assistant': r.assistant_questions,
+    })),
+  );
+
+  // Visits by where they came from (utm_source tag, or the kind of site).
+  const sourceColumns = Object.keys(rows[0] ?? {}).filter((c) => c.startsWith('visits_from_'));
+  if (sourceColumns.length) {
+    console.log('Visits by source');
+    console.table(rows.map((r) => ({ 'Week of': r.week_starting, ...Object.fromEntries(sourceColumns.map((c) => [c.replace('visits_from_', ''), r[c]])) })));
+  }
+
+  // Of the browsers that first got a recommendation in a week, how many came
+  // back on another day within 30 days. Weeks less than 30 days old are still
+  // filling in.
+  const today = new Date();
+  console.log('Coming back (first recommendation that week, then again within 30 days)');
+  console.table(
+    rows.map((r) => {
+      const settled = Date.parse(`${r.week_starting}T00:00:00Z`) + 37 * 24 * 3600 * 1000 <= today.getTime();
+      return {
+        'Week of': r.week_starting,
+        New: r.new_users,
+        'Came back ≤30 days': r.came_back_within_30_days,
+        Rate: r.new_users ? `${Math.round((r.came_back_within_30_days / r.new_users) * 100)}%` : '–',
+        ' ': settled ? '' : 'still filling in',
+      };
+    }),
+  );
+
+  console.log('All counts');
   console.table(
     rows.map((r) => ({
       'Week of': r.week_starting,

@@ -52,7 +52,7 @@ export function Agents() {
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-10 sm:px-6">
         <Section title="Connector address">
           <div className="flex flex-wrap items-center gap-3">
-            <code className="rounded-xl bg-slate-50 px-3 py-2 font-mono text-sm text-navy-950 ring-1 ring-navy/10">{CONNECTOR_URL}</code>
+            <code className="break-all rounded-xl bg-slate-50 px-3 py-2 font-mono text-sm text-navy-950 ring-1 ring-navy/10">{CONNECTOR_URL}</code>
             <button
               type="button"
               onClick={copy}

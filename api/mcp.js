@@ -25445,6 +25445,7 @@ function fieldFor(event) {
 	if (event.name === "trip_check") return `trip_check:${event.verdict}`;
 	if (event.name === "agent_call") return `agent_call:${event.tool}`;
 	if (event.name === "ai_call") return `ai_call:${event.mode}`;
+	if (event.name === "visit") return `visit:${event.source}`;
 	return event.name;
 }
 async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date()) {
@@ -25456,13 +25457,36 @@ async function recordEvent(store, event, anonId, now = /* @__PURE__ */ new Date(
 	if (event.name !== "trip_check" || !anonId) return;
 	const activeKey = `stats:active:${day}`;
 	const daysKey = `stats:iddays:${anonId}`;
+	const firstKey = `stats:idfirst:${anonId}`;
+	const seenBefore = await store.scard(daysKey) > 0;
+	const isNew = await store.set(firstKey, seenBefore ? "earlier" : day, {
+		ttlSeconds: ID_DAYS_TTL,
+		nx: true
+	});
 	await Promise.all([store.pfadd(activeKey, anonId), store.sadd(daysKey, day)]);
-	await Promise.all([store.expire(activeKey, COUNTS_TTL), store.expire(daysKey, ID_DAYS_TTL)]);
+	await Promise.all([
+		store.expire(activeKey, COUNTS_TTL),
+		store.expire(daysKey, ID_DAYS_TTL),
+		store.expire(firstKey, ID_DAYS_TTL)
+	]);
+	if (isNew && !seenBefore) {
+		await store.pfadd(`stats:new:${day}`, anonId);
+		await store.expire(`stats:new:${day}`, COUNTS_TTL);
+	} else if (!isNew) {
+		const first = await store.get(firstKey);
+		if (first && first !== "earlier" && first < day && daysBetween(first, day) <= 30) {
+			await store.pfadd(`stats:back30:${first}`, anonId);
+			await store.expire(`stats:back30:${first}`, COUNTS_TTL);
+		}
+	}
 	if (await store.scard(daysKey) >= 2) {
 		const returningKey = `stats:returning:${day}`;
 		await store.pfadd(returningKey, anonId);
 		await store.expire(returningKey, COUNTS_TTL);
 	}
+}
+function daysBetween(from, to) {
+	return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / (DAY * 1e3));
 }
 //#endregion
 //#region server/ratelimit.ts

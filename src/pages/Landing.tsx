@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import cardsData from '../data/cards.json';
 import transferPartnersData from '../data/transferPartners.json';
 import boostData from '../data/chase-points-boost.json';
@@ -227,23 +227,46 @@ const NUMBERS: { title: string; body: string; icon: ReactNode }[] = [
   },
 ];
 
+// On phones, a "Check a trip" button stays at the bottom of the screen once
+// the hero's buttons have scrolled away, and steps aside when the closing one
+// comes into view. Hidden until the page has looked, so it never flashes.
+function useStickyCta() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const closingRef = useRef<HTMLAnchorElement>(null);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const targets = [heroRef.current, closingRef.current].filter((t): t is HTMLDivElement | HTMLAnchorElement => t !== null);
+    if (targets.length === 0 || typeof IntersectionObserver === 'undefined') return;
+    const visible = new Map<Element, boolean>();
+    const observer = new IntersectionObserver((entries) => {
+      for (const e of entries) visible.set(e.target, e.isIntersecting);
+      setShow(visible.size === targets.length && [...visible.values()].every((v) => !v));
+    });
+    targets.forEach((t) => observer.observe(t));
+    return () => observer.disconnect();
+  }, []);
+  return { heroRef, closingRef, show };
+}
+
 export function Landing() {
+  const { heroRef, closingRef, show: showStickyCta } = useStickyCta();
   return (
     <>
       {/* Hero */}
       <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top,#dfe8f3,#f8fafc_60%)]">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24">
           <p className="inline-flex rounded-full bg-white/80 px-3.5 py-1 text-xs font-medium text-navy-950/60 ring-1 ring-navy/10">
-            Free to use · No account · No bank login
+            For Chase Sapphire cardholders · Free · No sign-up
           </p>
           <h1 className="mx-auto mt-6 max-w-4xl font-display text-5xl font-semibold tracking-tight text-navy-950 sm:text-6xl lg:text-7xl">
             Points or cash? Know before you book.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-950/60 sm:text-xl">
-            Enter a trip and PointCompass tells you the best way to pay for it, based on what your
-            points are worth and how much cash you can spare.
+            Enter a trip, and PointCompass checks it against your own cards and balances, including
+            the Sapphire Reserve's 2025 changes, then tells you whether to pay cash, transfer points
+            or book in Chase Travel. Capital One, Amex, Citi, Bank of America and Bilt points work too.
           </p>
-          <div className="mt-9 flex flex-wrap justify-center gap-3">
+          <div ref={heroRef} className="mt-9 flex flex-wrap justify-center gap-3">
             <a href="/app" onClick={linkHandler('/app')} className={PRIMARY_BUTTON}>
               Check a trip
             </a>
@@ -569,6 +592,7 @@ export function Landing() {
                 Enter the trip, and your cash position if you like. No account or bank login needed.
               </p>
               <a
+                ref={closingRef}
                 href="/app"
                 onClick={linkHandler('/app')}
                 className={`mt-7 inline-flex items-center rounded-full bg-slate-50 px-7 text-sm font-semibold text-navy transition-colors hover:bg-navy-100 motion-reduce:transition-none ${TAP_TARGET} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-50 focus-visible:ring-offset-2 focus-visible:ring-offset-navy`}
@@ -579,6 +603,16 @@ export function Landing() {
           </div>
         </div>
       </section>
+
+      {showStickyCta && (
+        <a
+          href="/app"
+          onClick={linkHandler('/app')}
+          className={`fixed bottom-5 left-1/2 z-40 -translate-x-1/2 sm:hidden ${PRIMARY_BUTTON}`}
+        >
+          Check a trip
+        </a>
+      )}
     </>
   );
 }

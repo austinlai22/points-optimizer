@@ -41,6 +41,11 @@ export interface WeekRow {
   trips_saved: number;
   ai_calls: number;
   trips_compared: number;
+  visits: number;
+  trips_started: number;
+  assistant_questions: number;
+  new_users: number;
+  came_back_within_30_days: number;
   [detail: string]: string | number;
 }
 
@@ -48,6 +53,7 @@ export interface WeekRow {
 // agent calls by tool. Page visitors come from Vercel's Analytics dashboard.
 export function toRows(weeks: PeriodStats[]): WeekRow[] {
   const tools = [...new Set(weeks.flatMap((w) => Object.keys(w.counts).filter((f) => f.startsWith('agent_call:'))))].sort();
+  const sources = [...new Set(weeks.flatMap((w) => Object.keys(w.counts).filter((f) => f.startsWith('visit:'))))].sort();
   return weeks.map((w) => {
     const row: WeekRow = {
       week_starting: w.from,
@@ -62,9 +68,15 @@ export function toRows(weeks: PeriodStats[]): WeekRow[] {
       trips_saved: w.counts.trip_saved ?? 0,
       ai_calls: sumPrefix(w.counts, 'ai_call:'),
       trips_compared: w.counts.trips_compared ?? 0,
+      visits: sumPrefix(w.counts, 'visit:'),
+      trips_started: w.counts.trip_started ?? 0,
+      assistant_questions: w.counts.assistant_question ?? 0,
+      new_users: w.newUsers,
+      came_back_within_30_days: w.cameBackWithin30Days,
     };
     for (const verdict of VERDICTS) row[`trip_checks_${verdict}`] = w.counts[`trip_check:${verdict}`] ?? 0;
     for (const tool of tools) row[tool.replace('agent_call:', 'agent_calls_')] = w.counts[tool] ?? 0;
+    for (const source of sources) row[source.replace('visit:', 'visits_from_')] = w.counts[source] ?? 0;
     return row;
   });
 }

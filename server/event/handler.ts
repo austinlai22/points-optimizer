@@ -7,6 +7,7 @@ export interface EventDeps {
 }
 
 // The web app's anonymous id: a random UUID made in the browser, nothing else.
+const VISIT_SOURCE = /^[a-z0-9_-]{1,24}$/;
 const ANON_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Accepts only the events the browser sends, so nothing else can be
@@ -14,7 +15,7 @@ const ANON_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // not an endpoint, so there is no stats page to protect.
 function parseEvent(body: unknown): { event: UsageEvent; id: string | null } | null {
   if (typeof body !== 'object' || body === null) return null;
-  const { event, verdict, id, cash } = body as Record<string, unknown>;
+  const { event, verdict, id, cash, source } = body as Record<string, unknown>;
   if (event === 'trip_check') {
     if (typeof id !== 'string' || !ANON_ID.test(id)) return null;
     if (!VERDICTS.includes(verdict as Verdict)) return null;
@@ -24,7 +25,14 @@ function parseEvent(body: unknown): { event: UsageEvent; id: string | null } | n
     return { event: { name: 'trip_check', verdict: verdict as Verdict, cash: cash ?? true }, id };
   }
   // The rest are counted without any id.
-  if (event === 'price_check' || event === 'trip_saved' || event === 'trips_compared') return { event: { name: event }, id: null };
+  if (event === 'price_check' || event === 'trip_saved' || event === 'trips_compared' || event === 'trip_started' || event === 'assistant_question') {
+    return { event: { name: event }, id: null };
+  }
+  // Where a visit came from: one short word, nothing else.
+  if (event === 'visit') {
+    if (typeof source !== 'string' || !VISIT_SOURCE.test(source)) return null;
+    return { event: { name: 'visit', source }, id: null };
+  }
   return null;
 }
 

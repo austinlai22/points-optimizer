@@ -296,7 +296,7 @@ export function TripsView() {
         ) : (
           <>
             <section aria-labelledby="saved-heading">
-              <div className="mb-3 flex items-baseline justify-between gap-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <h2 id="saved-heading" className="font-display text-xl font-medium text-navy-950">
                   Saved trips <span className="font-mono text-base text-navy-950/40">{trips.length}</span>
                 </h2>

@@ -14,6 +14,41 @@ describe('admin scripts', () => {
     ]);
   });
 
+  it("counts each week's newcomers and how many came back within 30 days", async () => {
+    const store = createMemoryStore();
+    const [a, b, c] = ['3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', '7c1d2e3f-4a5b-4c6d-8e7f-0a1b2c3d4e5f', '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'];
+    const check = (id: string, day: string) => recordEvent(store, { name: 'trip_check', verdict: 'PAY_CASH', cash: false }, id, at(day));
+    // Week of Oct 12: a, b and c are new. a comes back the same week, b three
+    // weeks later, c never; a also checks twice on its first day.
+    await check(a, '2026-10-13');
+    await check(a, '2026-10-13');
+    await check(b, '2026-10-14');
+    await check(c, '2026-10-15');
+    await check(a, '2026-10-16');
+    await check(b, '2026-11-05');
+    // b again much later: past 30 days, so no second count.
+    await check(b, '2026-12-20');
+    const [first] = toRows(await weeklyStats(store, 11, at('2026-12-21')));
+    expect(first).toMatchObject({ week_starting: '2026-10-12', new_users: 3, came_back_within_30_days: 2 });
+
+    // An id seen before first days were kept is neither new nor a comeback.
+    const old = createMemoryStore();
+    await old.sadd(`stats:iddays:${a}`, '2026-09-01');
+    await recordEvent(old, { name: 'trip_check', verdict: 'PAY_CASH', cash: false }, a, at('2026-10-13'));
+    await recordEvent(old, { name: 'trip_check', verdict: 'PAY_CASH', cash: false }, a, at('2026-10-14'));
+    const [week] = toRows(await weeklyStats(old, 1, at('2026-10-14')));
+    expect(week).toMatchObject({ new_users: 0, came_back_within_30_days: 0, returning_users: 1 });
+  });
+
+  it('reports visits by source and each step people take', async () => {
+    const store = createMemoryStore();
+    for (const source of ['reddit', 'reddit', 'search', 'direct']) await recordEvent(store, { name: 'visit', source }, null, at('2026-10-20'));
+    await recordEvent(store, { name: 'trip_started' }, null, at('2026-10-20'));
+    await recordEvent(store, { name: 'assistant_question' }, null, at('2026-10-20'));
+    const [row] = toRows(await weeklyStats(store, 1, at('2026-10-21')));
+    expect(row).toMatchObject({ visits: 4, visits_from_reddit: 2, visits_from_search: 1, visits_from_direct: 1, trips_started: 1, assistant_questions: 1 });
+  });
+
   it('reports every metric per week', async () => {
     const store = createMemoryStore();
     const id = '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e';

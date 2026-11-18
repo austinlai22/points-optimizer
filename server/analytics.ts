@@ -19,7 +19,11 @@ export type UsageEvent =
   | { name: 'price_report_rejected' }
   | { name: 'agent_call'; tool: string }
   // A call to /api/ai, by kind ('parse' or 'chat'). Nothing about its content.
-  | { name: 'ai_call'; mode: 'parse' | 'chat' };
+  | { name: 'ai_call'; mode: 'parse' | 'chat' }
+  // Once per visit, with where it came from as one word.
+  | { name: 'visit'; source: string }
+  | { name: 'trip_started' }
+  | { name: 'assistant_question' };
 
 export const VERDICTS: Verdict[] = [
   'PAY_CASH',
@@ -44,6 +48,7 @@ function fieldFor(event: UsageEvent): string {
   if (event.name === 'trip_check') return `trip_check:${event.verdict}`;
   if (event.name === 'agent_call') return `agent_call:${event.tool}`;
   if (event.name === 'ai_call') return `ai_call:${event.mode}`;
+  if (event.name === 'visit') return `visit:${event.source}`;
   return event.name;
 }
 
@@ -63,8 +68,25 @@ export async function recordEvent(
 
   const activeKey = `stats:active:${day}`;
   const daysKey = `stats:iddays:${anonId}`;
+  const firstKey = `stats:idfirst:${anonId}`;
+  // The first day this id checked a trip, to tell whether it came back within
+  // 30 days. Ids seen before this was kept are marked, not counted as new.
+  const seenBefore = (await store.scard(daysKey)) > 0;
+  const isNew = await store.set(firstKey, seenBefore ? 'earlier' : day, { ttlSeconds: ID_DAYS_TTL, nx: true });
   await Promise.all([store.pfadd(activeKey, anonId), store.sadd(daysKey, day)]);
-  await Promise.all([store.expire(activeKey, COUNTS_TTL), store.expire(daysKey, ID_DAYS_TTL)]);
+  await Promise.all([store.expire(activeKey, COUNTS_TTL), store.expire(daysKey, ID_DAYS_TTL), store.expire(firstKey, ID_DAYS_TTL)]);
+  if (isNew && !seenBefore) {
+    await store.pfadd(`stats:new:${day}`, anonId);
+    await store.expire(`stats:new:${day}`, COUNTS_TTL);
+  } else if (!isNew) {
+    // Came back on a later day within 30 days of the first: counted against
+    // the day it was first seen, so each week's newcomers get a rate.
+    const first = await store.get(firstKey);
+    if (first && first !== 'earlier' && first < day && daysBetween(first, day) <= COME_BACK_DAYS) {
+      await store.pfadd(`stats:back30:${first}`, anonId);
+      await store.expire(`stats:back30:${first}`, COUNTS_TTL);
+    }
+  }
   // Returning: has checked trips on two or more different days.
   if ((await store.scard(daysKey)) >= 2) {
     const returningKey = `stats:returning:${day}`;
@@ -73,12 +95,22 @@ export async function recordEvent(
   }
 }
 
+export const COME_BACK_DAYS = 30;
+
+function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / (DAY * 1000));
+}
+
 export interface PeriodStats {
   from: string;
   to: string;
   counts: Record<string, number>;
   activeUsers: number;
   returningUsers: number;
+  // Ids whose first trip check was in this period, and of those, how many
+  // checked again on a later day within 30 days.
+  newUsers: number;
+  cameBackWithin30Days: number;
 }
 
 // Totals for the days from `from` to `to` inclusive (YYYY-MM-DD, UTC).
@@ -91,9 +123,11 @@ export async function readPeriod(store: Store, from: string, to: string): Promis
   for (const daily of await Promise.all(days.map((day) => store.hgetall(`stats:day:${day}`)))) {
     for (const [field, n] of Object.entries(daily)) counts[field] = (counts[field] ?? 0) + n;
   }
-  const [activeUsers, returningUsers] = await Promise.all([
+  const [activeUsers, returningUsers, newUsers, cameBackWithin30Days] = await Promise.all([
     store.pfcount(...days.map((day) => `stats:active:${day}`)),
     store.pfcount(...days.map((day) => `stats:returning:${day}`)),
+    store.pfcount(...days.map((day) => `stats:new:${day}`)),
+    store.pfcount(...days.map((day) => `stats:back30:${day}`)),
   ]);
-  return { from, to, counts, activeUsers, returningUsers };
+  return { from, to, counts, activeUsers, returningUsers, newUsers, cameBackWithin30Days };
 }

@@ -3,6 +3,7 @@ import { AiError, chatStep } from '../lib/ai/client';
 import type { ChatMessage } from '../lib/ai/protocol';
 import { runTool, type Proposal, type ToolContext } from '../lib/ai/tools';
 import { FOCUS_RING, TAP_TARGET } from '../styles/constants';
+import { track } from '../utils/analytics';
 
 // "Ask PointCompass": a conversation where Google Gemini does the talking and
 // PointCompass's own calculations do the deciding. The model asks for tools;
@@ -77,6 +78,7 @@ export function AskPanel({
   const ask = async (text: string) => {
     if (!text.trim() || busy) return;
     setBusy(true);
+    track({ event: 'assistant_question' });
     const pending = decisionsRef.current;
     const decisions = pending.length ? `(Since your last reply they ${pending.join('; ')}.)\n` : '';
     decisionsRef.current = [];

@@ -97,4 +97,18 @@ describe('weekly active and returning users', () => {
     await recordEvent(store, { name: 'price_report' }, null, day('2026-10-19'));
     expect([...store.dump().keys()].some((k) => k.includes('iddays') || k.includes('active'))).toBe(false);
   });
+
+  it('counts visits by a one-word source, trip starts and assistant questions, and nothing else', async () => {
+    const store = createMemoryStore();
+    const handler = createEventHandler({ store });
+    expect((await post(handler, { event: 'visit', source: 'reddit' })).status).toBe(204);
+    expect((await post(handler, { event: 'trip_started' })).status).toBe(204);
+    expect((await post(handler, { event: 'assistant_question', text: 'my secret question' })).status).toBe(204);
+    for (const source of ['', 'https://evil.example/path', 'UPPER', 'x'.repeat(25), 5]) {
+      expect((await post(handler, { event: 'visit', source })).status, String(source)).toBe(400);
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    expect((await readPeriod(store, today, today)).counts).toEqual({ 'visit:reddit': 1, trip_started: 1, assistant_question: 1 });
+    expect(JSON.stringify([...store.dump()])).not.toContain('secret');
+  });
 });

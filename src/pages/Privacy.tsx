@@ -117,16 +117,19 @@ export function Privacy() {
         <Block title="Anonymous usage counts">
           <p>
             To learn whether PointCompass is useful, it counts page views (through Vercel Web
-            Analytics), recommendations shown, which kind they were and whether a cash position was
-            given, Chase Travel price checks, trips saved, comparisons made, uses of the AI features, shared price reports,
-            and calls from AI assistants using the agent tool. None of these include anything you
-            typed, and a saved trip's name or details are never counted or sent.
+            Analytics), visits and where they came from as one word (such as “search”, “reddit” or
+            a link's own campaign tag, never the page or link itself), trips started, recommendations
+            shown, which kind they were and whether a cash position was given, Chase Travel price
+            checks, trips saved, comparisons made, questions asked of the assistant and other uses of
+            the AI features, shared price reports, and calls from AI assistants using the agent tool.
+            None of these include anything you typed, and a saved trip's name or details are never
+            counted or sent.
           </p>
           <p>
             Recommendations also carry a random identifier your browser creates, so we can count how
             many different people use the site each week and how many come back. The list of days
-            each identifier was seen is deleted after 120 days, and daily totals after about 13
-            months. Nothing is counted if your browser sends a Do Not Track signal.
+            each identifier was seen, and the first of them, are deleted after 120 days, and daily
+            totals after about 13 months. Nothing is counted if your browser sends a Do Not Track signal.
           </p>
           <div className="rounded-2xl bg-slate-50 p-4">
             <Toggle id="usage-counts" checked={counting} onChange={changeCounting} label="Count my visits anonymously" />

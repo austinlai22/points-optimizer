@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import cardsData from '../data/cards.json';
 import transferPartnersData from '../data/transferPartners.json';
 import { useCardBalances } from '../context/CardBalancesContext';
@@ -43,7 +43,7 @@ import { useAiEnabled } from '../lib/ai/useAiEnabled';
 import { tripFromParsed, type Proposal, type ToolContext } from '../lib/ai/tools';
 import type { ParsedTrip } from '../lib/ai/protocol';
 import { addToCompare, MAX_COMPARE, MAX_SAVED_TRIPS, saveTrip, useCompareIds, useEditingTrip, useSavedTrips } from '../lib/trips';
-import { track } from '../utils/analytics';
+import { track, trackOncePerVisit } from '../utils/analytics';
 import { usePersistentState } from '../utils/usePersistentState';
 import { formatUSD, parseNonNegativeNumber } from '../utils/format';
 import { DEFAULT_VALUATION_BASIS } from '../types';
@@ -286,6 +286,14 @@ export function TripOptimizerView() {
     () => evaluateTrip(tripInputs, { ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs }),
     [tripInputs, ownedCards, balances, basis, cashInputs, chaseInputs],
   );
+
+  // Counted once a visit, the first time the trip changes after the page
+  // opens: someone started entering a trip (a link that arrives with one
+  // already filled in isn't a start).
+  const firstInputs = useRef(tripInputs);
+  useEffect(() => {
+    if (tripInputs !== firstInputs.current) trackOncePerVisit('cco:tripStarted', { event: 'trip_started' });
+  }, [tripInputs]);
 
   // Pilot counts: a verdict counts once it has stayed put for a moment, so
   // typing "1", "12", "120" into a field isn't three verdicts.

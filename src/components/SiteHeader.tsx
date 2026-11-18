@@ -82,7 +82,9 @@ export function SiteHeader({ current }: { current: PageName }) {
       href="/app"
       onClick={linkHandler('/app', close)}
       aria-current={current === 'check' ? 'page' : undefined}
-      className={`inline-flex items-center rounded-full bg-slate-50 text-sm font-semibold text-navy transition-colors hover:bg-navy-100 motion-reduce:transition-none ${TAP_TARGET} ${RING_ON_DARK} ${extra}`}
+      // No display class here: each use sets its own, since "inline-flex" here
+      // would override "hidden" there and show both copies on phones.
+      className={`items-center whitespace-nowrap rounded-full bg-slate-50 text-sm font-semibold text-navy transition-colors hover:bg-navy-100 motion-reduce:transition-none ${TAP_TARGET} ${RING_ON_DARK} ${extra}`}
     >
       Check a trip
     </a>
@@ -98,7 +100,9 @@ export function SiteHeader({ current }: { current: PageName }) {
           className={`flex shrink-0 items-center gap-2.5 rounded-lg text-slate-50 ${RING_ON_DARK}`}
         >
           <LogoMark className="h-9 w-9" />
-          <span className="font-display text-lg font-semibold tracking-tight">PointCompass</span>
+          {/* Smaller on narrow phones, and just the logo on the narrowest, so the
+              header never runs wider than the screen. */}
+          <span className="font-display text-lg font-semibold tracking-tight max-[379px]:text-base max-[339px]:sr-only">PointCompass</span>
         </a>
 
         <nav aria-label="About PointCompass" className="hidden flex-1 items-center gap-1 lg:flex">
@@ -133,7 +137,7 @@ export function SiteHeader({ current }: { current: PageName }) {
           {checkTrip('ml-1 hidden px-5 md:inline-flex')}
 
           <div className="flex items-center gap-2 lg:hidden">
-            {checkTrip('px-4 md:hidden')}
+            {checkTrip('inline-flex px-4 md:hidden')}
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}

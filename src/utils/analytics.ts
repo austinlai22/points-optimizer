@@ -19,7 +19,14 @@ type WebEvent =
   | { event: 'price_check' }
   // Bare counts: no trip details, no id.
   | { event: 'trip_saved' }
-  | { event: 'trips_compared' };
+  | { event: 'trips_compared' }
+  // Once per visit: where it came from, as one word ("reddit", "search",
+  // "direct", or a link's own utm_source tag). Never the page or link itself.
+  | { event: 'visit'; source: string }
+  // Once per visit: started entering a trip on Check a trip.
+  | { event: 'trip_started' }
+  // A question asked of the assistant. Never what was asked.
+  | { event: 'assistant_question' };
 
 function readFlag(key: string): boolean {
   try {
@@ -84,14 +91,57 @@ export function track(event: WebEvent): void {
   }
 }
 
+// Where a visit came from, as one plain word: a link's utm_source tag if it
+// has one (so links shared on Reddit, LinkedIn or a QR code can be told
+// apart), otherwise the kind of site that sent it.
+export function visitSource(search: string, referrer: string, ownHost: string): string {
+  const tag = (new URLSearchParams(search).get('utm_source') ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24);
+  if (tag) return tag;
+  let host: string;
+  try {
+    host = new URL(referrer).hostname.replace(/^www\./, '');
+  } catch {
+    return 'direct';
+  }
+  if (!host || host === ownHost.replace(/^www\./, '')) return 'direct';
+  const is = (...domains: string[]) => domains.some((d) => host === d || host.endsWith(`.${d}`));
+  if (is('claude.ai', 'chatgpt.com', 'chat.openai.com', 'perplexity.ai', 'gemini.google.com', 'copilot.microsoft.com')) return 'ai';
+  if (is('google.com', 'bing.com', 'duckduckgo.com', 'search.yahoo.com', 'ecosia.org', 'search.brave.com') || /^google\.[a-z.]+$/.test(host)) return 'search';
+  if (is('reddit.com')) return 'reddit';
+  if (is('x.com', 'twitter.com', 't.co')) return 'x';
+  if (is('linkedin.com', 'lnkd.in')) return 'linkedin';
+  if (is('facebook.com', 'instagram.com', 'threads.net')) return 'meta';
+  if (is('news.ycombinator.com')) return 'hackernews';
+  return 'other';
+}
+
+// Some counts are once per visit (a browser tab's session).
+export function trackOncePerVisit(key: string, event: WebEvent): void {
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch {
+    // Without session storage, count anyway; at worst a visit counts twice.
+  }
+  track(event);
+}
+
 // Once, before the first render. Marks this browser internal if the URL asks
-// (then tidies the URL), and starts Vercel's page-view counting, which drops
+// (then tidies the URL), counts where the visit came from, and starts Vercel's page-view counting, which drops
 // every view while counting is off.
 export function initAnalytics(): void {
   const params = new URLSearchParams(window.location.search);
   if (params.get('internal') === '1') {
     writeFlag(INTERNAL_KEY, true);
     params.delete('internal');
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  }
+  // Where this visit came from, counted once; utm_ tags are then taken out of
+  // the address so they aren't copied along with a link.
+  trackOncePerVisit('cco:visitCounted', { event: 'visit', source: visitSource(window.location.search, document.referrer, window.location.hostname) });
+  if ([...params.keys()].some((k) => k.startsWith('utm_'))) {
+    for (const k of [...params.keys()]) if (k.startsWith('utm_')) params.delete(k);
     const query = params.toString();
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
   }
