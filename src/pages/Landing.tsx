@@ -256,15 +256,16 @@ export function Landing() {
       <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top,#dfe8f3,#f8fafc_60%)]">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24">
           <p className="inline-flex rounded-full bg-white/80 px-3.5 py-1 text-xs font-medium text-navy-950/60 ring-1 ring-navy/10">
-            For Chase Sapphire cardholders · Free · No sign-up
+            For travel credit card holders · Free · No sign-up
           </p>
           <h1 className="mx-auto mt-6 max-w-4xl font-display text-5xl font-semibold tracking-tight text-navy-950 sm:text-6xl lg:text-7xl">
             Points or cash? Know before you book.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-950/60 sm:text-xl">
-            Enter a trip, and PointCompass checks it against your own cards and balances, including
-            the Sapphire Reserve's 2025 changes, then tells you whether to pay cash, transfer points
-            or book in Chase Travel. Capital One, Amex, Citi, Bank of America and Bilt points work too.
+            Enter a trip, and PointCompass checks it against your own Chase, Capital One, Amex, Citi,
+            Bilt or Bank of America cards and balances, then tells you whether to pay cash, transfer
+            points or book through your card's travel portal. It even handles Chase's Points Boost and
+            the Sapphire Reserve's 2025 changes.
           </p>
           <div ref={heroRef} className="mt-9 flex flex-wrap justify-center gap-3">
             <a href="/app" onClick={linkHandler('/app')} className={PRIMARY_BUTTON}>
