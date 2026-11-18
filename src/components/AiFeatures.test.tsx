@@ -173,16 +173,28 @@ describe('trips handed between PointCompass and Claude', () => {
 });
 
 describe('what if', () => {
-  it('runs the trip with other cards or points, leaving the Portfolio alone', () => {
+  it('is asked of the assistant, which runs it in the browser and leaves the Portfolio alone', async () => {
+    setServerAiEnabled(true);
     localStorage.setItem('cco:balances', JSON.stringify({ csr: 10000 }));
-    visit('/app?price=900&partner=united&points=50000');
-    fireEvent.click(screen.getByText('What if…'));
-    fireEvent.change(screen.getByLabelText('Chase points'), { target: { value: '40000' } });
-    expect(screen.getByText('The answer changes')).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('Capital One Venture X'));
-    expect(screen.getByText('(added)')).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('cco:balances')!)).toMatchObject({ csr: 10000, venturex: 0 });
-    expect(JSON.parse(localStorage.getItem('cco:ownership')!).venturex).toBeFalsy();
+    const replies = [
+      { reply: { type: 'tool', tool: 'what_if', args: { extra_points: { chase: 20000 } } } },
+      { reply: { type: 'answer', text: 'With 20,000 more Chase points, transferring to United would beat cash.' } },
+    ];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
+    visit('/app?price=900&partner=united&points=30000');
+    // A round button in the corner, not in the page's header.
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
+    const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
+    expect(screen.queryByRole('button', { name: 'Ask PointCompass' })).toBeNull();
+    fireEvent.click(panel.getByRole('button', { name: 'What if I had 20,000 more Chase points?' }));
+    expect(await panel.findByText(/would beat cash/)).toBeInTheDocument();
+    expect(panel.getByText('Tried a what-if with other cards or points')).toBeInTheDocument();
+    const second = String((fetchSpy.mock.calls[1][1] as RequestInit).body);
+    expect(second).toContain('TOOL_RESULT what_if');
+    expect(second).not.toContain('10000');
+    expect(JSON.parse(localStorage.getItem('cco:balances')!)).toMatchObject({ csr: 10000 });
+    expect(screen.queryByText('What if…')).toBeNull();
+    fetchSpy.mockRestore();
   });
 });
 

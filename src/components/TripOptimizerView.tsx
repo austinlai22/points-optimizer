@@ -39,7 +39,6 @@ import { SaveTripControl } from './SaveTripControl';
 import { DescribeTrip } from './DescribeTrip';
 import { tripFromLocation, tripParams } from '../lib/tripLink';
 import { AskPanel } from './AskPanel';
-import { WhatIfPanel } from './WhatIfPanel';
 import { useAiEnabled } from '../lib/ai/useAiEnabled';
 import { tripFromParsed, type Proposal, type ToolContext } from '../lib/ai/tools';
 import type { ParsedTrip } from '../lib/ai/protocol';
@@ -452,21 +451,8 @@ export function TripOptimizerView() {
         title="Check a trip"
         visual={<TripIntroVisual />}
         actions={
-          (aiEnabled || tripCashPrice > 0 || selectedPartnerId) && (
+          (tripCashPrice > 0 || selectedPartnerId) && (
             <>
-              {aiEnabled && (
-                <button
-                  type="button"
-                  onClick={() => openAsk()}
-                  className={`inline-flex items-center gap-2 rounded-full bg-navy px-5 text-sm font-semibold text-slate-50 transition-colors hover:bg-navy-950 motion-reduce:transition-none ${TAP_TARGET} ${FOCUS_RING}`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-                    <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" />
-                    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
-                  </svg>
-                  Ask PointCompass
-                </button>
-              )}
               {(tripCashPrice > 0 || selectedPartnerId) && (
                 <button
                   type="button"
@@ -696,7 +682,6 @@ export function TripOptimizerView() {
                     onBoostChange={setBoostShown}
                   />
                 )}
-                <WhatIfPanel key={ownedCards.map((c) => c.id).join()} trip={tripInputs} ctx={{ ownedCards, balances, basis, cash: cashInputs, chase: chaseInputs }} />
               </div>
             ) : (
               <div className="mb-8 rounded-3xl border border-dashed border-navy/20 bg-white px-6 py-12 text-center">
@@ -738,6 +723,23 @@ export function TripOptimizerView() {
 
         <Methodology />
       </div>
+
+      {/* The assistant, always a tap away in the corner. On phones it sits
+          above the "Recommendation" shortcut when that's showing. */}
+      {aiEnabled && !ask.open && (
+        <button
+          type="button"
+          onClick={() => openAsk()}
+          aria-label="Ask PointCompass"
+          title="Ask PointCompass"
+          className={`fixed right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-navy text-slate-50 shadow-control transition-colors hover:bg-navy-950 motion-reduce:transition-none ${verdict && !verdictOnScreen ? 'bottom-20 lg:bottom-5' : 'bottom-5'} ${FOCUS_RING}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden="true">
+            <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" />
+            <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+          </svg>
+        </button>
+      )}
 
       <AskPanel
         open={ask.open}

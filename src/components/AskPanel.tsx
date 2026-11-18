@@ -163,7 +163,7 @@ export function AskPanel({
           {shown.length === 0 && (
             <div className="space-y-2 text-sm text-navy-950/60">
               <p>Ask about this trip, your saved trips or your points. For example:</p>
-              {['Should I use points for this trip?', 'Which of my saved trips should I spend points on?', 'Set up a $900 trip for 60k United miles plus $85'].map((q) => (
+              {['Should I use points for this trip?', 'Which of my saved trips should I spend points on?', 'What if I had 20,000 more Chase points?', 'Set up a $900 trip for 60k United miles plus $85'].map((q) => (
                 <button
                   key={q}
                   type="button"
