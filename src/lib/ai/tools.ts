@@ -48,7 +48,13 @@ export function describeTrip(t: TripInputs): string {
   return parts.join(', or ');
 }
 
-export function tripFromParsed(p: ParsedTrip, base: TripInputs | null = null): TripInputs {
+// A trip from parsed words, on top of the trip already in the form (`base`).
+// A price with an award or Chase Travel price describes a whole new trip, so
+// nothing from the old one carries over (its Chase Travel price, say). A
+// price alone ("actually it's $950") or an award alone changes the trip.
+export function tripFromParsed(p: ParsedTrip, current: TripInputs | null = null): TripInputs {
+  const wholeTrip = p.trip_cash_price_usd !== null && (p.program !== null || p.award_points !== null || p.chase_travel_points !== null);
+  const base = wholeTrip ? null : current;
   return {
     tripCashPrice: p.trip_cash_price_usd ?? base?.tripCashPrice ?? 0,
     selectedPartnerId: p.program ?? base?.selectedPartnerId ?? '',
@@ -69,7 +75,8 @@ function describeForAi(o: PointsOption) {
     points_spent: Math.round(o.pointsUsed),
     partner_points_used: o.partnerPointsApplied || undefined,
     cents_per_point: o.cppCents === null ? null : round(o.cppCents),
-    usual_cents_per_point: round(o.benchmarkCents),
+    // The bar to beat: what this bank's points usually get, not airline miles.
+    bank_points_usually_worth_cents: round(o.benchmarkCents),
     cash_still_due_usd: o.cashFees,
   };
 }
@@ -111,6 +118,10 @@ export function runTool(name: string, args: Record<string, unknown>, ctx: ToolCo
       if (parsed.program && !ctx.reachablePrograms.has(parsed.program)) {
         return { error: `None of their cards transfer to ${partnerName(parsed.program)}, so the form can't show that award.` };
       }
+      // A different program without a price is most likely a different trip,
+      // so the price in the form isn't borrowed for it.
+      const newProgram = parsed.program !== null && parsed.program !== (ctx.currentTrip?.selectedPartnerId || null);
+      if (parsed.trip_cash_price_usd === null && newProgram) return { error: 'Needs the cash price of this trip. Ask for it.' };
       const trip = tripFromParsed(parsed, ctx.currentTrip);
       if (!(trip.tripCashPrice > 0)) return { error: 'Needs the trip cash price. Ask for it.' };
       // One trip suggestion at a time: a newer one replaces the last.

@@ -376,7 +376,17 @@ export function TripOptimizerView() {
     setAwardCashFees(trip.awardCashFees);
     setChaseTravelPoints(trip.chaseTravelPoints);
   };
-  const fillFromWords = (parsed: ParsedTrip) => applyTrip(tripFromParsed(parsed, tripInputs));
+  // Only programs one of the held cards reaches can be chosen in the form;
+  // an award with any other is left out.
+  const reachableOnly = (trip: TripInputs): TripInputs =>
+    !trip.selectedPartnerId || availablePartners.some((x) => x.id === trip.selectedPartnerId)
+      ? trip
+      : { ...trip, selectedPartnerId: '', pointsRequired: 0, partnerPointsHeld: 0, awardCashFees: 0 };
+  const fillFromWords = (parsed: ParsedTrip): TripInputs => {
+    const trip = reachableOnly(tripFromParsed(parsed, tripInputs));
+    applyTrip(trip);
+    return trip;
+  };
 
   const aiEnabled = useAiEnabled();
   const savedTrips = useSavedTrips();
@@ -393,8 +403,7 @@ export function TripOptimizerView() {
   // A change the assistant suggested, once the person taps Apply.
   const applyProposal = (p: Proposal): string | null => {
     if (p.kind === 'trip') {
-      // Only programs one of the held cards reaches can be chosen in the form.
-      applyTrip(availablePartners.some((x) => x.id === p.trip.selectedPartnerId) ? p.trip : { ...p.trip, selectedPartnerId: '', pointsRequired: 0, partnerPointsHeld: 0, awardCashFees: 0 });
+      applyTrip(reachableOnly(p.trip));
       return null;
     }
     if (p.kind === 'save') {

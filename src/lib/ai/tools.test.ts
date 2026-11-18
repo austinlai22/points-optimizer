@@ -3,8 +3,8 @@ import cardsData from '../../data/cards.json';
 import type { CardConfig } from '../../types';
 import { evaluateTrip, type SavedTrip, type TripInputs } from '../trips';
 import { EMPTY_CHASE_INPUTS } from '../../utils/verdictInputs';
-import { runTool, type Proposal, type ToolContext } from './tools';
-import { parseAiReply } from './protocol';
+import { runTool, tripFromParsed, type Proposal, type ToolContext } from './tools';
+import { parseAiReply, type ParsedTrip } from './protocol';
 
 const cards = cardsData as CardConfig[];
 const trip = (price: number, extra: Partial<TripInputs> = {}): TripInputs => ({
@@ -93,7 +93,12 @@ describe("the assistant's tools", () => {
     expect(runTool('propose_trip', { trip_cash_price_usd: 700, program: 'delta', award_points: 30000 }, ctx)).toHaveProperty('error');
     expect(runTool('propose_trip', { program: 'united', award_points: 30000 }, { ...ctx, currentTrip: null })).toHaveProperty('error');
     expect(runTool('propose_compare', { trip_names: ['Paris'] }, ctx)).toHaveProperty('error');
+    // Another program with no price isn't given the form's price.
+    expect(runTool('propose_trip', { program: 'united', award_points: 30000 }, { ...ctx, currentTrip: trip(900) })).toMatchObject({ error: /cash price of this trip/ });
+    // The same program with no price is a change to the trip in the form.
+    expect(runTool('propose_trip', { award_points: 45000 }, { ...ctx, currentTrip: trip(900, { selectedPartnerId: 'united', pointsRequired: 40000 }) })).toMatchObject({ proposed: true });
     expect(proposals).toHaveLength(3);
+    expect(proposals.find((p) => p.kind === 'trip')).toMatchObject({ trip: { tripCashPrice: 900, pointsRequired: 45000 } });
   });
 
   it('try a what-if without revealing balances', () => {
@@ -107,6 +112,27 @@ describe("the assistant's tools", () => {
   it('work out a value per point, never below zero', () => {
     expect(runTool('cents_per_point', { cash_price_usd: 702, points: 25000, taxes_usd: 121.5 }, context())).toMatchObject({ cents_per_point: 2.322 });
     expect(runTool('cents_per_point', { cash_price_usd: 100, points: 10000, taxes_usd: 200 }, context())).toMatchObject({ cents_per_point: 0 });
+  });
+});
+
+describe('a trip from words, on top of the one in the form', () => {
+  const form = trip(500, { selectedPartnerId: 'united', pointsRequired: 40000, awardCashFees: 50, chaseTravelPoints: 45000 });
+  const words = (p: Partial<ParsedTrip>): ParsedTrip => ({
+    trip_cash_price_usd: null, program: null, award_points: null, award_taxes_usd: null, partner_points_held: null, chase_travel_points: null, ...p,
+  });
+
+  it('starts afresh for a whole new trip, keeping nothing of the old one', () => {
+    expect(tripFromParsed(words({ trip_cash_price_usd: 700, program: 'atmos', award_points: 30000 }), form)).toEqual(
+      trip(700, { selectedPartnerId: 'atmos', pointsRequired: 30000 }),
+    );
+    expect(tripFromParsed(words({ trip_cash_price_usd: 700, chase_travel_points: 50000 }), form)).toEqual(trip(700, { chaseTravelPoints: 50000 }));
+  });
+
+  it('changes just what was said otherwise', () => {
+    expect(tripFromParsed(words({ trip_cash_price_usd: 550 }), form)).toEqual({ ...form, tripCashPrice: 550 });
+    expect(tripFromParsed(words({ award_points: 35000 }), form)).toEqual({ ...form, pointsRequired: 35000 });
+    // A different program alone brings none of the old award with it.
+    expect(tripFromParsed(words({ program: 'aeroplan', award_points: 35000 }), form)).toEqual({ ...form, selectedPartnerId: 'aeroplan', pointsRequired: 35000, awardCashFees: 0 });
   });
 });
 

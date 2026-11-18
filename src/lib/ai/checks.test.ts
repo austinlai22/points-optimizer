@@ -41,4 +41,17 @@ describe('checking what was read from a description', () => {
       'Found an award price but not its program. Choose the program below.',
     ]);
   });
+
+  it('says what was kept from the form when the words left it out', () => {
+    const form = { tripCashPrice: 900, selectedPartnerId: 'united', pointsRequired: 60000, partnerPointsHeld: 0, awardCashFees: 0, chaseTravelPoints: 0 };
+    // Just new award points: the price and the program stay, and say so.
+    const c = readingChecks(parsed({ award_points: 6000 }), form);
+    expect(c.read).toEqual(['6,000 United MileagePlus points']);
+    expect(c.warnings).toEqual([
+      "No cash price in that, so the $900 already in the form was kept. Change it below if it's a different trip.",
+      "No program in that, so the points were put with United MileagePlus, already in the form. Change it below if that's wrong.",
+      // And the kept price still catches the slip.
+      expect.stringMatching(/far above usual.*6,000 may be missing a zero/),
+    ]);
+  });
 });

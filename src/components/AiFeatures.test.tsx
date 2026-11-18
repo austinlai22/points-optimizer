@@ -49,6 +49,16 @@ describe('describing a trip in your own words', () => {
     expect(screen.getByLabelText(/airline or hotel program/i)).toHaveValue('');
   });
 
+  it("replaces the form's trip with a new one, even when its program isn't reachable", async () => {
+    visit('/app?price=500&partner=united&points=40000&fees=50&ct=45000');
+    fireEvent.change(screen.getByLabelText(/describe your trip/i), { target: { value: '$700 or 40k Delta miles' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Fill in' }));
+    await waitFor(() => expect(screen.getByLabelText(/trip cash price/i)).toHaveValue(700));
+    // Nothing of the United trip stays.
+    expect(screen.getByLabelText(/airline or hotel program/i)).toHaveValue('');
+    expect(new URLSearchParams(window.location.search).toString()).toBe('price=700');
+  });
+
   it('says what it read and flags figures that look off', async () => {
     visit('/app');
     fireEvent.change(screen.getByLabelText(/describe your trip/i), { target: { value: '$900 cash or 6k United miles + $85' } });
@@ -114,6 +124,54 @@ describe('asking PointCompass', () => {
       expect(body).not.toContain(String(BALANCE));
       expect(body).not.toContain('123,457');
     }
+    fetchSpy.mockRestore();
+  });
+
+  it('keeps quick replies in view below a suggestion card', async () => {
+    setServerAiEnabled(true);
+    const replies = [
+      { reply: { type: 'tool', tool: 'propose_trip', args: { trip_cash_price_usd: 700, program: 'united', award_points: 30000 } } },
+      { reply: { type: 'answer', text: 'Tap Apply to fill it in. Save it too?', options: ['Yes, save it', 'No thanks'] } },
+    ];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
+    visit('/app');
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
+    const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
+    fireEvent.click(panel.getByRole('button', { name: /set up a \$900 trip/i }));
+    expect(await panel.findByRole('group', { name: 'Suggested change' })).toBeInTheDocument();
+    expect(panel.getByRole('button', { name: 'Yes, save it' })).toBeInTheDocument();
+    fetchSpy.mockRestore();
+  });
+
+  it('tells the assistant what was applied even after a message fails', async () => {
+    setServerAiEnabled(true);
+    const replies: (object | null)[] = [
+      { reply: { type: 'tool', tool: 'propose_trip', args: { trip_cash_price_usd: 700, program: 'united', award_points: 30000 } } },
+      { reply: { type: 'answer', text: 'Tap Apply.' } },
+      null,
+      { reply: { type: 'answer', text: 'Noted.' } },
+    ];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      const next = replies.shift();
+      return next ? new Response(JSON.stringify(next), { status: 200 }) : new Response(JSON.stringify({ error: 'The assistant is busy right now.' }), { status: 429 });
+    });
+    visit('/app');
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
+    const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
+    const say = async (text: string) => {
+      fireEvent.change(panel.getByLabelText('Your question'), { target: { value: text } });
+      fireEvent.click(panel.getByRole('button', { name: 'Ask' }));
+    };
+    await say('Set up $700 or 30k United');
+    fireEvent.click(await panel.findByRole('button', { name: 'Apply' }));
+    await say('Thanks');
+    expect(await panel.findByText('The assistant is busy right now.')).toBeInTheDocument();
+    await say('Thanks again');
+    expect(await panel.findByText('Noted.')).toBeInTheDocument();
+    const last = JSON.parse(String((fetchSpy.mock.calls[3][1] as RequestInit).body)).messages as { role: string; text: string }[];
+    expect(last.at(-1)!.text).toMatch(/^\(Since your last reply they applied “\$700 cash/);
+    // The failed message isn't in the conversation.
+    expect(last.map((m) => m.text)).not.toContain('Thanks');
     fetchSpy.mockRestore();
   });
 

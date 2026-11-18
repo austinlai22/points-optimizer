@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { readTripText, type ReadVia } from '../lib/ai/client';
 import { isEmptyTrip, type ParsedTrip } from '../lib/ai/protocol';
 import { readingChecks, type ReadingChecks } from '../lib/ai/checks';
-import { partnerName } from '../lib/trips';
+import { partnerName, type TripInputs } from '../lib/trips';
 import { FOCUS_RING, LABEL, TAP_TARGET } from '../styles/constants';
 
 const VIA_NOTE: Record<ReadVia, string> = {
@@ -18,7 +18,8 @@ export function DescribeTrip({
   onFill,
 }: {
   reachablePrograms: Set<string>;
-  onFill: (trip: ParsedTrip) => void;
+  // Fills in the form; returns the trip as it now stands there.
+  onFill: (trip: ParsedTrip) => TripInputs;
 }) {
   const [text, setText] = useState('');
   const [status, setStatus] = useState<{ kind: 'idle' | 'reading' | 'done' | 'empty'; note?: string; checks?: ReadingChecks }>({ kind: 'idle' });
@@ -32,17 +33,17 @@ export function DescribeTrip({
       setStatus({ kind: 'empty', note: "Couldn't find a price in that. Try something like “$900 cash or 60k United miles + $85”." });
       return;
     }
-    // A program none of the held cards reach can't be chosen in the form.
+    // A program none of the held cards reach can't be chosen in the form, so
+    // the form leaves that award out (it's still a new trip, so nothing of
+    // the old one stays), and so do the checks.
     let note = VIA_NOTE[via];
+    let checked = trip;
     if (trip.program && !reachablePrograms.has(trip.program)) {
       note += ` None of your cards in Portfolio transfer to ${partnerName(trip.program)}, so that award was left out.`;
-      trip.program = null;
-      trip.award_points = null;
-      trip.award_taxes_usd = null;
-      trip.partner_points_held = null;
+      checked = { ...trip, program: null, award_points: null, award_taxes_usd: null, partner_points_held: null };
     }
-    onFill(trip);
-    const checks = readingChecks(trip);
+    const filled = onFill(trip);
+    const checks = readingChecks(checked, filled);
     setStatus({ kind: 'done', note: `Filled in below. ${note}${checks.warnings.length ? '' : ' Check the figures.'}`, checks });
   };
 

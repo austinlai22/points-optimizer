@@ -77,7 +77,8 @@ export function AskPanel({
   const ask = async (text: string) => {
     if (!text.trim() || busy) return;
     setBusy(true);
-    const decisions = decisionsRef.current.length ? `(Since your last reply they ${decisionsRef.current.join('; ')}.)\n` : '';
+    const pending = decisionsRef.current;
+    const decisions = pending.length ? `(Since your last reply they ${pending.join('; ')}.)\n` : '';
     decisionsRef.current = [];
     let messages: ChatMessage[] = [...transcript, { role: 'user', text: decisions + text.trim() }];
     setShown((s) => [...s, { kind: 'user', text: text.trim() }]);
@@ -96,6 +97,9 @@ export function AskPanel({
         }
         if (step === MAX_TOOL_STEPS) {
           setShown((s) => [...s, { kind: 'error', text: "The assistant couldn't finish that. Try asking more simply." }]);
+          // An unfinished turn isn't kept, so the conversation stays whole.
+          messages = transcript;
+          decisionsRef.current = [...pending, ...decisionsRef.current];
           break;
         }
         const result = runTool(reply.tool, reply.args, { ...toolContext(), proposals });
@@ -109,8 +113,10 @@ export function AskPanel({
       setTranscript(messages);
     } catch (e) {
       setShown((s) => [...s, { kind: 'error', text: e instanceof AiError ? e.message : 'Something went wrong. Try again.' }]);
-      // Keep what was asked so far, minus the failed turn.
+      // Keep what was asked so far, minus the failed turn, and what was
+      // applied or dismissed, to tell the assistant next time.
       setTranscript(transcript);
+      decisionsRef.current = [...pending, ...decisionsRef.current];
     } finally {
       setBusy(false);
     }
@@ -133,8 +139,15 @@ export function AskPanel({
     setShown((s) => s.map((m, i) => (i === index && m.kind === 'proposal' ? { ...m, state: problem ? 'open' : apply ? 'applied' : 'dismissed', problem: problem ?? undefined } : m)));
   };
 
-  const last = shown.length ? shown[shown.length - 1] : null;
-  const quickReplies = !busy && last?.kind === 'assistant' ? (last.options ?? []) : [];
+  // The latest answer's quick replies, while nothing but its suggestion cards
+  // has come after it.
+  let lastAnswer: Shown | null = null;
+  for (let i = shown.length - 1; i >= 0; i--) {
+    if (shown[i].kind === 'proposal') continue;
+    lastAnswer = shown[i];
+    break;
+  }
+  const quickReplies = !busy && lastAnswer?.kind === 'assistant' ? (lastAnswer.options ?? []) : [];
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
