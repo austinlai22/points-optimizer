@@ -79,7 +79,7 @@ describe('asking PointCompass', () => {
 
     visit('/app');
     fireEvent.change(screen.getByLabelText(/trip cash price/i), { target: { value: '500' } });
-    fireEvent.click(await screen.findByRole('button', { name: /ask pointcompass/i }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
     const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
     fireEvent.change(panel.getByLabelText('Your question'), { target: { value: 'Set up $700 or 30k United miles and save it as Lisbon in May' } });
     fireEvent.click(panel.getByRole('button', { name: 'Ask' }));
@@ -125,7 +125,7 @@ describe('asking PointCompass', () => {
     ];
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
     visit('/app');
-    fireEvent.click(await screen.findByRole('button', { name: /ask pointcompass/i }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
     const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
     fireEvent.click(panel.getByRole('button', { name: 'Should I use points for this trip?' }));
     fireEvent.click(await panel.findByRole('button', { name: 'About $900' }));
@@ -182,10 +182,11 @@ describe('what if', () => {
     ];
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(replies.shift()), { status: 200 }));
     visit('/app?price=900&partner=united&points=30000');
-    // A round button in the corner, not in the page's header.
-    fireEvent.click(await screen.findByRole('button', { name: 'Ask PointCompass' }));
+    // From the header, or the round button in the corner, hidden while the chat is open.
+    expect(await screen.findByRole('button', { name: 'Ask PointCompass' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Open Ask PointCompass' }));
     const panel = within(screen.getByRole('dialog', { name: 'Ask PointCompass' }));
-    expect(screen.queryByRole('button', { name: 'Ask PointCompass' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open Ask PointCompass' })).toBeNull();
     fireEvent.click(panel.getByRole('button', { name: 'What if I had 20,000 more Chase points?' }));
     expect(await panel.findByText(/would beat cash/)).toBeInTheDocument();
     expect(panel.getByText('Tried a what-if with other cards or points')).toBeInTheDocument();
