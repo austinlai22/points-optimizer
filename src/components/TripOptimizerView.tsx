@@ -113,18 +113,25 @@ function TakeawayLine({ topPath, tiedCount, tripCashPrice }: TakeawayLineProps) 
   const colorClass = savings > 0 ? 'text-teal' : savings === 0 ? 'text-orange' : 'text-red';
   const amount = <span className={`font-mono font-medium ${colorClass}`}>{formatUSD(Math.abs(savings))}</span>;
   const tied = tiedCount > 1;
+  // The way to pay, as the option cards below name it, not just the card.
+  const way =
+    topPath.kind === 'portal'
+      ? `book through the ${topPath.card.name} travel portal`
+      : topPath.pointsUsed === 0 && topPath.partnerPointsApplied > 0
+        ? `book directly with ${topPath.partner?.name}`
+        : `transfer from your ${topPath.card.name} to ${topPath.partner?.name}`;
 
   if (savings < 0) {
     return (
       <p className="mb-5 text-navy-950/70">
-        {tied ? <>Your best options ({tiedCount} tied) cost</> : <>Your best option, {topPath.card.name}, costs</>}{' '}
+        {tied ? <>The best options ({tiedCount} tied) cost</> : <>The best option, to {way}, costs</>}{' '}
         {amount} more than paying cash, so none of these redemptions is worthwhile for this trip.
       </p>
     );
   }
   return (
     <p className="mb-5 text-navy-950/70">
-      {tied ? <>Best options ({tiedCount} tied).</> : <>Best option: {topPath.card.name}.</>}{' '}
+      {tied ? <>Best options ({tiedCount} tied).</> : <>Best option: {way}.</>}{' '}
       {savings === 0 ? (
         <>{tied ? 'They cost' : 'It costs'} the same as paying cash.</>
       ) : (
@@ -497,8 +504,8 @@ export function TripOptimizerView() {
         }
       >
         <p>
-          Find the best way to pay for your trip. Enter the price for a recommendation, and add an
-          airline or hotel award price to compare transferring too. Your cash position is optional.
+          Enter the trip's cash price to get a recommendation. Add an airline or hotel award price
+          to compare transferring points. The cash position section is optional.
         </p>
       </PageIntro>
 

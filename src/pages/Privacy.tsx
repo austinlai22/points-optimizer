@@ -38,10 +38,9 @@ export function Privacy() {
         }
       >
         <p>
-          PointCompass keeps your cards, balances and cash figures in your own browser. Sharing a
-          Chase Travel price is optional and anonymous, the AI features are optional and never see
-          your balances or cash, usage is counted without anything you type, and you will never be
-          asked for bank logins.
+          Your cards, balances and cash figures stay in your browser, and PointCompass never asks
+          for bank logins. The AI features and sharing a Chase Travel price are optional, and
+          neither sees your balances or cash. Usage counts never include anything you type.
         </p>
       </PageIntro>
 
@@ -165,7 +164,7 @@ export function Privacy() {
           </p>
         </Block>
 
-        <p className="pt-2 text-xs text-navy-950/45">Last updated October 2026.</p>
+        <p className="pt-2 text-xs text-navy-950/45">Last updated November 2026.</p>
       </div>
     </>
   );

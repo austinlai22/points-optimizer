@@ -120,7 +120,7 @@ function FloatingNote({ label, value, className }: { label: string; value: strin
 const STEPS: { title: string; body: string; visual: ReactNode }[] = [
   {
     title: 'Add your cards',
-    body: 'Select your cards and balances once. PointCompass works out what every point is worth.',
+    body: 'Pick the cards you hold and enter their points balances. They stay saved in your browser for next time.',
     visual: (
       <div className="relative h-28 w-48">
         <CardArt cardId="venturex" issuer="capitalOne" compact className="absolute left-0 top-4 w-32 -rotate-12" />
@@ -131,7 +131,7 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
   },
   {
     title: 'Add your cash position (optional)',
-    body: 'Three figures let PointCompass protect the savings you need for the month ahead. Skip them for an answer on value alone.',
+    body: "Enter the cash you have for travel and what you spend in a month, and it won't suggest paying cash if that would leave you short. Skip it to compare on value only.",
     visual: (
       <div className="w-56 rounded-2xl bg-white p-4 shadow-card">
         <RunwayMeter payCash={example.runway.payCash} />
@@ -140,7 +140,7 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
   },
   {
     title: 'Get your answer',
-    body: 'Enter the trip, or describe it in your own words, and get one clear recommendation, with the numbers behind it.',
+    body: 'Enter the cash price and any award or Chase Travel price, or describe the trip in a sentence. You get one recommendation and the numbers behind it.',
     visual: (
       <div className={`${HERO_SURFACE} flex w-56 items-center gap-3 rounded-2xl p-4`}>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal text-slate-50">
@@ -162,7 +162,7 @@ const MORE: { title: string; ai?: boolean; body: string; href: string; link: str
   {
     title: 'Describe it in your own words',
     ai: true,
-    body: "Type the trip the way you'd text it, and AI fills in the form. Figures that look off, like 6k for 60k, are flagged before they count.",
+    body: "Type the trip the way you'd text it and AI fills in the form. It flags figures that look wrong, such as 6k where you probably meant 60k.",
     href: '/app',
     link: 'Check a trip',
     visual: (
@@ -179,7 +179,7 @@ const MORE: { title: string; ai?: boolean; body: string; href: string; link: str
   {
     title: 'Ask PointCompass',
     ai: true,
-    body: 'An AI assistant for your trips: ask why, set one up or try a what-if. Its answers come from PointCompass’s own calculations, and nothing changes until you tap Apply.',
+    body: 'Ask an AI assistant why it recommended something, set up a trip, or try a what-if. It uses PointCompass’s own calculations, and only changes the form if you tap Apply.',
     href: '/app',
     link: 'Try it on a trip',
     visual: (
@@ -194,7 +194,7 @@ const MORE: { title: string; ai?: boolean; body: string; href: string; link: str
   },
   {
     title: 'Save, compare and plan',
-    body: 'Keep trips in My trips, put up to five side by side, and see which ones to spend your points on to save the most.',
+    body: 'Save trips, compare up to five side by side, and see which ones to use your points on when they can’t cover them all.',
     href: '/trips',
     link: 'Open My trips',
     visual: (
@@ -216,7 +216,7 @@ const MORE: { title: string; ai?: boolean; body: string; href: string; link: str
 const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: 'Can PointCompass see Chase Points Boost offers?',
-    a: 'No. Offers change often and are only visible inside Chase Travel, which PointCompass never accesses. Instead it calculates your breakeven: the highest points price at which Chase Travel would be your best option. Enter the price Chase Travel shows and the recommendation will check it exactly.',
+    a: 'No. Offers change often and are only visible inside Chase Travel, which PointCompass never accesses. Instead it calculates your breakeven: the highest points price at which Chase Travel would be your best option. If you enter the price Chase Travel shows, the recommendation uses it.',
   },
   {
     q: 'Is this financial advice?',
@@ -319,10 +319,10 @@ export function Landing() {
             Points or cash? Know before you book.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-950/60 sm:text-xl">
-            Enter a trip, and PointCompass checks it against your own Chase, Capital One, Amex, Citi,
-            Bilt or Bank of America cards and balances, then tells you whether to pay cash, transfer
-            points or book through your card's travel portal. It even handles Chase's Points Boost and
-            the Sapphire Reserve's 2025 changes.
+            Enter a trip and the points you have. PointCompass tells you whether to pay cash, transfer
+            points to an airline or hotel, or book through your card's travel portal. It follows each
+            bank's own rules, including Chase's Points Boost and the Sapphire Reserve's 2025 rate
+            changes.
           </p>
           <div ref={heroRef} className="mt-9 flex flex-wrap justify-center gap-3">
             <a href="/app" onClick={linkHandler('/app')} className={PRIMARY_BUTTON}>
@@ -362,9 +362,8 @@ export function Landing() {
       <Section id="how">
         <SectionHeading
           id="how"
-          eyebrow="How it works"
-          title="From trip to answer in three steps."
-          intro="Your balances and cash figures stay in your browser, and no bank connection is required."
+          title="How it works"
+          intro="Your balances and cash figures stay in your browser. There's no bank connection."
         />
         <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {STEPS.map(({ title, body, visual }, i) => (
@@ -385,13 +384,13 @@ export function Landing() {
       <Section id="example" tone="white">
         <SectionHeading
           id="example"
-          eyebrow="An example"
-          title="One trip. One clear answer."
+          eyebrow="Example"
+          title={`${EXAMPLE.route} for ${formatUSD(EXAMPLE.cashPrice)}`}
           intro={
             <>
-              {EXAMPLE.route}, {EXAMPLE.when}. The traveller holds a Sapphire Reserve with{' '}
+              {EXAMPLE.when}. The traveller holds a Sapphire Reserve with{' '}
               {formatPoints(EXAMPLE.chasePoints)} points, has {formatUSD(EXAMPLE.cash.available)}{' '}
-              available for travel, and spends {formatUSD(EXAMPLE.cash.monthlySpend)} in a typical month.
+              set aside for travel, and spends {formatUSD(EXAMPLE.cash.monthlySpend)} a month.
             </>
           }
         />
@@ -402,7 +401,7 @@ export function Landing() {
                 {
                   label: 'Pay cash',
                   value: formatUSD(EXAMPLE.cashPrice),
-                  detail: `Leaves ${describeRunway(example.runway.payCash)}`,
+                  detail: `Afterwards: ${describeRunway(example.runway.payCash)}`,
                   chosen: example.verdict === 'PAY_CASH',
                   art: (
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-navy/[0.08] font-mono text-lg text-navy">$</span>
@@ -479,16 +478,16 @@ export function Landing() {
         <SectionHeading
           id="different"
           eyebrow="Why PointCompass"
-          title="Spend points when they are worth it. Keep cash when you need it."
+          title="What it checks for you"
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Reveal className="lg:col-span-2">
             <div className={`${TILE} grid h-full gap-6 p-7 sm:grid-cols-2 sm:p-8`}>
               <div>
-                <h3 className="font-display text-2xl font-semibold text-navy-950">Protects your cash cushion</h3>
+                <h3 className="font-display text-2xl font-semibold text-navy-950">Whether you can afford to pay cash</h3>
                 <p className="mt-3 text-sm leading-relaxed text-navy-950/60">
-                  If paying cash would leave you short for the month, PointCompass looks for a
-                  points option that holds its value, or suggests waiting.
+                  If paying cash would leave you with less than a month of spending, it looks for a
+                  points option that still gets good value, or suggests waiting to book.
                 </p>
               </div>
               <div className="self-center rounded-2xl bg-slate-50 p-5">
@@ -498,10 +497,10 @@ export function Landing() {
           </Reveal>
           <Reveal delay={80}>
             <div className={`${TILE} flex h-full flex-col p-7 sm:p-8`}>
-              <h3 className="font-display text-2xl font-semibold text-navy-950">Saves your points for better trips</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy-950">Whether the points are worth using</h3>
               <p className="mt-3 text-sm leading-relaxed text-navy-950/60">
-                When a redemption is poor value, PointCompass recommends paying cash and keeping your
-                points for a trip where they are worth more.
+                If a redemption gets less than your points are usually worth, it says to pay cash and
+                keep them.
               </p>
               <div className="mt-auto pt-6">
                 <div className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-2.5 font-display text-lg font-semibold text-slate-50">
@@ -512,10 +511,10 @@ export function Landing() {
           </Reveal>
           <Reveal>
             <div className={`${TILE} flex h-full flex-col p-7 sm:p-8`}>
-              <h3 className="font-display text-2xl font-semibold text-navy-950">Tells you which Chase Travel price to accept</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy-950">Which Chase Travel price to accept</h3>
               <p className="mt-3 text-sm leading-relaxed text-navy-950/60">
-                Points Boost offers change often. PointCompass gives you the highest price worth
-                accepting, so you can decide in seconds.
+                Points Boost prices change often, so it works out the most points worth paying in
+                Chase Travel. Compare that with the price Chase shows you.
               </p>
               {example.chaseTravel && (
                 <div className="mt-auto pt-4">
@@ -526,10 +525,10 @@ export function Landing() {
           </Reveal>
           <Reveal className="lg:col-span-2" delay={80}>
             <div className={`${TILE} h-full p-7 sm:p-8`}>
-              <h3 className="font-display text-2xl font-semibold text-navy-950">Covers {transferPartners.length} airline and hotel programs</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy-950">Every transfer partner</h3>
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-navy-950/60">
-                Every transfer route from six banks, each at its published ratio, so the best option
-                is never missed.
+                All {transferPartners.length} airline and hotel programs the six banks transfer to, each at
+                the bank's published ratio.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 {partnerNames.slice(0, 16).map((name) => (
@@ -547,7 +546,7 @@ export function Landing() {
       </Section>
 
       <Section id="more" tone="white">
-        <SectionHeading id="more" eyebrow="Also in PointCompass" title="Quicker to use, and built for more than one trip." />
+        <SectionHeading id="more" eyebrow="Also in PointCompass" title="More ways to use it" />
         <ul className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {MORE.map(({ title, ai, body, href, link, visual }, i) => (
             <Reveal key={title} delay={i * 80}>
@@ -575,15 +574,15 @@ export function Landing() {
       <Section id="assistants">
         <SectionHeading
           id="assistants"
-          eyebrow="Use it from your AI assistant"
-          title="Ask Claude. It checks with PointCompass."
-          intro="Add PointCompass as a connector, and your assistant answers points-or-cash questions with the same engine and sourced data as this site, instead of guessing."
+          eyebrow="For Claude users"
+          title="Use PointCompass inside Claude"
+          intro="Add PointCompass as a connector. When you ask Claude a points-or-cash question, it runs the same calculation as this site instead of estimating."
         />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             { step: '1', title: 'Add the connector', body: 'In Claude, add a custom connector with the PointCompass address. It takes a minute and needs no account here.' },
             { step: '2', title: 'Ask in your own words', body: '“I have 80,000 Chase points. Should I use them on a $900 flight to Lisbon?”' },
-            { step: '3', title: 'Get a sourced answer', body: 'Your assistant runs PointCompass’s calculation and shows the same recommendation, ratios and assumptions as this site.' },
+            { step: '3', title: 'Get the same answer as here', body: 'Claude shows PointCompass’s recommendation, the transfer ratios with their sources, and the assumptions.' },
           ].map(({ step, title, body }, i) => (
             <Reveal key={step} delay={i * 80}>
               <div className={`${TILE} h-full p-7`}>
@@ -602,7 +601,7 @@ export function Landing() {
           >
             Set it up
           </a>
-          <p className="mt-3 text-sm text-navy-950/50">Works with Claude, and other assistants that support custom connectors.</p>
+          <p className="mt-3 text-sm text-navy-950/50">Also works with other assistants that support custom connectors.</p>
         </div>
       </Section>
 
@@ -640,8 +639,8 @@ export function Landing() {
         <SectionHeading
           id="numbers"
           eyebrow="About the numbers"
-          title="Where every figure comes from."
-          intro="And which ones are estimates."
+          title="Where the numbers come from"
+          intro="Every rule and ratio has a source and a check date. Estimates are labelled."
         />
         <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {NUMBERS.map(({ title, body, icon }, i) => (
@@ -671,9 +670,9 @@ export function Landing() {
               <CardArt cardId="amexplatinum" issuer="amex" className="absolute right-0 top-28 w-60 rotate-[6deg] opacity-90" />
             </div>
             <div className="relative max-w-lg">
-              <h2 className="font-display text-3xl font-semibold text-slate-50 sm:text-4xl">Get an answer for your next trip.</h2>
+              <h2 className="font-display text-3xl font-semibold text-slate-50 sm:text-4xl">Check your next trip</h2>
               <p className="mt-3 text-slate-50/70">
-                Enter the trip, and your cash position if you like. No account or bank login needed.
+                Enter a price and your balances. No account or bank login.
               </p>
               <a
                 ref={closingRef}

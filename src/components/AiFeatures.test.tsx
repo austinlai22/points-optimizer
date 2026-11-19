@@ -292,7 +292,7 @@ describe('planning points across saved trips', () => {
 describe('home page', () => {
   it('shows how to use PointCompass from an AI assistant', () => {
     visit('/');
-    const section = within(screen.getByRole('heading', { name: /ask claude/i }).closest('section')!);
+    const section = within(screen.getByRole('heading', { name: /inside claude/i }).closest('section')!);
     expect(section.getByRole('link', { name: 'Set it up' })).toHaveAttribute('href', '/agents');
   });
 });

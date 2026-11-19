@@ -44,8 +44,8 @@ export function Agents() {
     <>
       <PageIntro title="PointCompass for AI assistants">
         <p>
-          Add PointCompass to Claude as a connector, and Claude can check points-or-cash decisions
-          with the same engine and sourced data as this website.
+          Add PointCompass to Claude as a connector, and Claude uses the same calculations and
+          sources as this website when you ask whether to use points or pay cash.
         </p>
       </PageIntro>
 

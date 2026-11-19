@@ -85,9 +85,9 @@ export function PortfolioView() {
         }
       >
         <p>
-          See what your points are worth today. Turn on each card you hold and enter its balance:
-          every card shows its cash-back value and its guaranteed travel value on the same scale,
-          so they compare directly. Points combine only within the same bank.
+          Turn on each card you hold and enter its points balance. Each card shows what its points
+          are worth as cash back and when booked through the bank's travel portal. Points can only
+          be combined within the same bank.
         </p>
       </PageIntro>
 
