@@ -157,6 +157,60 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
   },
 ];
 
+// The newer ways to use the app, each with a small picture of itself.
+const MORE: { title: string; body: string; href: string; link: string; visual: ReactNode }[] = [
+  {
+    title: 'Describe it in your own words',
+    body: "Type the trip the way you'd text it, and the form fills itself. Figures that look off, like 6k for 60k, are flagged before they count.",
+    href: '/app',
+    link: 'Check a trip',
+    visual: (
+      <div className="w-60 space-y-2">
+        <p className="rounded-2xl bg-white px-3.5 py-2.5 text-xs leading-relaxed text-navy-950 shadow-card">
+          SFO to Lisbon: $900, or 60k United miles + $85
+        </p>
+        <p className="px-1 text-[11px] text-navy-950/55">
+          <span className="font-semibold text-navy-950/70">Read:</span> $900 cash · 60,000 United points + $85
+        </p>
+      </div>
+    ),
+  },
+  {
+    title: 'Ask PointCompass',
+    body: 'Ask why, set up a trip or try a what-if. Answers come from PointCompass’s own calculations, and nothing changes until you tap Apply.',
+    href: '/app',
+    link: 'Try it on a trip',
+    visual: (
+      <div className="w-60 space-y-2 text-xs">
+        <p className="ml-8 rounded-2xl rounded-br-md bg-navy px-3 py-2 text-slate-50">What if I had 20,000 more Chase points?</p>
+        <div className="mr-6 flex items-center justify-between gap-2 rounded-2xl bg-white px-3 py-2 shadow-card">
+          <span className="text-navy-950/70">Suggested change</span>
+          <span className="rounded-full bg-navy px-2.5 py-1 text-[11px] font-semibold text-slate-50">Apply</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: 'Save, compare and plan',
+    body: 'Keep trips in My trips, put up to five side by side, and see which ones to spend your points on to save the most.',
+    href: '/trips',
+    link: 'Open My trips',
+    visual: (
+      <div className="flex w-60 gap-2">
+        {[
+          { name: 'Lisbon', answer: 'Transfer points' },
+          { name: 'Tokyo', answer: 'Pay cash' },
+        ].map((t) => (
+          <div key={t.name} className="flex-1 rounded-2xl bg-white p-3 shadow-card">
+            <p className="font-display text-sm font-semibold text-navy-950">{t.name}</p>
+            <p className="mt-1 text-[11px] text-navy-950/55">{t.answer}</p>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+];
+
 const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: 'Can PointCompass see Chase Points Boost offers?',
@@ -490,7 +544,30 @@ export function Landing() {
         </div>
       </Section>
 
-      <Section id="assistants" tone="white">
+      <Section id="more" tone="white">
+        <SectionHeading id="more" eyebrow="Also in PointCompass" title="Quicker to use, and built for more than one trip." />
+        <ul className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {MORE.map(({ title, body, href, link, visual }, i) => (
+            <Reveal key={title} delay={i * 80}>
+              <li className={`${TILE} flex h-full flex-col overflow-hidden`}>
+                <div className="flex h-48 items-center justify-center bg-gradient-to-b from-navy-100 to-slate-50">{visual}</div>
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="font-display text-xl font-semibold text-navy-950">{title}</h3>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-navy-950/60">{body}</p>
+                  <a href={href} onClick={linkHandler(href)} className={`mt-4 self-start rounded text-sm font-semibold text-navy underline-offset-4 hover:underline ${FOCUS_RING}`}>
+                    {link} →
+                  </a>
+                </div>
+              </li>
+            </Reveal>
+          ))}
+        </ul>
+        <p className="mt-6 text-center text-sm text-navy-950/50">
+          Describing a trip and Ask PointCompass use Google Gemini, only when you use them, and never see your balances or cash figures.
+        </p>
+      </Section>
+
+      <Section id="assistants">
         <SectionHeading
           id="assistants"
           eyebrow="Use it from your AI assistant"
@@ -524,7 +601,7 @@ export function Landing() {
         </div>
       </Section>
 
-      <Section id="faq">
+      <Section id="faq" tone="white">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
           <div>
             <p className="text-sm font-semibold text-navy/70">FAQ</p>
@@ -554,7 +631,7 @@ export function Landing() {
         </div>
       </Section>
 
-      <Section id="numbers" tone="white">
+      <Section id="numbers">
         <SectionHeading
           id="numbers"
           eyebrow="About the numbers"
