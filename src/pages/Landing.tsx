@@ -158,10 +158,11 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
 ];
 
 // The newer ways to use the app, each with a small picture of itself.
-const MORE: { title: string; body: string; href: string; link: string; visual: ReactNode }[] = [
+const MORE: { title: string; ai?: boolean; body: string; href: string; link: string; visual: ReactNode }[] = [
   {
     title: 'Describe it in your own words',
-    body: "Type the trip the way you'd text it, and the form fills itself. Figures that look off, like 6k for 60k, are flagged before they count.",
+    ai: true,
+    body: "Type the trip the way you'd text it, and AI fills in the form. Figures that look off, like 6k for 60k, are flagged before they count.",
     href: '/app',
     link: 'Check a trip',
     visual: (
@@ -177,7 +178,8 @@ const MORE: { title: string; body: string; href: string; link: string; visual: R
   },
   {
     title: 'Ask PointCompass',
-    body: 'Ask why, set up a trip or try a what-if. Answers come from PointCompass’s own calculations, and nothing changes until you tap Apply.',
+    ai: true,
+    body: 'An AI assistant for your trips: ask why, set one up or try a what-if. Its answers come from PointCompass’s own calculations, and nothing changes until you tap Apply.',
     href: '/app',
     link: 'Try it on a trip',
     visual: (
@@ -547,10 +549,13 @@ export function Landing() {
       <Section id="more" tone="white">
         <SectionHeading id="more" eyebrow="Also in PointCompass" title="Quicker to use, and built for more than one trip." />
         <ul className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {MORE.map(({ title, body, href, link, visual }, i) => (
+          {MORE.map(({ title, ai, body, href, link, visual }, i) => (
             <Reveal key={title} delay={i * 80}>
               <li className={`${TILE} flex h-full flex-col overflow-hidden`}>
-                <div className="flex h-48 items-center justify-center bg-gradient-to-b from-navy-100 to-slate-50">{visual}</div>
+                <div className="relative flex h-48 items-center justify-center bg-gradient-to-b from-navy-100 to-slate-50">
+                  {ai && <span className="absolute left-5 top-5 rounded-full bg-navy px-2.5 py-1 text-xs font-semibold text-slate-50">AI</span>}
+                  {visual}
+                </div>
                 <div className="flex flex-1 flex-col p-6">
                   <h3 className="font-display text-xl font-semibold text-navy-950">{title}</h3>
                   <p className="mt-2 flex-1 text-sm leading-relaxed text-navy-950/60">{body}</p>
@@ -563,7 +568,7 @@ export function Landing() {
           ))}
         </ul>
         <p className="mt-6 text-center text-sm text-navy-950/50">
-          Describing a trip and Ask PointCompass use Google Gemini, only when you use them, and never see your balances or cash figures.
+          The AI features use Google Gemini, only when you use them, and never see your balances or cash figures.
         </p>
       </Section>
 
