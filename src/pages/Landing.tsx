@@ -110,7 +110,7 @@ function HeroScreen() {
 
 function FloatingNote({ label, value, className }: { label: string; value: string; className: string }) {
   return (
-    <div className={`absolute hidden rounded-2xl bg-white/90 px-4 py-3 shadow-card ring-1 ring-navy/10 backdrop-blur sm:block ${className}`}>
+    <div className={`absolute z-20 hidden max-w-[13rem] rounded-2xl bg-white/90 px-4 py-3 shadow-card ring-1 ring-navy/10 backdrop-blur sm:block ${className}`}>
       <p className={LABEL}>{label}</p>
       <p className="mt-0.5 font-mono text-sm text-navy-950">{value}</p>
     </div>
@@ -140,7 +140,7 @@ const STEPS: { title: string; body: string; visual: ReactNode }[] = [
   },
   {
     title: 'Get your answer',
-    body: 'Enter the trip price and receive one clear recommendation, with the numbers behind it.',
+    body: 'Enter the trip, or describe it in your own words, and get one clear recommendation, with the numbers behind it.',
     visual: (
       <div className={`${HERO_SURFACE} flex w-56 items-center gap-3 rounded-2xl p-4`}>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal text-slate-50">
@@ -171,7 +171,8 @@ const FAQ: { q: string; a: ReactNode }[] = [
     a: (
       <>
         Your cards, balances and cash figures stay on your device. The optional AI features send
-        only what you type to them, plus PointCompass's own results, to Google Gemini. The{' '}
+        what you type to them, your trips and PointCompass's results to Google Gemini, never your
+        balances or cash figures. The{' '}
         <a href="/privacy" onClick={linkHandler('/privacy')} className={`rounded font-medium text-navy underline underline-offset-2 ${FOCUS_RING}`}>
           privacy page
         </a>{' '}
@@ -185,7 +186,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'Do I need to connect a bank account?',
-    a: 'No. You enter three figures about your cash yourself. PointCompass never asks for bank logins.',
+    a: 'No. You enter your balances yourself, and the three cash figures are optional. PointCompass never asks for bank logins.',
   },
 ];
 
@@ -281,7 +282,7 @@ export function Landing() {
             <div aria-hidden="true" className="absolute inset-x-0 top-24 -z-0 mx-auto h-72 max-w-2xl rounded-full bg-navy/10 blur-3xl" />
             <CardArt cardId="csr" issuer="chase" className="absolute left-[2%] top-28 hidden w-56 -rotate-[14deg] sm:block lg:left-[6%] lg:w-64" />
             <CardArt cardId="venturex" issuer="capitalOne" className="absolute right-[2%] top-48 hidden w-56 rotate-[12deg] sm:block lg:right-[6%] lg:w-64" />
-            <FloatingNote label="If you pay cash" value={describeRunway(example.runway.payCash)} className="bottom-24 left-[4%] text-left lg:left-[12%]" />
+            <FloatingNote label="If you pay cash" value={describeRunway(example.runway.payCash)} className="bottom-24 left-[4%] text-left lg:left-[6%]" />
             <FloatingNote label="Value per point" value={`${formatCents(exampleTransfer.cppCents!)} vs. ${formatCents(exampleTransfer.benchmarkCents)} usual`} className="right-[4%] top-12 text-left lg:right-[12%]" />
             <PhoneFrame className="relative z-10 w-[290px]">
               <HeroScreen />
@@ -307,7 +308,7 @@ export function Landing() {
           id="how"
           eyebrow="How it works"
           title="From trip to answer in three steps."
-          intro="Your figures stay in your browser, and no bank connection is required."
+          intro="Your balances and cash figures stay in your browser, and no bank connection is required."
         />
         <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {STEPS.map(({ title, body, visual }, i) => (
@@ -583,7 +584,7 @@ export function Landing() {
       <section className="bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
           <div className={`${HERO_SURFACE} relative overflow-hidden p-8 sm:p-12`}>
-            <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-6 hidden w-80 sm:block">
+            <div aria-hidden="true" className="pointer-events-none absolute -right-10 top-2 hidden w-80 sm:block">
               <CardArt cardId="csp" issuer="chase" className="absolute right-20 top-10 w-60 rotate-[18deg] opacity-90" />
               <CardArt cardId="amexplatinum" issuer="amex" className="absolute right-0 top-28 w-60 rotate-[6deg] opacity-90" />
             </div>

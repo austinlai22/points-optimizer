@@ -16,10 +16,13 @@ interface CardArtProps {
 export function CardArt({ cardId, issuer, className = 'w-28', compact = false }: CardArtProps) {
   const style = cardArtStyle(cardId);
   const ink = style.ink === 'light' ? 'text-white' : 'text-navy-950';
+  // Relative unless the caller places it: "relative" alongside the caller's
+  // "absolute" would win and drop the card into the page's flow.
+  const position = /(^|\s)(absolute|fixed)(\s|$)/.test(className) ? '' : 'relative';
   return (
     <div
       aria-hidden="true"
-      className={`@container relative aspect-[1.586] shrink-0 overflow-hidden rounded-[9%/14%] shadow-[0_8px_20px_-8px_rgba(11,18,32,0.45)] ring-1 ring-black/5 ${ink} ${className}`}
+      className={`@container ${position} aspect-[1.586] shrink-0 overflow-hidden rounded-[9%/14%] shadow-[0_8px_20px_-8px_rgba(11,18,32,0.45)] ring-1 ring-black/5 ${ink} ${className}`}
       style={{ backgroundImage: `linear-gradient(135deg, ${style.from}, ${style.to})` }}
     >
       {/* Soft sheen across the top, as on a real card. */}
